@@ -39,21 +39,29 @@ jai/
 - Python 3.9+
 - Node.js 18+
 
-### Setup (5 minutes)
+### Setup (5-35 minutes)
 
 ```bash
 # 1. Initialize Docker services (PostgreSQL, Redis, Qdrant)
 ./dev-setup.sh
 
-# 2. Start Backend (in Terminal 1)
+# 2. Copy large pre-built files (models, data, node_modules)
+#    This is 15-30x faster than re-downloading!
+#    Total: ~9.8GB in 15-30 minutes
+#    Options: all | backend | frontend | models-only | data-only
+./copy-large-files.sh all
+
+# 3. Start Backend (in Terminal 1)
 ./dev-backend.sh
 
-# 3. Start Frontend (in Terminal 2)
+# 4. Start Frontend (in Terminal 2)
 ./dev-frontend.sh
 
-# 4. Access the app
+# 5. Access the app
 open http://localhost:3000
 ```
+
+**Note on Step 2**: Copying large files (`copy-large-files.sh`) is optional but **strongly recommended**. It copies pre-built models and dependencies from source repos instead of re-downloading them, saving 20-40 minutes. See [COPY_LARGE_FILES.md](./COPY_LARGE_FILES.md) for details.
 
 **Endpoints**:
 - 🎨 Frontend: `http://localhost:3000`
@@ -107,6 +115,7 @@ This runs backend + frontend + all dependencies in containers.
 
 ## Documentation
 
+- **Quick Copy Guide**: [COPY_LARGE_FILES.md](./COPY_LARGE_FILES.md) - Copy models and data (15-30x faster than re-download)
 - **Development Setup**: Read [HYBRID_DEVELOPMENT.md](./HYBRID_DEVELOPMENT.md) ⭐ for hybrid dev guide
 - **Full Architecture**: [JAI_SETUP_GUIDE.md](./JAI_SETUP_GUIDE.md)
 - **GitHub Deployment**: [GITHUB_PUSH_GUIDE.md](./GITHUB_PUSH_GUIDE.md)
