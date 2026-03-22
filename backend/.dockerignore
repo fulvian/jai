@@ -1,6 +1,7 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Python
 .venv
@@ -16,45 +17,95 @@ __pycache__
 .ruff_cache
 .coverage
 htmlcov
+.tox/
+.nox/
+.hypothesis/
 
 # IDE
 .vscode
 .idea
 *.swp
 *.swo
+*~
+.DS_Store
 
 # Build
 build
 dist
 *.egg
+*.whl
 
 # Tests
 tests/
 pytest.ini
+conftest.py
 
-# Documentation (eccetto README)
+# Documentation (except README)
 docs/
 CHANGELOG.md
 CONTRIBUTING.md
+LICENSE
 
-# Docker
+# Docker (not needed in image)
 docker/
 Dockerfile*
 docker-compose*
+.dockerignore
 
-# Environment
+# Kubernetes & CI/CD (mounted at runtime)
+kubernetes/
+k8s/
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Environment (secrets mounted at runtime)
 .env*
 *.env
+.env.local
+secrets/
+.security/
 
-# Data
+# Data & Logs
 data/
 *.db
 *.sqlite
-
-# Logs
 logs/
 *.log
+tmp/
+temp/
 
-# OS
-.DS_Store
-Thumbs.db
+# Monitoring configs (mounted at runtime)
+monitoring/
+grafana/
+prometheus/
+
+# Frontend (separate build)
+frontend/
+packages/
+node_modules/
+
+# Virtual environments
+venv/
+env/
+.env*/
+
+# Security keys (mounted at runtime)
+*.key
+*.pem
+*.cert
+*.sec
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.tmp
+
+# Local config overrides
+config/local/
+config/*local*
+*.local

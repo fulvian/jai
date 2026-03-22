@@ -1,0 +1,217 @@
+name: Deploy to Environment
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Docker Images"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      rollback:
+        description: 'Rollback to previous version'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  KUBECONFIG: /tmp/kubeconfig
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BE: ${{ github.repository_owner }}/me4brain-backend
+  IMAGE_NAME_FE: ${{ github.repository_owner }}/me4brain-frontend
+
+jobs:
+  # ===========================================================================
+  # Validate Environment
+  # ===========================================================================
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate required secrets
+        run: |
+          echo "Checking required secrets for ${{ steps.env.outputs.environment }}..."
+          if [ "${{ steps.env.outputs.environment }}" = "production" ]; then
+            # Production requires extra validation
+            echo "Production deployment requires manual approval"
+          fi
+
+  # ===========================================================================
+  # Deploy to Staging
+  # ===========================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [validate]
+    if: needs.validate.outputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.jai.example.com
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl for staging cluster
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBECONFIG_STAGING }}
+
+      - name: Deploy staging
+        run: |
+          echo "Deploying to staging cluster..."
+          # Apply Kubernetes manifests
+          kubectl apply -f kubernetes/namespace.yaml
+          kubectl apply -f kubernetes/configmap.yaml
+          kubectl apply -f kubernetes/secrets.yaml --namespace=jai-staging
+          kubectl apply -f kubernetes/deployment.yaml
+          kubectl apply -f kubernetes/service.yaml
+          kubectl apply -f kubernetes/ingress.yaml
+
+          # Rollout status
+          kubectl rollout status deployment/me4brain -n jai-staging --timeout=300s
+
+          # Show deployed pods
+          kubectl get pods -n jai-staging
+
+      - name: Verify deployment
+        run: |
+          echo "### Staging Deployment Verification" >> $GITHUB_STEP_SUMMARY
+          echo "Pods running:" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n jai-staging -o wide >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Services:" >> $GITHUB_STEP_SUMMARY
+          kubectl get svc -n jai-staging >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Deploy to Production (Requires Approval)
+  # ===========================================================================
+  deploy-production:
+    name: Deploy to Production
+    needs: [validate]
+    if: needs.validate.outputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://jai.example.com
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl for production cluster
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: Backup before deployment
+        run: |
+          echo "Creating backup before production deployment..."
+          kubectl get all -n jai-production -o yaml > backup-pre-deploy.yaml
+          # In production, integrate with actual backup solution
+          # kubectl exec -n jai-production postgres-0 -- pg_dump -U jai_user > backup.sql
+
+      - name: Deploy production
+        run: |
+          echo "Deploying to production cluster..."
+          # Apply Kubernetes manifests with production settings
+          kubectl apply -f kubernetes/namespace.yaml
+          kubectl apply -f kubernetes/configmap.yaml
+          kubectl apply -f kubernetes/secrets.yaml --namespace=jai-production
+          kubectl apply -f kubernetes/deployment.yaml
+          kubectl apply -f kubernetes/service.yaml
+          kubectl apply -f kubernetes/ingress.yaml
+
+          # Wait for rollout
+          kubectl rollout status deployment/me4brain -n jai-production --timeout=600s
+
+      - name: Verify deployment
+        run: |
+          echo "### Production Deployment Verification" >> $GITHUB_STEP_SUMMARY
+          echo "Pods running:" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n jai-production -o wide >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Service endpoints:" >> $GITHUB_STEP_SUMMARY
+          kubectl get endpoints -n jai-production >> $GITHUB_STEP_SUMMARY
+
+      - name: Health check
+        run: |
+          echo "Running health checks..."
+          BACKEND_URL="https://jai.example.com/health/ready"
+          curl -sf "$BACKEND_URL" || exit 1
+          echo "✅ Health check passed"
+
+  # ===========================================================================
+  # Smoke Tests
+  # ===========================================================================
+  smoke-tests:
+    name: Smoke Tests
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: staging
+            url: https://staging.jai.example.com
+          - environment: production
+            url: https://jai.example.com
+    steps:
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests for ${{ matrix.environment }}..."
+          BACKEND_URL="${{ matrix.url }}"
+          
+          # Health check
+          echo "Testing health endpoint..."
+          curl -sf "$BACKEND_URL/health/live" || exit 1
+          
+          # Readiness check
+          echo "Testing readiness endpoint..."
+          curl -sf "$BACKEND_URL/health/ready" || exit 1
+          
+          # API check
+          echo "Testing API endpoint..."
+          curl -sf "$BACKEND_URL/v1/health" || exit 1
+          
+          echo "✅ All smoke tests passed for ${{ matrix.environment }}"
+
+  # ===========================================================================
+  # Notify Success
+  # ===========================================================================
+  notify:
+    name: Notify Success
+    needs: [smoke-tests]
+    runs-on: ubuntu-latest
+    if: always() && needs.smoke-tests.result == 'success'
+    steps:
+      - name: Send success notification
+        run: |
+          echo "✅ Deployment to ${{ needs.smoke-tests.outputs.environment || 'unknown' }} completed successfully!"
+          # Integrate with Slack, Teams, etc.

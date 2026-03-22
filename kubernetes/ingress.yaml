@@ -1,0 +1,153 @@
+# =============================================================================
+# Kubernetes Ingress Configuration for JAI
+# =============================================================================
+# Supports both AWS ALB, GCP Cloud Load Balancer, Azure Application Gateway
+# =============================================================================
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: me4brain-ingress
+  namespace: jai-staging
+  labels:
+    app: me4brain
+    environment: staging
+  annotations:
+    # AWS ALB annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health/live
+    alb.ingress.kubernetes.io/healthcheck-port: "8089"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/idle-timeout: "60"
+    
+    # Security headers
+    alb.ingress.kubernetes.io/actions.response-headers-add:
+      '{"X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "X-XSS-Protection": "1; mode=block", "Strict-Transport-Security": "max-age=31536000; includeSubDomains"}'
+    
+    # Rate limiting
+    alb.ingress.kubernetes.io/actions.rate-limit:
+      '{"Type": "request-headers", "Key": "X-Forwarded-For", "Value": "100"}'
+    
+    # SSL redirect
+    alb.ingress.kubernetes.io/ssl-redirect: "true"
+
+spec:
+  rules:
+    - host: staging.jai.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: me4brain
+                port:
+                  number: 8089
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: me4brain-ingress
+  namespace: jai-production
+  labels:
+    app: me4brain
+    environment: production
+  annotations:
+    # AWS ALB annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health/live
+    alb.ingress.kubernetes.io/healthcheck-port: "8089"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/idle-timeout: "120"
+    
+    # Security headers
+    alb.ingress.kubernetes.io/actions.response-headers-add:
+      '{"X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "X-XSS-Protection": "1; mode=block", "Strict-Transport-Security": "max-age=31536000; includeSubDomains"}'
+    
+    # WAF integration
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:us-east-1:123456789:regional/webacl/production-webacl/abc123"
+    
+    # Access logging
+    alb.ingress.kubernetes.io/access-logging: "true"
+
+spec:
+  rules:
+    - host: jai.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: me4brain
+                port:
+                  number: 8089
+    - host: "*.jai.example.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: me4brain
+                port:
+                  number: 8089
+
+---
+# Network Policy to restrict traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: me4brain-network-policy
+  namespace: jai-production
+spec:
+  podSelector:
+    matchLabels:
+      app: me4brain
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app: nginx-ingress
+      ports:
+        - protocol: TCP
+          port: 8089
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: qdrant
+      ports:
+        - protocol: TCP
+          port: 6333
+    - to:
+        - namespaceSelector: {}  # Allow DNS
+      ports:
+        - protocol: UDP
+          port: 53

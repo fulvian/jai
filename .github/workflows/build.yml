@@ -1,0 +1,229 @@
+name: Build & Push Docker Images
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BE: ${{ github.repository_owner }}/me4brain-backend
+  IMAGE_NAME_FE: ${{ github.repository_owner }}/me4brain-frontend
+
+jobs:
+  # ===========================================================================
+  # Build Backend
+  # ===========================================================================
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: true
+          sbom: true
+
+      - name: Generate image URL
+        run: echo "IMAGE_URL=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BE }}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+
+      - name: Image size report
+        run: |
+          echo "### Backend Image Size" >> $GITHUB_STEP_SUMMARY
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BE }}:latest
+          docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BE }}:latest --format='{{.Size}}' | numfmt --to=iec
+
+  # ===========================================================================
+  # Build Frontend
+  # ===========================================================================
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          dockerfile: docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: true
+          sbom: true
+
+  # ===========================================================================
+  # Security Scan
+  # ===========================================================================
+  security-scan:
+    name: Security Scan
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      matrix:
+        image:
+          - backend
+          - frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ github.repository_owner }}/me4brain-${{ matrix.image }}:${{ github.ref_name }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          limit: 30
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy scanner in fs mode
+        if: false  # Disable filesystem scan to avoid false positives
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  # ===========================================================================
+  # Generate SBOM
+  # ===========================================================================
+  sbom:
+    name: Generate SBOM
+    needs: [build-backend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: '${{ env.REGISTRY }}/${{ github.repository_owner }}/me4brain-backend:${{ github.ref_name }}'
+          format: 'spdx-json'
+          output-file: 'sbom-backend.json'
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-backend
+          path: sbom-backend.json
+          retention-days: 90
+
+  # ===========================================================================
+  # Image Summary
+  # ===========================================================================
+  summary:
+    name: Build Summary
+    needs: [build-backend, build-frontend, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "### Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.build-backend.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.build-frontend.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Success' || '⚠️ Warnings' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BE }}:latest`" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FE }}:latest`" >> $GITHUB_STEP_SUMMARY

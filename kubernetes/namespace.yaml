@@ -1,0 +1,32 @@
+# =============================================================================
+# Kubernetes Namespaces for JAI
+# =============================================================================
+# Separate namespaces for different environments
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jai-staging
+  labels:
+    name: jai-staging
+    environment: staging
+    app: me4brain
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jai-production
+  labels:
+    name: jai-production
+    environment: production
+    app: me4brain
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    app: me4brain
