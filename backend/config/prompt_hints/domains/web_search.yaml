@@ -1,0 +1,149 @@
+version: "2.0"
+domain: "web_search"
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: "Web search multidominio via Smart Routing (Brave, Tavily, DuckDuckGo) con estrazione contenuti."
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - Usa `smart_search` come punto di ingresso predefinito per il 90% delle richieste web.
+  - Per ricerche accademiche, tecniche o scientifiche, forza `tavily_search` con `search_depth: advanced`.
+  - Non allucinare mai URL: usa solo quelli restituiti dai tool di ricerca.
+  - Se l'utente fornisce un URL o se trovi un URL altamente rilevante, usa `tavily_extract` per leggerne il contenuto prima di rispondere.
+  - Sequenzialità: `smart_search` (scoperta) -> `tavily_extract` (approfondimento).
+
+  ### Strategia di Routing Intelligente
+  - **Dati Real-time/News**: Brave Search è ottimizzato per il 2025/2026.
+  - **Fatti Semplici/Definizioni**: DuckDuckGo è istantaneo e gratuito.
+  - **Analisi Profonda/Multi-sito**: Tavily è il motore di ricerca AI più potente per sintesi e news finanziarie.
+
+  ### 2. Automazione Browser & Estrazione Avanzata (Utility Linkage) [NEW]
+  - **Interazione Complessa**: Se `smart_search` non basta e serve navigare, cliccare o compilare form su un sito, usa i tool del dominio `utility` come `browser_open`, `browser_act` e `browser_close`.
+  - **Screen Recording/Shot**: Usa `browser_screenshot` per catturare prove visive di una pagina web se richiesto.
+
+  ### Errori Comuni (Anti-pattern)
+  - ❌ Chiamare tool di ricerca uno dopo l'altro senza aver analizzato i risultati del primo.
+  - ❌ Ignorare l'uso di `tavily_extract` quando l'utente fornisce un link diretto.
+  - ❌ Usare query troppo generiche (es: "news") invece di query specifiche ("news elezioni Germania 2025").
+
+tools:
+  smart_search:
+    description: "Routing intelligente automatico tra i provider. Da usare per ogni ricerca generica."
+    constraints:
+      max_results: 10
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "La domanda o i termini di ricerca.",
+            }
+          force_provider:
+            {
+              type: "string",
+              enum: ["duckduckgo", "brave", "tavily"],
+              description: "Opzionale per forzare un provider.",
+            }
+    hard_rules: |
+      RULE 1: Non usare `force_provider` a meno che l'utente non lo richieda esplicitamente.
+    few_shot_examples:
+      - description: "Ricerca generica su evento attuale"
+        content: |
+          INPUT: "Quali sono i risultati delle ultime elezioni in Germania?"
+          THOUGHT: L'utente chiede informazioni su un evento recente. Uso smart_search per delegare il routing al miglior provider attuale.
+          CALL: {"query": "risultati elezioni Germania 2025", "smart_search": true}
+          RESULT: {"source": "Brave Search", "results": [...]}
+
+  tavily_search:
+    description: "Ricerca web avanzata con sintesi AI e topic ottimizzati (finance, news)."
+    constraints:
+      max_results: 20
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            { type: "string", description: "Query di ricerca dettagliata." }
+          search_depth:
+            { type: "string", enum: ["basic", "advanced"], default: "basic" }
+          topic:
+            {
+              type: "string",
+              enum: ["general", "news", "finance"],
+              default: "general",
+            }
+          max_results: { type: "integer", minimum: 1, maximum: 20 }
+    hard_rules: |
+      RULE 1: Usa `topic: finance` per query su stock market, crypto o macroeconomia.
+      RULE 2: Usa `search_depth: advanced` solo per ricerche complesse che richiedono dati tecnici o scientifici.
+    few_shot_examples:
+      - description: "Analisi finanziaria profonda"
+        content: |
+          INPUT: "Analisi dettagliata del sentiment su NVIDIA dopo l'ultima trimestrale"
+          THOUGHT: Si tratta di una ricerca finanziaria che richiede dati freschi e sintetizzati. Uso Tavily con topic finance.
+          CALL: {"query": "NVIDIA sentiment analysis Q4 earnings 2025", "topic": "finance", "search_depth": "advanced"}
+          RESULT: {"summary": "NVIDIA bullish sentiment continues high...", "source": "Tavily Finance"}
+
+  tavily_extract:
+    description: "Estrae il contenuto testuale pulito (markdown) da uno o più URL."
+    constraints:
+      input_schema:
+        type: object
+        required: ["urls"]
+        properties:
+          urls:
+            {
+              type: "array",
+              items: { type: "string" },
+              description: "Lista di URL (max 10).",
+            }
+    hard_rules: |
+      RULE 1: Non passare più di 10 URL per chiamata.
+    few_shot_examples:
+      - description: "Lettura contenuto sito specifico"
+        content: |
+          INPUT: "Leggi questo articolo: https://techcrunch.com/example-news"
+          THOUGHT: L'utente ha fornito un URL diretto. Uso tavily_extract per leggerne il testo.
+          CALL: {"urls": ["https://techcrunch.com/example-news"]}
+          RESULT: {"content": "# Article Title\nText content in markdown...", "source": "Tavily Extract"}
+
+  brave_search:
+    description: "Ottimizzato per news locali, meteo e ricerche broad."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          country: { type: "string", default: "it" }
+          count: { type: "integer", default: 5 }
+    hard_rules: |
+      RULE 1: Specifica sempre `country: it` per query in lingua italiana riguardanti l'Italia.
+    few_shot_examples:
+      - description: "Ricerca news locale"
+        content: |
+          INPUT: "Ultime notizie sull'alluvione in Emilia Romagna oggi"
+          THOUGHT: Ricerca di news locale molto specifica per data e luogo. Brave è ideale.
+          CALL: {"query": "alluvione Emilia Romagna news oggi", "country": "it"}
+          RESULT: {"results": [{"title": "Situazione fiumi Bologna...", "url": "..."}, ...]}
+
+  duckduckgo_instant:
+    description: "Fatti rapidi, definizioni e Wikipedia summaries. Gratuito e veloce."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+    hard_rules: |
+      RULE 1: Usa questo tool solo per domande fattuali semplici ("Chi è X", "Cos'è Y").
+    few_shot_examples:
+      - description: "Definizione rapida"
+        content: |
+          INPUT: "Cos'è la fotosintesi clorofilliana?"
+          THOUGHT: Domanda di carattere enciclopedico/scientifico stabile. DDG è sufficiente e veloce.
+          CALL: {"query": "fotosintesi clorofilliana"}
+          RESULT: {"abstract": "La fotosintesi clorofilliana è un processo chimico...", "source": "DuckDuckGo Instant"}

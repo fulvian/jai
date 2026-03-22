@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/skills/watcher.py
+# hypothesis_version: 6.151.9
+
+[5.0, 'FileSystemEvent', 'Observer', 'SKILL.md', 'created', 'deleted', 'modified', 'polling', 'skill_file_created', 'skill_file_deleted', 'skill_file_modified', 'watchdog']

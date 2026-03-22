@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/router.py
+# hypothesis_version: 6.151.9
+
+[0.0, 100, 1024, '": "([^"]*), "', '": "\\1", "', '%Y-%m-%d', 'AMADEUS_CLIENT_ID', 'FINNHUB_API_KEY', 'FMP_API_KEY', 'GOOGLE_OAUTH_TOKEN', '\\{[^{}]*\\}', 'amadeus_book_flight', 'auto', 'binance_klines', 'binance_ticker', 'coingecko_price', 'description', 'finnhub_news', 'finnhub_quote', 'fmp_balance_sheet', 'fmp_cash_flow', 'fmp_dcf', 'fmp_income_statement', 'fmp_key_metrics', 'fmp_ratios', 'function', 'google_drive_search', 'google_drive_upload', 'google_gmail_search', 'google_gmail_send', 'google_places_hotels', 'kimi-k2-5', 'name', 'parameters', 'router_decision', 'router_failed', 'router_json_fixed', 'router_no_tool_calls', 'router_tool_parsed', 'system', 'user', 'yahoo_quote', '{', '}']

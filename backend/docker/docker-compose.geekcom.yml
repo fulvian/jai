@@ -1,0 +1,249 @@
+# =============================================================================
+# Me4Brain Docker Compose - GeekCom Production
+# =============================================================================
+# Ports:
+#   - API: 8089
+#   - Redis: 6379
+#   - PostgreSQL: 5432
+#   - Qdrant: 6333 (gRPC), 6334 (HTTP)
+#   - Neo4j: 7474 (HTTP), 7687 (Bolt)
+#   - Keycloak: 8080 (optional)
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # APPLICATION
+  # ===========================================================================
+  me4brain:
+    image: me4brain:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: me4brain-api
+    restart: unless-stopped
+    profiles: ["app", "full"]
+    env_file:
+      - ../.env
+    ports:
+      - "8089:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QDRANT_URL=http://qdrant:6334
+      - QDRANT_HOST=qdrant
+      - QDRANT_HTTP_PORT=6334
+      - QDRANT_GRPC_PORT=6333
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_HOST=neo4j
+      - NEO4J_BOLT_PORT=7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j_secret}
+      - POSTGRES_URL=postgresql://me4brain:${DB_PASSWORD:-me4brain_secret}@postgres:5432/me4brain
+      - POSTGRES_HOST=postgres
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - HF_HOME=/home/appuser/.cache/huggingface
+      - TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface
+    volumes:
+      - hf_cache:/home/appuser/.cache/huggingface
+      - ../src:/app/src
+      - ../models:/app/models
+      - ../data:/app/data
+      - ~/.me4brain/skills:/home/appuser/.me4brain/skills:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    mem_limit: 6G
+    mem_reservation: 2G
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: "2.0"
+        reservations:
+          memory: 2G
+    networks:
+      - me4brain-network
+
+  # ===========================================================================
+  # INFRASTRUCTURE
+  # ===========================================================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: me4brain-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: me4brain
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-me4brain_secret}
+      POSTGRES_DB: me4brain
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U me4brain"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    networks:
+      - me4brain-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: me4brain-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    networks:
+      - me4brain-network
+
+  qdrant:
+    image: qdrant/qdrant:v1.16.2
+    container_name: me4brain-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      QDRANT__STORAGE__MMAP_THRESHOLD_KB: 2048
+      QDRANT__SERVICE__GRPC_PORT: 6333
+      QDRANT__SERVICE__HTTP_PORT: 6334
+      QDRANT__STORAGE__ON_DISK_PAYLOAD: "true"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q 18BE /proc/net/tcp || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    networks:
+      - me4brain-network
+
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: me4brain-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_secret}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 128m
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_db_transaction_timeout: 30s
+      NEO4J_db_transaction_bookmark__ready__timeout: 30s
+      NEO4J_server_db_query__cache__size: 1000
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    networks:
+      - me4brain-network
+
+  # Keycloak (optional - enable with --profile auth)
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: me4brain-keycloak
+    restart: unless-stopped
+    profiles: ["auth", "full"]
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin_secret}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      JAVA_OPTS_APPEND: "-Xms128m -Xmx256m"
+    command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200' || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    networks:
+      - me4brain-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  keycloak_data:
+  hf_cache:
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  me4brain-network:
+    external: true
+    name: me4brain-network

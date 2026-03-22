@@ -1,0 +1,94 @@
+[project]
+name = "me4brain-sdk"
+version = "1.0.0"
+description = "Python SDK for Me4BrAIn Agentic Memory Platform"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [
+    { name = "Fulvio Ventura", email = "fulvio@me4brain.ai" }
+]
+keywords = [
+    "ai", "memory", "cognitive", "agent", "langchain", "llm", 
+    "knowledge-graph", "rag", "semantic-memory"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.5.0",
+    "tenacity>=8.2.0",
+    "anyio>=4.0.0",
+]
+
+[project.optional-dependencies]
+telemetry = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-instrumentation-httpx>=0.45b0",
+    "prometheus-client>=0.19.0",
+]
+security = [
+    "cryptography>=41.0.0",
+]
+langchain = [
+    "langchain-core>=0.1.0",
+]
+llamaindex = [
+    "llama-index-core>=0.10.0",
+]
+all = [
+    "me4brain-sdk[telemetry,security,langchain,llamaindex]",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "respx>=0.21.0",
+    "ruff>=0.4.0",
+    "mypy>=1.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/fulvian/me4brain"
+Documentation = "https://docs.me4brain.ai/sdk"
+Repository = "https://github.com/fulvian/me4brain"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/me4brain_sdk"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --cov=me4brain_sdk --cov-report=term-missing"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+]

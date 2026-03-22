@@ -1,0 +1,31 @@
+# Travel & Transport Skills
+# travel-agent, travel-concierge, flight-tracker, skiplagged-flights
+
+category: travel_transport
+description: "Travel planning, flight search and tracking"
+
+patterns:
+  - "travel-*"
+  - "flight-*"
+  - "skiplagged-*"
+
+hints: |
+  VOLI:
+  - origin, destination: codici IATA (FCO, MXP, JFK)
+  - departure_date: YYYY-MM-DD
+  - return_date: per andata/ritorno
+  - passengers: adults, children, infants
+  - cabin_class: economy, premium_economy, business, first
+
+  SKIPLAGGED (hidden city):
+  - Cerca voli con scalo nella destinazione desiderata
+  - ATTENZIONE: solo bagaglio a mano, no check-in
+
+  FLIGHT TRACKER:
+  - flight_number: es. "AZ1234"
+  - date: data del volo
+  - Output: status, gate, delay, aircraft
+
+  ITINERARI:
+  - Per viaggi multi-città, specifica tutte le tappe
+  - Include hotel preferences se travel-concierge

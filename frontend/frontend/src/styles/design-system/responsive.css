@@ -1,0 +1,319 @@
+/**
+ * Responsive Design System
+ * Mobile-first breakpoints for PersAn Dashboard
+ *
+ * Breakpoint: 768px (md) — below = mobile, above = desktop
+ */
+
+:root {
+    --mobile-topbar-h: 56px;
+    --mobile-input-h: 60px;
+    --mobile-glass-bg: rgba(28, 28, 30, 0.7);
+    --mobile-glass-blur: 25px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE DRAWER — Overlay panel for sidebar / intel deck on mobile
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mobile-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 85vw;
+    max-width: 360px;
+    z-index: 50;
+    background: rgba(28, 28, 30, 0.97);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: forwards;
+}
+
+.mobile-drawer-left {
+    left: 0;
+    border-right: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+    animation-name: slideInLeft;
+}
+
+.mobile-drawer-right {
+    right: 0;
+    border-left: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+    animation-name: slideInRight;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE OVERLAY — Backdrop behind drawer
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mobile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: fadeIn 0.25s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE TOPBAR — Compact topbar for mobile
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mobile-topbar {
+    height: var(--mobile-topbar-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: var(--mobile-glass-bg);
+    backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--mobile-glass-blur)) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    /* Increased to stay above all chat content */
+}
+
+
+.mobile-topbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #ebebf5cc);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-topbar-btn:hover,
+.mobile-topbar-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+}
+
+.mobile-topbar-btn.active {
+    background: rgba(10, 132, 255, 0.2);
+    color: var(--tahoe-blue, #0a84ff);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE STATUS BAR
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mobile-statusbar {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    background: rgba(28, 28, 30, 0.5);
+    border-top: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+    font-size: 10px;
+    color: var(--text-quaternary, #ebebf54d);
+    flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DRAWER CLOSE BUTTON
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.drawer-close-btn {
+    position: absolute;
+    top: 10px;
+    z-index: 51;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-secondary, #ebebf5cc);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.drawer-close-btn-left {
+    left: 10px;
+}
+
+.drawer-close-btn-right {
+    right: 10px;
+}
+
+.drawer-close-btn:hover,
+.drawer-close-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary, #ffffff);
+    transform: scale(1.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY: Touch-friendly tap targets
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM MOBILE INPUT AREA
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mobile-input-container {
+    padding: 12px 16px env(safe-area-inset-bottom, 16px);
+    background: linear-gradient(to top, rgba(10, 10, 12, 0.95), transparent);
+    backdrop-filter: none;
+    z-index: 40;
+}
+
+.mobile-input-pill {
+    background: rgba(44, 44, 46, 0.6);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    padding: 6px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-input-pill:focus-within {
+    background: rgba(54, 54, 56, 0.8);
+    border-color: rgba(10, 132, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.sidebar-header {
+    /* Base styles are handled by inline Tailwind, this is for responsive overrides */
+}
+
+@media (max-width: 767px) {
+    .sidebar-header {
+        padding-left: 48px !important;
+        /* Spazio per la X sposta a sinistra */
+    }
+}
+
+.mobile-action-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.mobile-action-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.9);
+}
+
+.mobile-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tahoe-blue);
+    color: white;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mobile-send-btn:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.2);
+    transform: scale(0.9);
+}
+
+@media (max-width: 767px) {
+
+    /* Ensure minimum tap target size for WCAG compliance */
+    button,
+    [role="button"],
+    a {
+        min-height: 40px;
+        min-width: 40px;
+    }
+
+    /* Disable text selection on interactive elements */
+    .mobile-topbar,
+    .mobile-drawer {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Prevent overscroll bounce on iOS */
+    body {
+        overscroll-behavior: none;
+    }
+
+    /* Welcome screen adjustments */
+    .welcome-logo {
+        filter: drop-shadow(0 0 30px rgba(10, 132, 255, 0.2));
+        animation: logoGlow 4s infinite alternate;
+    }
+}
+
+@keyframes logoGlow {
+    from {
+        filter: drop-shadow(0 0 20px rgba(10, 132, 255, 0.1));
+        transform: scale(1);
+    }
+
+    to {
+        filter: drop-shadow(0 0 40px rgba(10, 132, 255, 0.3));
+        transform: scale(1.02);
+    }
+}

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/retrieval/openapi_ingester.py
+# hypothesis_version: 6.151.9
+
+[0.5, '$', '([a-z])([A-Z])', '-', '.yaml', '.yml', '/', '1.0.0', 'ACTIVE', 'Unknown API', '\\1 \\2', '_', 'application/json', 'body', 'content', 'content-type', 'delete', 'description', 'get', 'head', 'info', 'name', 'object', 'openapi_file_loaded', 'openapi_parsed', 'openapi_url_loaded', 'operationId', 'options', 'parameters', 'patch', 'paths', 'post', 'properties', 'put', 'requestBody', 'required', 'responses', 'schema', 'servers', 'string', 'summary', 'tags', 'title', 'tool_ingested', 'type', 'unknown', 'url', 'version', 'yaml', '{']

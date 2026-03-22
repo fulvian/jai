@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/llm/nanogpt.py
+# hypothesis_version: 6.151.9
+
+[10.0, 60.0, 600.0, 200, 503, 1024, '/', 'Authorization', 'Content-Type', 'MISSING', 'N/A', 'NOT_DICT', 'NanoGPTClient', 'POST', '[DONE]', 'application/json', 'arguments', 'assistant', 'choices', 'content', 'created', 'data: ', 'delta', 'exclude', 'finish_reason', 'function', 'id', 'index', 'llm_request', 'llm_request_debug', 'llm_stream_start', 'local/bge-m3', 'max_tokens', 'medium', 'message', 'messages', 'model', 'name', 'nanogpt_503_debug', 'nanogpt_api_error', 'nanogpt_stream_error', 'parallel_tool_calls', 'reasoning', 'reasoning_content', 'reasoning_effort', 'response_format', 'role', 'stop', 'stream', 'temperature', 'tool_calls', 'tool_choice', 'tools', 'top_p', 'type', '{}']

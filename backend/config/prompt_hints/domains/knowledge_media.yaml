@@ -1,0 +1,223 @@
+version: "2.0"
+domain: "knowledge_media"
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Recupero di conoscenza enciclopedica, notizie globali, trend social (Reddit) e gestione della conoscenza personale. 
+  Integra Vector Memory (ChromaDB), PDF extraction, news aggregators e Second Brain.
+
+content: |
+  - **Ricerca Multi-Sorgente**: Per news attuali, usa `news-summary` per briefing o `bbc-news` per fonti specifiche. Per trend social, usa `reddit-scraper`.
+  - **Memoria A Lungo Termine**: Usa `chromadb-memory` per richiamare contesti associativi o `second-brain`/`clawpedia` per basi di conoscenza condivise/personali.
+  - **Gestione Media & Documenti**: Usa `pdf-extract` per leggere documenti tecnici e `apple-photos` per gestire o cercare cataloghi fotografici locali.
+  - **Web Deep Search**: Se le fonti standard falliscono, usa `exa-web-search-free` o `web_scraper` per estrarre dati grezzi da URL specifici.
+  - **Sequenze Consigliate**:
+    1. Per definizioni/concetti: `wikipedia_summary`.
+    2. Per news recenti: `news-summary` -> `bbc-news`.
+    3. Per discussioni community: `reddit-scraper` -> `hackernews_top`.
+    4. Per conoscenza personale: `chromadb-memory` -> `second-brain`.
+    5. Per media/documenti: `pdf-extract` o `apple-photos`.
+
+  ### Errori Comuni (Anti-pattern)
+  - ❌ Chiamare `chromadb-memory` senza un contesto chiaro, risultando in recuperi di rumore.
+  - ❌ Estrarre interi PDF senza filtrare le sezioni rilevanti se il documento è tecnico (>100 pag).
+  - ❌ Confondere `second-brain` (note personali) con `clawpedia` (conoscenza di progetto).
+
+tools:
+  wikipedia_summary:
+    description: "Ottiene il riassunto (extract), titolo e URL desktop di una pagina Wikipedia. Ideale per domande 'chi è', 'cos'è', 'storia di'."
+    constraints:
+      input_schema:
+        type: object
+        required: ["topic"]
+        properties:
+          topic:
+            type: "string"
+            description: "Il nome esatto del soggetto o concetto da cercare."
+    hard_rules: |
+      RULE 1: Se il topic è in italiano e fallisce, l'agente DEVE ritentare la chiamata in inglese.
+      RULE 2: Massimo 1 chiamata per turno per Wikipedia per evitare loop di ricerca infiniti.
+    version: "1.0"
+    few_shot_examples:
+      - description: "Ricerca concetto scientifico"
+        content: |
+          INPUT: "Spiegami cos'è la fusione nucleare"
+          THOUGHT: "Devo recuperare una definizione enciclopedica affidabile. Wikipedia è la fonte primaria."
+          CALL: { "topic": "Nuclear fusion" }
+          RESULT: { "title": "Nuclear fusion", "extract": "Nuclear fusion is a reaction in which two or more atomic nuclei are combined...", "source": "Wikipedia" }
+      - description: "Ricerca personaggio storico"
+        content: |
+          INPUT: "Chi era Leonardo da Vinci?"
+          THOUGHT: "Cerco la biografia sintetica su Wikipedia Italia."
+          CALL: { "topic": "Leonardo da Vinci" }
+          RESULT: { "title": "Leonardo da Vinci", "extract": "Leonardo di ser Piero da Vinci è stato un inventore, artista e scienziato italiano...", "source": "Wikipedia" }
+
+  hackernews_top:
+    description: "Recupera i titoli più popolari correnti (top stories) dalla community Hacker News. Ottimo per tech-trends."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          count:
+            type: "integer"
+            default: 10
+            maximum: 30
+            description: "Numero di articoli da recuperare (Massimo 30)."
+    hard_rules: |
+      RULE 1: Il parametro 'count' non deve mai superare 30.
+    version: "1.0"
+    few_shot_examples:
+      - description: "Trend tecnologici odierni"
+        content: |
+          INPUT: "Quali sono le novità tech più discusse di oggi?"
+          THOUGHT: "Hacker News è il termometro della community tech. Recupero le prime 10 storie."
+          CALL: { "count": 10 }
+          RESULT: { "stories": [{"title": "Show HN: A new AI framework", "url": "..."}, ...], "source": "Hacker News" }
+
+  openlibrary_search:
+    description: "Cerca libri, autori e metadati bibliografici nel catalogo mondiale Open Library."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          limit: { type: "integer", default: 5 }
+    hard_rules: |
+      RULE 1: Fornire sempre l'URL della pagina dell'opera se disponibile.
+    few_shot_examples:
+      - description: "Ricerca libro tech"
+        content: |
+          INPUT: "Cerca libri su Clean Code"
+          THOUGHT: Uso Open Library per trovare riferimenti bibliografici.
+          CALL: {"query": "Clean Code", "limit": 2}
+          RESULT: {"docs": [{"title": "Clean Code", "author": "Robert C. Martin", "url": "..."}]}
+
+  news-summary:
+    description: "Briefing giornalieri e notizie internazionali da feed RSS fidati con sintesi vocale opzionale."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          category: { type: "string" }
+          voice_summary: { type: "boolean" }
+    hard_rules: |
+      RULE 1: Includere almeno 3 fonti diverse per un bilanciamento informativo.
+    few_shot_examples:
+      - description: "Briefing news tech"
+        content: |
+          INPUT: "Dammi un riassunto delle news tech di oggi"
+          THOUGHT: Uso news-summary per un briefing aggregato.
+          CALL: {"category": "technology", "voice_summary": false}
+          RESULT: {"summary": "Today's tech highlights: AI advances...", "source": "News Aggregator"}
+
+  reddit-scraper:
+    description: "Lettura e ricerca su Reddit (old.reddit.com) per discussioni e monitoraggio community (Read-only)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["subreddit"]
+        properties:
+          subreddit: { type: "string" }
+          query: { type: "string" }
+    hard_rules: |
+      RULE 1: Segnalare sempre l'Upvote Ratio se disponibile per indicare la polarità della discussione.
+    few_shot_examples:
+      - description: "Monitoraggio trend su r/Python"
+        content: |
+          INPUT: "Cosa si dice di nuovo su r/Python?"
+          THOUGHT: Scansiono il subreddit Python per le ultime discussioni.
+          CALL: {"subreddit": "Python"}
+          RESULT: {"posts": [{"title": "Python 3.13 released!", "upvotes": 1200, "ratio": 0.98}, ...]}
+
+  chromadb-memory:
+    description: "Memoria a lungo termine via ChromaDB: recall automatico e iniezione di contesto rilevante."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["save", "query", "recall"] }
+          content: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare 'query' per ricerche semantiche e 'save' solo se l'informazione è nuova e rilevante.
+    few_shot_examples:
+      - description: "Query memoria semantica"
+        content: |
+          INPUT: "Cosa avevamo deciso sulla gestione errori?"
+          THOUGHT: Cerco nella memoria ChromaDB discussioni precedenti.
+          CALL: {"action": "query", "content": "error handling decisions"}
+          RESULT: {"results": ["Decision: Use custom exceptions...", "Status: Approved"]}
+
+  second-brain:
+    description: "Base di conoscenza personale per catturare e recuperare comprensione e note."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["save", "retrieve", "list"] }
+          topic: { type: "string" }
+    hard_rules: |
+      RULE 1: Organizzare le note per topic chiari per facilitare il retrieval futuro.
+    few_shot_examples:
+      - description: "Recupero nota personale"
+        content: |
+          INPUT: "Recupera i miei appunti su SOTA 2026"
+          THOUGHT: Cerco nel second-brain la nota specifica.
+          CALL: {"action": "retrieve", "topic": "SOTA 2026"}
+          RESULT: {"note": "# SOTA 2026 Guidelines\nStandardizing GraphRAG...", "tags": ["graphrag", "standard"]}
+
+  pdf-extract:
+    description: "Estrazione testo da file PDF per elaborazione locale."
+    constraints:
+      input_schema:
+        type: object
+        required: ["file_path"]
+        properties:
+          file_path: { type: "string" }
+    hard_rules: |
+      RULE 1: Segnalare se il PDF contiene solo immagini (OCR richiesto).
+    few_shot_examples:
+      - description: "Estrazione testo da paper"
+        content: |
+          INPUT: "Leggi il PDF in /docs/paper.pdf"
+          THOUGHT: Estraggo il contenuto markdown dal PDF locale.
+          CALL: {"file_path": "/docs/paper.pdf"}
+          RESULT: {"text": "# Full Paper Text\nAbstract: ...", "pages": 12}
+
+  apple-photos:
+    description: "Integrazione con Apple Photos.app: ricerca foto, album e date su macOS."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          query: { type: "string" }
+          album: { type: "string" }
+    hard_rules: |
+      RULE 1: Può fallire se l'app Foto non ha i permessi di automazione.
+    few_shot_examples:
+      - description: "Ricerca foto in album"
+        content: |
+          INPUT: "Trova le foto di montagna nell'album Vacanze"
+          THOUGHT: Cerco nell'album specifico dell'app Foto.
+          CALL: {"query": "montagna", "album": "Vacanze"}
+          RESULT: {"photos": [{"id": "IMG_001", "date": "2024-08-15"}, ...]}
+
+  exa-web-search-free:
+    description: "Ricerca web AI gratuita (Exa MCP) per notizie, codice e business intel."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          type: { type: "string", enum: ["news", "code", "company"] }
+    hard_rules: |
+      RULE 1: Usare il filtro 'type' per restringere i risultati a domini autorevoli.
+    few_shot_examples:
+      - description: "Ricerca business intel su Exa"
+        content: |
+          INPUT: "Chi sono i competitor di OpenAI secondo le ultime news?"
+          THOUGHT: Uso Exa con filtro news per dati business aggiornati.
+          CALL: {"query": "OpenAI competitors news 2025", "type": "news"}
+          RESULT: {"results": [{"title": "Anthropic vs OpenAI", "company": "Anthropic"}, ...]}

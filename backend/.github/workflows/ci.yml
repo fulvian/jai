@@ -1,0 +1,109 @@
+name: CI
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main]
+
+env:
+    PYTHON_VERSION: "3.12"
+
+jobs:
+    test:
+        name: Test Suite
+        runs-on: ubuntu-latest
+
+        services:
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6389:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v4
+              with:
+                  version: "latest"
+
+            - name: Set up Python
+              run: uv python install ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: uv sync --dev
+
+            - name: Run unit tests with coverage
+              run: |
+                  uv run pytest tests/unit/ \
+                    --cov=src/me4brain \
+                    --cov-report=xml \
+                    --cov-report=term \
+                    --tb=short \
+                    -q
+              env:
+                  REDIS_URL: redis://localhost:6389
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  files: ./coverage.xml
+                  fail_ci_if_error: false
+                  verbose: true
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    lint:
+        name: Lint & Format
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v4
+              with:
+                  version: "latest"
+
+            - name: Set up Python
+              run: uv python install ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: uv sync --dev
+
+            - name: Run ruff check
+              run: uv run ruff check src/
+
+            - name: Run ruff format check
+              run: uv run ruff format --check src/
+
+    type-check:
+        name: Type Check
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v4
+              with:
+                  version: "latest"
+
+            - name: Set up Python
+              run: uv python install ${{ env.PYTHON_VERSION }}
+
+            - name: Install dependencies
+              run: uv sync --dev
+
+            - name: Run mypy
+              run: uv run mypy src/ --config-file=pyproject.toml
+              continue-on-error: true # Don't fail CI on type errors for now

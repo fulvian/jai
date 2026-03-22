@@ -1,0 +1,30 @@
+tool_id: "openmeteo_forecast"
+description: "7-day weather forecast for a latitude/longitude pair."
+domain: "weather_geo"
+constraints:
+  input_schema:
+    type: "object"
+    properties:
+      latitude: { "type": "number", "minimum": -90, "maximum": 90 }
+      longitude: { "type": "number", "minimum": -180, "maximum": 180 }
+      hourly:
+        {
+          "type": "string",
+          "default": "temperature_2m,precipitation_probability,weather_code",
+        }
+      daily:
+        {
+          "type": "string",
+          "default": "temperature_2m_max,temperature_2m_min,weather_code",
+        }
+      timezone: { "type": "string", "default": "auto" }
+    required: ["latitude", "longitude"]
+  few_shot_examples:
+    - input: "Previsioni per i prossimi giorni a Milano"
+      output: '{"tool": "openmeteo_forecast", "params": {"latitude": 45.46, "longitude": 9.19}}'
+  pre_execution_validators:
+    - type: "business_logic"
+      description: "Forecast requires ISO8601 compatible date handling if provided."
+hard_rules: |
+  1. Use for future dates or general 'forecast' intent.
+  2. For current exact time, prefer openmeteo_weather.

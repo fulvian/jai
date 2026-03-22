@@ -1,0 +1,324 @@
+/**
+ * macOS Tahoe Liquid Animations
+ * Liquid Glass Design System - WWDC 2025
+ */
+
+:root {
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     EASING CURVES (Apple-style fluid motion)
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    /* Standard - Smooth deceleration */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Liquid - Fluid glass motion */
+    --ease-liquid: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    /* Bounce - Slight overshoot */
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Snap - Quick start, smooth end */
+    --ease-snap: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Swift - iOS modal style */
+    --ease-swift: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     DURATION TOKENS
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+    --duration-slower: 500ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Fade In - Basic opacity transition
+ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/**
+ * Fade In Up - Content entering from below
+ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/**
+ * Fade In Down - Content entering from above
+ */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/**
+ * Liquid Expand - Glass panels expanding from center
+ */
+@keyframes liquidExpand {
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+/**
+ * Liquid Collapse - Glass panels collapsing to center
+ */
+@keyframes liquidCollapse {
+    from {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.85);
+        filter: blur(4px);
+    }
+}
+
+/**
+ * AI Pulse - Breathing glow for AI activity
+ */
+@keyframes aiPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.4);
+        opacity: 1;
+    }
+
+    50% {
+        box-shadow: 0 0 20px 8px rgba(10, 132, 255, 0.2);
+        opacity: 0.9;
+    }
+}
+
+/**
+ * AI Typing - Dot indicator for streaming
+ */
+@keyframes aiTyping {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+/**
+ * Shimmer - Loading skeleton effect
+ */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/**
+ * Float - Subtle floating motion
+ */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/**
+ * Spin - Rotation for loaders
+ */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/**
+ * Wiggle - Attention indicator
+ */
+@keyframes wiggle {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-3deg);
+    }
+
+    75% {
+        transform: rotate(3deg);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATION UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Basic animations */
+.animate-fade-in {
+    animation: fadeIn var(--duration-normal) var(--ease-smooth);
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp var(--duration-normal) var(--ease-liquid);
+}
+
+.animate-fade-in-down {
+    animation: fadeInDown var(--duration-normal) var(--ease-liquid);
+}
+
+/* Liquid glass animations */
+.animate-liquid-expand {
+    animation: liquidExpand var(--duration-slow) var(--ease-liquid);
+}
+
+.animate-liquid-collapse {
+    animation: liquidCollapse var(--duration-normal) var(--ease-liquid);
+}
+
+/* AI activity animations */
+.animate-ai-pulse {
+    animation: aiPulse 2s var(--ease-smooth) infinite;
+}
+
+.animate-ai-typing>span:nth-child(1) {
+    animation: aiTyping 1.4s var(--ease-smooth) infinite;
+    animation-delay: 0s;
+}
+
+.animate-ai-typing>span:nth-child(2) {
+    animation: aiTyping 1.4s var(--ease-smooth) infinite;
+    animation-delay: 0.2s;
+}
+
+.animate-ai-typing>span:nth-child(3) {
+    animation: aiTyping 1.4s var(--ease-smooth) infinite;
+    animation-delay: 0.4s;
+}
+
+/* Loading states */
+.animate-shimmer {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.animate-float {
+    animation: float 3s var(--ease-smooth) infinite;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.animate-wiggle {
+    animation: wiggle 0.5s var(--ease-bounce);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TRANSITION UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.transition-all {
+    transition: all var(--duration-normal) var(--ease-liquid);
+}
+
+.transition-fast {
+    transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.transition-slow {
+    transition: all var(--duration-slow) var(--ease-liquid);
+}
+
+.transition-colors {
+    transition: color var(--duration-fast) var(--ease-smooth),
+        background-color var(--duration-fast) var(--ease-smooth),
+        border-color var(--duration-fast) var(--ease-smooth);
+}
+
+.transition-transform {
+    transition: transform var(--duration-normal) var(--ease-liquid);
+}
+
+.transition-opacity {
+    transition: opacity var(--duration-normal) var(--ease-smooth);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTION REDUCE (A11y)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

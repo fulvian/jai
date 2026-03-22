@@ -1,0 +1,61 @@
+version: "2.0"
+domain: sports_booking
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Dominio avanzato per la prenotazione di strutture sportive (Playtomic) 
+  e biglietteria per eventi (Ticketmaster, StubHub). Gestisce la logistica 
+  delle attività fisiche e l'accesso ai grandi eventi sportivi mondiali.
+
+content: |
+  ### Errori Comuni (Anti-pattern)
+  - ❌ Prenotare campi padel/tennis senza aver verificato la pioggia in `geo_weather`.
+  - ❌ Cercare eventi Ticketmaster senza specificare la città, portando a troppi risultati irrilevanti.
+
+tools:
+  playtomic_find_nearby:
+    description: "Cerca centri sportivi nelle vicinanze della posizione utente o città."
+    constraints:
+      input_schema:
+        type: object
+        required: ["location"]
+        properties:
+          location: { type: "string" }
+          sport_id:
+            { type: "string", enum: ["PADEL", "TENNIS"], default: "PADEL" }
+    hard_rules: |
+      RULE 1: Inserire la città esatta per restringere la ricerca dei club.
+
+  ticketmaster-mcp:
+    description: "Ricerca e acquisto biglietti per eventi sportivi ufficiali (NBA, NFL, Soccer)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["keyword"]
+        properties:
+          keyword: { type: "string" }
+          city: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare il parametro 'city' per evitare ambiguità geografiche.
+
+  stubhub-mcp:
+    description: "Accesso al mercato secondario per biglietti sold-out o last-minute."
+    constraints:
+      input_schema:
+        type: object
+        required: ["event_name"]
+        properties:
+          event_name: { type: "string" }
+    hard_rules: |
+      RULE 1: Informare l'utente che i prezzi su StubHub possono essere superiori al valore nominale.
+
+few_shot_examples:
+  - description: "Prenotazione campo padel con check meteo"
+    content: |
+      USER: "Vorrei prenotare un campo da padel a Milano per domani pomeriggio verso le 18:00."
+      THOUGHT: "Devo prima controllare il meteo e poi cercare disponibilità su Playtomic."
+      CALL: {"tool_name": "openmeteo_forecast", "arguments": {"city": "Milano", "days": 2}}
+      RESULT: {"forecast": [{"date": "2026-02-24", "weather": "Rainy"}]}
+      THOUGHT: "Piove, suggerisco un campo indoor."
+      CALL: {"tool_name": "playtomic_find_nearby", "arguments": {"location": "Milano", "sport_id": "PADEL"}}

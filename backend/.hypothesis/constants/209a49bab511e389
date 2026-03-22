@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/unified_intent_analyzer.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.1, 0.5, 1.0, 100, 200, 1000, 'LLMProvider', 'before', 'communication', 'complex', 'complexity', 'confidence', 'conversational', 'data_analysis', 'domains', 'empty_query', 'empty_query_received', 'empty_response', 'entertainment', 'file_management', 'finance_crypto', 'food', 'general', 'geo_weather', 'intent', 'intent_analyzed', 'json_parse_failed', 'moderate', 'query_truncated', 'reasoning', 'scheduling', 'shopping', 'simple', 'sports', 'tool_required', 'travel', 'validation_failed', 'web_search']

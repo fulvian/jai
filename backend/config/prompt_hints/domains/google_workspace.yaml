@@ -1,0 +1,312 @@
+version: "2.0"
+domain: "google_workspace"
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Servizi Google Workspace (Drive, Gmail, Calendar, Meet, Docs, Sheets). 
+  Ottimizzato per l'attività di consulenza operativa in progetti di innovazione per la PA 
+  (Tribunali, Comuni, Gestioni Associate). Focus su analisi dei contenuti, meta-analisi 
+  e supporto al decision-making per il consulente. Include strumenti per la 
+  rendicontazione delle attività svolte.
+
+content: |
+  ## REGOLE CRITICHE (Google Workspace)
+
+  ### 1. Gestione Date e Orari (CRITICAL)
+  - Usa SEMPRE il formato **RFC3339** (es. `2026-02-23T09:00:00Z`) nei campi time_min o time_max.
+  - Per date fisse (es. YYYY-MM-DD), usa quel formato dove permesso.
+  - Calcola le date esatte per riferimenti temporali relativi ("ieri").
+
+  ### 2. Strategie di Deep Content Analysis (Consultancy focus)
+  - **Ricerca Intratestuale**: Se l'utente chiede informazioni specifiche (es. "cosa abbiamo deciso sul progetto X?"), usa la query testuale 'fullText contains' per Drive o query avanzate con 'subject' su Gmail.
+  - **Ispezione Operativa**: Trovato un documento rilevante, **DEVI** leggerlo (`google_drive_get_content`, `google_docs_get`, `google_sheets_get_values`) per estrarre dettagli.
+  - **Meta-Analisi Consulente-Cliente**: Se la richiesta coinvolge più fonti, esegui letture sequenziali (es. cerca email, poi leggi il documento allegato/linkato).
+
+  ### 3. Rendicontazione e Activity Tracking (NEW)
+  - **Ricostruzione Attività**: L'agente deve tracciare le azioni (reporting):
+    - **Incontri**: Call/Meeting in `google_calendar_list_events` e `google_meet_list_conferences`.
+    - **Produzione/Output**: Documenti (Drive) o Comunicazioni (Gmail).
+  - **Identificazione Output Definitivi vs Intermedi**:
+    - **Definitivi**: Cerca file con suffissi `DEF`, `def`, `definitivo`, `STAMPA`, `v_finale`.
+    - **Intermedi**: File con `v1`, `v2`, `draft`, `bozza` o senza suffissi espliciti.
+    - Se trovi più versioni, segnala l'ultima data di modifica come la più rilevante.
+  - **Filtro Tematico (Topic-Aware)**: Nelle consulenze PA, ignora file di colleghi che non afferiscono al tema specifico (es. se cerchi "gestioni associate", ignora documenti su "appalti" anche se nello stesso periodo).
+  - **Cross-Referencing Collaboratori**: Se trovi nomi nel "Piano di Gestione" o "Piano Esecutivo" (es. Francesca Ravaioli), cerca il loro coinvolgimento specifico nelle email/file per ricostruire l'effort del team.
+
+  ### 4. Referenziazione Context-Aware
+  - Mai procedere "al buio": cerca le informazioni prima di dedurre decisioni.
+  - Usa sempre ID estratti (file_id, message_id) per indagare i dettagli.
+
+  ### Errori Comuni da Evitare:
+  - ❌ Chiedere a Drive di cercare con "fullText" passando argomenti troppo elaborati (usa max 5 keywords).
+  - ❌ Confondere CALL ONLINE (Meet/Teams/Zoom in Calendar) con MISSIONI sul campo (molto rare, solitamente incontri "in presenza").
+  - ❌ Inventare ID dei file: recuperali tramite i tool di search.
+  - ❌ Descrivere il testo completo dei file se l'utente voleva solo una sintesi da timesheet.
+
+  ### Sequenze Consigliate:
+  1. `google_workspace_report` (Dati aggregati di progetto)
+  2. `google_drive_search` (Ricerca file) -> `google_drive_get_content` (Identificazione versione DEF)
+  3. `google_gmail_search` (Cerca invii di output a referenti) -> `google_gmail_get_message` (Verifica destinatari)
+  4. `google_docs_create` (Generazione report finale su Drive in cartella specifica)
+
+  ### 5. Automazione e Monitoraggio (Utility Linkage) [NEW]
+  - **Briefing Schedulati**: Se l'utente chiede briefing periodici sui documenti (es: "riassumimi i file del Comune ogni lunedì"), usa `schedule_task` con `action: 'google_workspace_report'`.
+  - **Alert Email/Calendar**: Per monitorare l'arrivo di email critiche o eventi imminenti, usa `create_autonomous_agent` con `agent_type: 'inbox_watch'` o `'calendar_watch'`.
+
+tools:
+  google_drive_search:
+    description: "Cerca i file di progetto su Google Drive. Supporta sia la ricerca per none ('name contains') che nel testo del documento ('fullText')."
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "Query di ricerca supportata da Drive API",
+            }
+          max_results: { type: "integer", default: 20 }
+          folder_id: { type: "string" }
+          mime_type: { type: "string" }
+    hard_rules: |
+      RULE 1: Se l'utente cerca contenuti testuali specifici, includi 'fullText contains' nella query.
+      RULE 2: Per reportistica, usa filtri 'modifiedTime >' per estrarre le lavorazioni recenti.
+      RULE 3: Quando cerchi la versione definitiva, includi operatori `name contains 'DEF'` o `name contains 'definitivo'`.
+    version: "2.0"
+    few_shot_examples:
+      - description: "Ricerca di un piano operativo"
+        content: |
+          INPUT: "Trovami l'ultimo piano operativo caricato per il progetto di gestione associata"
+          THOUGHT: "Devo cercare nei contenuti dei file la keyword richiesta."
+          CALL: { "query": "fullText contains 'piano operativo' and fullText contains 'gestione' and trashed = false", "max_results": 10 }
+          RESULT: "File trovato: id XYZ123"
+      - description: "Ricerca file elaborati di recente"
+        content: |
+          INPUT: "Quali documenti ho prodotto o aggiornato negli ultimi 6 mesi?"
+          THOUGHT: "Eseguo una query Drive per recuperare i file recenti in modo da rendicontarli."
+          CALL: { "query": "modifiedTime > '2025-08-01T00:00:00Z' and trashed = false", "max_results": 20 }
+          RESULT: "Trovati 15 file."
+
+  google_drive_get_content:
+    description: "Estrae il testo grezzo e il contenuto di un file su Google Drive, inclusi Docs, Sheets, Slides e PDF."
+    constraints:
+      input_schema:
+        type: object
+        required: ["file_id"]
+        properties:
+          file_id: { type: "string", description: "L'ID del file Google Drive" }
+    hard_rules: |
+      RULE 1: L'ID del file deve provenire da una preventiva ricerca o dalla lista file recente, non tentare di passare un URL.
+    version: "1.0"
+    few_shot_examples:
+      - description: "Lettura verbale di accordo"
+        content: |
+          INPUT: "Leggi gli intenti scritti nell'accordo del mese scorso relativo a Viterbo."
+          THOUGHT: "Ho trovato che l'ID file del verbale in riunione è 1A2b3C4d. Estraggo il contenuto testuale per rispondere."
+          CALL: { "file_id": "1A2b3C4d5E" }
+          RESULT: "Il documento testuale dichiara: 'accordo fatto per la procedura...'"
+
+  google_gmail_search:
+    description: "Cerca comunicazioni operative in Gmail per verificare feedback, invii o task."
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "Query nel formato standard Gmail (from:, to:, subject:)",
+            }
+          max_results: { type: "integer", default: 20 }
+    version: "2.0"
+    hard_rules: |
+      RULE 1: Usa 'from:me' per recuperare allegati o mail che l'utente ha inviato, 'after:' per filtrare temporalmente.
+    few_shot_examples:
+      - description: "Ricerca mail con allegati"
+        content: |
+          INPUT: "Trovami la mail in cui ho inviato la fattura la settimana scorsa"
+          THOUGHT: "Cerco tra le mie e-mail in uscita che hanno allegati."
+          CALL: { "query": "from:me has:attachment fattura", "max_results": 5 }
+          RESULT: "Trovato 1 thread."
+
+  google_gmail_get_message:
+    description: "Riproduce il pieno contenuto di un singolo messaggio da Gmail usando il suo ID univoco."
+    constraints:
+      input_schema:
+        type: object
+        required: ["message_id"]
+        properties:
+          message_id:
+            {
+              type: "string",
+              description: "ID del messaggio Gmail recuperato con la ricerca",
+            }
+    version: "1.0"
+    hard_rules: |
+      RULE 1: Da chiamare esclusivamente utilizzando l'ID ricevuto in Google Gmail Search.
+    few_shot_examples:
+      - description: "Lettura di un'email"
+        content: |
+          INPUT: "In quella mail di approvazione, cosa mi hanno risposto in dettaglio?"
+          THOUGHT: "Possiedo l'ID del messaggio 18f2d5a9. Ne richiedo la struttura completa per leggere le note extra."
+          CALL: { "message_id": "18f2d5a9" }
+          RESULT: "Contenuto della mail: Inoltro approvazione. Tuttavia, modifichiamo l'articolo 2..."
+
+  google_calendar_list_events:
+    description: "Elenca appuntamenti e conferenze calendarizzate. Ideale per la ricostruzione agende (timesheet)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          calendar_id: { type: "string", default: "primary" }
+          time_min: { type: "string", description: "Range start UTC ISO8601" }
+          time_max: { type: "string", description: "Range end UTC ISO8601" }
+          max_results: { type: "integer", default: 100 }
+          query:
+            { type: "string", description: "Testo da cercare negli eventi" }
+    version: "2.0"
+    hard_rules: |
+      RULE 1: Fornire date precise e valide in RFC3339 (time_min / time_max).
+    few_shot_examples:
+      - description: "Cerca eventi per uno specifico progetto"
+        content: |
+          INPUT: "Calcolami quanti incontri ho fatto per il progetto ANCI questo mese."
+          THOUGHT: "Ricerco per ANCI nel calendario per il mese in corso in formato RFC3339."
+          CALL: { "time_min": "2026-02-01T00:00:00Z", "time_max": "2026-02-28T23:59:59Z", "query": "ANCI" }
+          RESULT: "Event list with 4 meetings."
+
+  google_meet_list_conferences:
+    description: "Individua lo storico di call e videocall svolte su Meet, incluso un audit log base con l'elenco dei partecipanti."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          max_results: { type: "integer", default: 50 }
+    version: "1.0"
+    hard_rules: |
+      RULE 1: Utilizza questo tool primariamente quando l'utente richiede 'chi vi ha partecipato' se non hai trovato l'informazione sufficiente su Calendar.
+    few_shot_examples:
+      - description: "Audit presenze alle call"
+        content: |
+          INPUT: "Vedi chi c'era alla videoconferenza di Meet registrata per la governance?"
+          THOUGHT: "Elenco le videocall e controllo il log dei partecipanti."
+          CALL: { "max_results": 20 }
+          RESULT: "Trovata conferenza, partecipanti: Gianni, Laura, e Utente 0."
+
+  google_workspace_report:
+    description: "Crea automaticamente una macro-analisi di documenti elaborati, email di comunicazione in corso, eventi Calendar, e riunioni Meet per un certo progetto in un intervallo."
+    constraints:
+      input_schema:
+        type: object
+        required: ["project_keyword"]
+        properties:
+          project_keyword:
+            {
+              type: "string",
+              description: "Keyword per il progetto (es. PNRR)",
+            }
+          date_from: { type: "string", description: "Giorno start YYYY-MM-DD" }
+          date_to: { type: "string", description: "Giorno end YYYY-MM-DD" }
+          include_drive: { type: "boolean", default: true }
+          include_gmail: { type: "boolean", default: true }
+          include_calendar: { type: "boolean", default: true }
+          include_meet: { type: "boolean", default: true }
+    version: "2.0"
+    hard_rules: |
+      RULE 1: L'output generato contiene l'esatta sintesi aggregata da esporre per i riepiloghi e report timesheet/PMO.
+    few_shot_examples:
+      - description: "Report generale progetto"
+        content: |
+          INPUT: "Dimmi tutto quello che abbiamo prodotto sul progetto PNRR Scuola nell'ultimo trimestre."
+          THOUGHT: "Uso il generatore di report multi-service per eseguire interrogazioni aggregate parallele."
+          CALL: { "project_keyword": "PNRR Scuola", "date_from": "2025-11-23", "date_to": "2026-02-23", "include_drive": true, "include_gmail": true, "include_calendar": true, "include_meet": true }
+          RESULT: "L'output contiene 5 item su drive, 10 email, 2 cal events raggruppati ordinatamente."
+
+  google_docs_get:
+    description: "Estrae il contenuto e il testo formattato base specificamente e unicamente da file nativi Google Docs (es. documenti testuali word processing)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["document_id"]
+        properties:
+          document_id: { type: "string" }
+    version: "1.0"
+    hard_rules: |
+      RULE 1: Deve essere usato assieme a `google_drive_search` quando l'utente vuole leggere il paragrafo di un elaborato scritto docx/pdf nativo.
+    few_shot_examples:
+      - description: "Leggere uno specifico testo di policy"
+        content: |
+          INPUT: "Qual è l'incipit della policy privacy su cui stiamo lavorando?"
+          THOUGHT: "Con l'ID del documento policy, richiedo l'estrazione totale della stringa testuale."
+          CALL: { "document_id": "abc123DocID" }
+          RESULT: "Testo: 'I termini generali e le condizioni sono stabiliti...'"
+  google_sheets_get_values:
+    description: "Reperisce tutte le tuple, celle, righe o un estratto incrociato di griglia dati (range) da un Google Sheet."
+    constraints:
+      input_schema:
+        type: object
+        required: ["spreadsheet_id"]
+        properties:
+          spreadsheet_id: { type: "string" }
+          range_notation: { type: "string", default: "A1:Z500" }
+    version: "1.0"
+    hard_rules: |
+      RULE 1: Specificare `range_notation` (es. Sheet1!A1:D10) per evitare data overload e out of context tokens su fogli grandi.
+    few_shot_examples:
+      - description: "Controllare il riassunto contabile"
+        content: |
+          INPUT: "Che fondi ci sono per la voce trasferte nel file di budgeting?"
+          THOUGHT: "Prendo il foglio per guardare l'array di valori limitandomi al primo range potenziale."
+          CALL: { "spreadsheet_id": "xyzSheetID1", "range_notation": "Budgeting!A1:D50" }
+          RESULT: "Matrice con trasferte allocato a 3000 EUR."
+
+  google_docs_create:
+    description: "Crea un nuovo documento Google Docs. Supporta l'inserimento immediato di testo e il salvataggio in una cartella specifica."
+    constraints:
+      input_schema:
+        type: object
+        required: ["title"]
+        properties:
+          title: { type: "string", description: "Titolo del documento" }
+          content: { type: "string", description: "Testo iniziale da inserire" }
+          folder_id:
+            {
+              type: "string",
+              description: "ID della cartella Drive di destinazione",
+            }
+    version: "1.0"
+    hard_rules: |
+      RULE 1: Se l'utente fornisce un URL di una cartella, estrai l'ID (es. dall'URL in prompt) prima di chiamare il tool.
+    few_shot_examples:
+      - description: "Salvataggio report in cartella specifica"
+        content: |
+          INPUT: "Salva il report come Google Doc nella cartella https://drive.google.com/drive/u/1/folders/1ThCvFX"
+          THOUGHT: "Estraggo l'ID cartella 1ThCvFX e creo il documento con il contenuto elaborato."
+          CALL: { "title": "Report Castelvetere - Gestioni Associate", "content": "Il report dettagliato...", "folder_id": "1ThCvFX" }
+          RESULT: "Documento creato con ID doc999 in cartella 1ThCvFX"
+
+  google_workspace_complex_query:
+    description: "Esempio di meta-analisi per consulenza territoriale PA (Workflow Castelvetere)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["project_keyword"]
+        properties:
+          project_keyword: { type: "string" }
+          date_from: { type: "string" }
+          include_drive: { type: "boolean", default: true }
+          include_gmail: { type: "boolean", default: true }
+    hard_rules: |
+      RULE 1: Questo è un meta-tool; deve coordinare le chiamate a Drive e Gmail in parallelo.
+    few_shot_examples:
+      - description: "Query di reportistica complessa multisorgente"
+        content: |
+          INPUT: "Ricostruisci attività Comune Castelvetere da Ottobre 2024 su tema gestioni associate. Analizza Drive, Gmail, Meet. Identifica output DEF e salva report su GDoc in cartella 1ThCvFX."
+          THOUGHT: "Procedo per step: 1. Report aggregato per keyword 'Castelvetere' e 'gestioni associate'. 2. Search Drive per file 'DEF' o 'definitivo'. 3. Search Gmail per invii a referenti (Ravaioli/Giuliano). 4. Sintetizzo effort e salvo con google_docs_create."
+          CALL: { "project_keyword": "Castelvetere gestioni associate", "date_from": "2024-10-01", "include_drive": true, "include_gmail": true }
+          RESULT: "Dati recuperati: 3 Call Meet, 2 Documenti DEF, 5 Email inviate."

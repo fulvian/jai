@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/skills/security.py
+# hypothesis_version: 6.151.9
+
+['/etc/passwd', '/etc/shadow', '0\\.0\\.0\\.0', 'Accesso a chiavi SSH', 'Accesso a file .env', 'CONFIRM', 'Chiamata os.system()', 'DENY', 'Import dinamico', 'NOTIFY', 'SAFE', 'Solo tool read-only', 'Uso di eval()', 'Uso di exec()', 'Uso di telnet', '\\.env', '__import__\\s*\\(', 'api_delete', 'api_post', 'browser_act', 'chmod\\s+777', 'curl.*\\|\\s*(sh|bash)', 'eval\\s*\\(', 'exec\\s*\\(', 'execute_shell', 'file_delete', 'file_write', 'google_docs_create', 'google_drive_delete', 'google_drive_share', 'google_drive_upload', 'google_gmail_send', 'google_sheets_create', 'os\\.system\\s*\\(', 'pickle\\.loads?\\s*\\(', 'rm\\s+-rf', 'run_command', 'run_script', 'sudo\\s+', 'telnet\\s+', 'webhook_trigger', 'wget.*\\|\\s*(sh|bash)', '~/.ssh']

@@ -1,0 +1,27 @@
+apiVersion: v2
+name: me4brain
+description: Me4BrAIn Core - Piattaforma Universale di Memoria Agentica
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - memory
+  - ai
+  - agentic
+  - rag
+  - knowledge-graph
+
+maintainers:
+  - name: Me4BrAIn Team
+    email: team@me4brain.ai
+
+dependencies:
+  - name: redis
+    version: "~18.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: qdrant
+    version: "~0.7"
+    repository: https://qdrant.github.io/qdrant-helm
+    condition: qdrant.enabled

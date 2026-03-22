@@ -1,0 +1,317 @@
+version: "2.0"
+domain: "utility"
+last_updated: "2026-02-23"
+author: "Antigravity_Execution_Agent"
+
+description: |
+  Dominio trasversale per utilità di sistema, automazione browser, agenti proattivi/schedulati, comunicazione inter-agente,
+  domotica (HomeKit), sintesi vocale (TTS), OCR e gestione risorse hardware/software.
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Piani d'Azione**: Gli strumenti di questo dominio sono spesso usati come step finali o di monitoraggio. Non usarli se l'utente chiede un'azione immediata una tantum (a meno che non sia browser o sistema).
+  - **Browser State**: Mantieni la sessione aperta solo se necessario. Chiudi sempre con `browser_close` al termine di un task multi-step per risparmiare risorse.
+  - **Handoff**: Usa `sessions_handoff` solo se il dominio corrente non ha strumenti sufficienti e sai che esiste un agente specializzato (es: delegare coding a tech_coding).
+  - **Proattività**: Distingui tra "avvisami quando" (`create_autonomous_agent`) e "fai questo tra X tempo" (`schedule_task`).
+
+  ### Errori Comuni
+  - Dimenticare di chiamare `browser_open` prima di `browser_act`.
+  - Non passare i parametri corretti a `create_autonomous_agent` (es: dimenticare `ticker` per i price watch).
+  - Confondere `sessions_send` (messaggio singolo) con `sessions_handoff` (delega task con tracking).
+
+tools:
+  # --- BROWSER TOOLS ---
+  browser_open:
+    description: "Apre il browser e naviga a un URL specifico. Essenziale per web scraping dinamico."
+    constraints:
+      input_schema:
+        type: object
+        required: ["url"]
+        properties:
+          url: { type: "string" }
+          headless: { type: "boolean", default: true }
+    hard_rules: |
+      RULE 1: Usa sempre HTTPS se possibile.
+      RULE 2: Imposta headless=false solo se richiesto esplicitamente per debug visivo.
+    few_shot_examples:
+      - description: "Aprire una pagina di news"
+        content: |
+          INPUT: "Apri il sito di ANSA"
+          THOUGHT: Devo aprire il browser sulla home di ANSA per poi leggere le notizie.
+          CALL: {"url": "https://www.ansa.it"}
+          RESULT: {"status": "success", "url": "https://www.ansa.it"}
+
+  browser_act:
+    description: "Esegue azioni (click, type, scroll) descritte in linguaggio naturale sulla pagina corrente."
+    constraints:
+      input_schema:
+        type: object
+        required: ["instruction"]
+        properties:
+          instruction: { type: "string" }
+    hard_rules: |
+      RULE 1: Sii specifico nell'istruzione (es. "Click on the red button" invece di "Click button").
+    few_shot_examples:
+      - description: "Login su un sito"
+        content: |
+          INPUT: "Fai il login con la mia email"
+          THOUGHT: Devo interagire con i campi di input.
+          CALL: {"instruction": "Type my email in the username field and click Login"}
+          RESULT: {"status": "success", "action_taken": "Typed email and clicked login"}
+
+  browser_extract:
+    description: "Estrae dati strutturati dalla pagina corrente via LLM vision/parsing."
+    constraints:
+      input_schema:
+        type: object
+        required: ["what"]
+        properties:
+          what: { type: "string" }
+          schema: { type: "object" }
+    hard_rules: |
+      RULE 1: Fornire lo 'schema' JSON quando possibile per ottenere dati tipizzati.
+    few_shot_examples:
+      - description: "Estrarre prezzi prodotti"
+        content: |
+          INPUT: "Prendi tutti i nomi e prezzi dei prodotti in questa lista"
+          THOUGHT: Uso browser_extract con uno schema per assicurarmi dati puliti.
+          CALL: {"what": "product names and prices", "schema": {"type": "array", "items": {"properties": {"name": {"type": "string"}, "price": {"type": "string"}}}}}
+          RESULT: {"data": [{"name": "Laptop", "price": "999€"}, ...]}
+
+  browser_screenshot:
+    description: "Cattura l'immagine della pagina corrente."
+    constraints:
+      input_schema: { type: "object", properties: {} }
+    hard_rules: |
+      RULE 1: Usare questo tool per debug visivo o per catturare grafici web.
+
+  browser_close:
+    description: "Chiude la sessione browser corrente."
+    constraints:
+      input_schema: { type: "object", properties: {} }
+    hard_rules: |
+      RULE 1: Obbligatorio chiudere la sessione browser per liberare memoria di sistema.
+
+  # --- PROACTIVE & SCHEDULE TOOLS ---
+  create_autonomous_agent:
+    description: "Crea un agente autonomo per monitoraggio ricorrente o task schedulati (Price watch, Alert, etc)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["agent_type", "name"]
+        properties:
+          agent_type:
+            {
+              type: "string",
+              enum:
+                [
+                  "price_watch",
+                  "signal_watch",
+                  "calendar_watch",
+                  "inbox_watch",
+                  "task_reminder",
+                  "autonomous",
+                  "scheduled",
+                ],
+            }
+          name: { type: "string" }
+          description: { type: "string" }
+          ticker: { type: "string" }
+          condition: { type: "string", enum: ["above", "below"] }
+          threshold: { type: "number" }
+          action: { type: "string" }
+          schedule: { type: "string" }
+    hard_rules: |
+      RULE 1: Se agent_type è 'price_watch', il parametro 'ticker' è OBBLIGATORIO.
+    few_shot_examples:
+      - description: "Alert prezzo Bitcoin"
+        content: |
+          INPUT: "Avvisami se BTC scende sotto i 50k"
+          THOUGHT: Devo creare un price_watch agent.
+          CALL: {"agent_type": "price_watch", "name": "BTC Alert", "ticker": "BTC", "condition": "below", "threshold": 50000, "action": "notify"}
+          RESULT: {"status": "agent_created", "agent_id": "BTC-50k-watcher"}
+
+  schedule_task:
+    description: "Schedula un task per esecuzione futura (Reminder, briefing, invio mail ritardato)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["name", "schedule", "action"]
+        properties:
+          name: { type: "string" }
+          schedule:
+            {
+              type: "string",
+              description: "Es: 'every 6h', 'at 2026-05-01T10:00', 'cron 0 9 * * *'",
+            }
+          action: { type: "string" }
+          params: { type: "object" }
+    hard_rules: |
+      RULE 1: Validare la stringa 'schedule' prima di confermare il task.
+    few_shot_examples:
+      - description: "Briefing mattutino"
+        content: |
+          INPUT: "Ogni mattina alle 8 generami un riassunto delle news"
+          THOUGHT: Uso schedule_task con espressione cron.
+          CALL: {"name": "morning_brief", "schedule": "cron 0 8 * * *", "action": "generate_briefing", "params": {"topic": "news"}}
+          RESULT: {"status": "task_scheduled", "schedule": "0 8 * * *"}
+
+  # --- INTER-AGENT TOOLS ---
+  sessions_list:
+    description: "Mostra gli agenti attivi e le loro capacità."
+    constraints:
+      input_schema:
+        type: object
+        properties: { capability: { type: "string" } }
+    hard_rules: |
+      RULE 1: Mostrare solo gli agenti che hanno le capacità richieste se 'capability' è fornita.
+
+  sessions_handoff:
+    description: "Delega un intero task a un altro agente specializzato."
+    constraints:
+      input_schema:
+        type: object
+        required: ["task"]
+        properties:
+          task: { type: "string" }
+          to_agent: { type: "string" }
+          priority: { type: "integer" }
+    hard_rules: |
+      RULE 1: Una volta fatto l'handoff, l'agente corrente deve mettersi in stato di attesa.
+    few_shot_examples:
+      - description: "Delega sviluppo codice"
+        content: |
+          INPUT: "Passa questo bug al coding agent"
+          THOUGHT: Devo fare handoff del task tecnico.
+          CALL: {"task": "Fix the bug in main.py", "to_agent": "tech_coding", "priority": 1}
+          RESULT: {"status": "handoff_initiated", "tracking_id": "TRK-123"}
+
+  sessions_send:
+    description: "Invia un messaggio diretto a un altro agente."
+    constraints:
+      input_schema:
+        type: object
+        required: ["to_agent", "message"]
+        properties:
+          to_agent: { type: "string" }
+          message: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare per messaggi brevi; per task complessi preferire 'handoff'.
+
+  # --- NETWORK UTILITY ---
+  get_ip:
+    description: "Ottiene l'indirizzo IP pubblico corrente del sistema."
+    constraints:
+      input_schema: { type: "object", properties: {} }
+    hard_rules: |
+      RULE 1: Indispensabile per verificare la configurazione di tunneling Tailscale.
+
+  get_headers:
+    description: "Ottiene gli header HTTP correnti."
+    constraints:
+      input_schema: { type: "object", properties: {} }
+    hard_rules: |
+      RULE 1: Usare per diagnosticare problemi di autenticazione API.
+
+  homekit:
+    description: "Controllo dispositivi domotici Apple HomeKit (luci, termostati, interruttori)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["list", "discover", "get", "set"] }
+          device: { type: "string", description: "Nome o ID del dispositivo" }
+          value:
+            {
+              type: "string",
+              description: "Valore da impostare (on/off, temperatura)",
+            }
+    hard_rules: |
+      RULE 1: Usare 'discover' se l'ID dispositivo non è certo.
+
+  mac-tts:
+    description: "Sintesi vocale (Text-To-Speech) tramite comando 'say' di macOS."
+    constraints:
+      input_schema:
+        type: object
+        required: ["message"]
+        properties:
+          message: { type: "string" }
+          voice: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare solo se l'utente ha output audio abilitato.
+      RULE 2: Preferire voci locali (es: 'Alice', 'Luca').
+
+  pomodoro:
+    description: "Timer Pomodoro (ClawDoro) per sessioni di lavoro focalizzato."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["start", "stop", "status"] }
+          duration: { type: "integer", description: "Minuti (default 25)" }
+    hard_rules: |
+      RULE 1: Inserire una notifica di sistema allo scadere del timer.
+
+  timer:
+    description: "Imposta timer e allarmi di sistema con notifiche."
+    constraints:
+      input_schema:
+        type: object
+        required: ["duration"]
+        properties:
+          duration: { type: "string", description: "E.g. '10m', '1h'" }
+          message: { type: "string" }
+    hard_rules: |
+      RULE 1: Massimo 3 timer attivi contemporaneamente.
+      RULE 2: Supporta linguaggio naturale per 'duration'.
+
+  image-ocr:
+    description: "Estrazione testo da immagini (OCR) tramite Tesseract."
+    constraints:
+      input_schema:
+        type: object
+        required: ["image_path"]
+        properties:
+          image_path: { type: "string" }
+    hard_rules: |
+      RULE 1: Validare l'esistenza del file immagine prima dell'elaborazione.
+
+  screenshot:
+    description: "Cattura screenshot o registrazioni video dello schermo."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["capture", "record"] }
+    hard_rules: |
+      RULE 1: Richiedere il permesso utente prima di avviare 'record'.
+
+  system_info:
+    description: "Recupera informazioni di sistema (OS, CPU, RAM, Disco)."
+    constraints:
+      input_schema: { type: "object", properties: {} }
+    hard_rules: |
+      RULE 1: Fornire dati su carico CPU e memoria libera se richiesto check performance.
+
+  clipboard:
+    description: "Gestione e ricerca nello storico della clipboard (copia/incolla)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["get", "set", "search"] }
+          text: { type: "string" }
+    hard_rules: |
+      RULE 1: Non loggare MAI password rilevate nella clipboard.
+
+  file_manager:
+    description: "Gestione file e directory locale: lista, ricerca e organizzazione."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["list", "search", "move", "delete"] }
+          path: { type: "string" }
+    hard_rules: |
+      RULE 1: Richiedere conferma per 'delete' ricorsivo.

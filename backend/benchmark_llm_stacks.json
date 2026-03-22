@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-01-31T12:28:39",
+  "query": "Dammi il prezzo attuale di Bitcoin ed Ethereum, le previsioni meteo per Roma e Milano per domani, e cerca su HackerNews le notizie più recenti su crypto. Fai una sintesi correlando tutti i dati.",
+  "expected_tools": [
+    "coingecko_price",
+    "openmeteo_weather",
+    "hackernews_top"
+  ],
+  "results": [
+    {
+      "stack_id": "A_kimi_only",
+      "stack_name": "Kimi K2.5 (tutto)",
+      "model_agentic": "moonshotai/kimi-k2.5:thinking",
+      "model_thinking": "moonshotai/kimi-k2.5:thinking",
+      "latency_ms": 77427.01506614685,
+      "tools_called": [
+        "coingecko_price",
+        "openmeteo_weather",
+        "duckduckgo_instant"
+      ],
+      "tools_success": 3,
+      "analysis_domains": [
+        "finance_crypto",
+        "geo_weather",
+        "web_search"
+      ],
+      "response_length": 3086,
+      "error": null,
+      "scores": {
+        "latency": 2.0,
+        "tool": 10.0,
+        "synthesis": 10.0,
+        "total": 8.0
+      }
+    },
+    {
+      "stack_id": "B_mistral_only",
+      "stack_name": "Mistral Large 3 (tutto)",
+      "model_agentic": "mistralai/mistral-large-3-675b-instruct-2512",
+      "model_thinking": "mistralai/mistral-large-3-675b-instruct-2512",
+      "latency_ms": 106898.00071716309,
+      "tools_called": [
+        "coingecko_price",
+        "openmeteo_weather",
+        "duckduckgo_instant"
+      ],
+      "tools_success": 3,
+      "analysis_domains": [
+        "finance_crypto",
+        "geo_weather",
+        "web_search"
+      ],
+      "response_length": 4846,
+      "error": null,
+      "scores": {
+        "latency": 2.0,
+        "tool": 10.0,
+        "synthesis": 10.0,
+        "total": 8.0
+      }
+    },
+    {
+      "stack_id": "C_kimi_deepseek",
+      "stack_name": "Kimi K2.5 → DeepSeek V3.2",
+      "model_agentic": "moonshotai/kimi-k2.5:thinking",
+      "model_thinking": "deepseek/deepseek-v3.2-speciale",
+      "latency_ms": 238280.38787841797,
+      "tools_called": [
+        "coingecko_price",
+        "openmeteo_weather",
+        "duckduckgo_instant"
+      ],
+      "tools_success": 3,
+      "analysis_domains": [
+        "finance_crypto",
+        "geo_weather",
+        "web_search"
+      ],
+      "response_length": 204,
+      "error": null,
+      "scores": {
+        "latency": 2.0,
+        "tool": 10.0,
+        "synthesis": 4.0,
+        "total": 5.3
+      }
+    },
+    {
+      "stack_id": "D_deepseek_mistral",
+      "stack_name": "DeepSeek V3.2 → Mistral L3",
+      "model_agentic": "deepseek/deepseek-v3.2-speciale",
+      "model_thinking": "mistralai/mistral-large-3-675b-instruct-2512",
+      "latency_ms": 113958.08506011963,
+      "tools_called": [
+        "coingecko_price",
+        "openmeteo_weather",
+        "tech_coding_tool"
+      ],
+      "tools_success": 2,
+      "analysis_domains": [
+        "finance_crypto",
+        "geo_weather",
+        "tech_coding"
+      ],
+      "response_length": 5969,
+      "error": null,
+      "scores": {
+        "latency": 2.0,
+        "tool": 7.0,
+        "synthesis": 10.0,
+        "total": 7.1
+      }
+    },
+    {
+      "stack_id": "E_mistral_deepseek",
+      "stack_name": "Mistral L3 → DeepSeek V3.2",
+      "model_agentic": "mistralai/mistral-large-3-675b-instruct-2512",
+      "model_thinking": "deepseek/deepseek-v3.2-speciale",
+      "latency_ms": 181274.54376220703,
+      "tools_called": [
+        "coingecko_price",
+        "openmeteo_weather",
+        "duckduckgo_instant"
+      ],
+      "tools_success": 3,
+      "analysis_domains": [
+        "finance_crypto",
+        "geo_weather",
+        "web_search"
+      ],
+      "response_length": 2361,
+      "error": null,
+      "scores": {
+        "latency": 2.0,
+        "tool": 10.0,
+        "synthesis": 10.0,
+        "total": 8.0
+      }
+    }
+  ]
+}

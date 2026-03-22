@@ -1,0 +1,34 @@
+# Dockerfile.gateway.prebuilt - Usa dist compilati localmente
+# Strategia D: build locale, deploy solo artefatti compilati
+
+# Fase unica: Runtime
+FROM node:20-alpine
+
+# Installa git (necessario per alcune dipendenze npm) e curl
+RUN apk add --no-cache curl git
+
+WORKDIR /app
+
+# Copia package.json per npm install
+COPY package.json turbo.json ./
+COPY packages/gateway/package.json ./packages/gateway/
+COPY packages/me4brain-client/package.json ./packages/me4brain-client/
+COPY packages/shared/package.json ./packages/shared/
+
+# Installa tutte le dipendenze (incluso @whiskeysockets/baileys che richiede git)
+RUN npm install
+
+# Copia dist pre-compilati (già buildati localmente)
+COPY packages/gateway/dist ./packages/gateway/dist
+COPY packages/me4brain-client/dist ./packages/me4brain-client/dist
+COPY packages/shared/dist ./packages/shared/dist
+
+# Porta gateway
+EXPOSE 3030
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3030}/health || exit 1
+
+# Start gateway
+CMD ["node", "packages/gateway/dist/index.js"]

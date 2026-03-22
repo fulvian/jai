@@ -1,0 +1,240 @@
+version: "2.0"
+domain: "entertainment"
+last_updated: "2026-02-23"
+author: "Antigravity"
+
+description: |
+  Dominio avanzato per Entertainment & Culture. Gestisce Film/Serie TV (TMDB MCP), 
+  Musica (YouTube Music/Last.fm) e Ricerca Libri professionale (Open Library/Books Search).
+  Integra trend virali e playlist personalizzate.
+
+  - **Multimedia**: Usa `youtube-music`, `spotify-applescript` o `mcp-applemusic` per playlist e brani, e `tmdb-mcp` per tutto ciò che riguarda il cinema istituzionale.
+  - **Books Intelligence**: Per approfondimenti letterari, incrocia `openlibrary` con `books-search` (Google Books) per anteprime e rating.
+  - **Sequenza Consigliata**:
+    1. `tmdb-mcp` (Contenuti video in tendenza o specifici).
+    2. `youtube-music` (Colonne sonore o clip correlate).
+    3. `books-search` (Materiale cartaceo originale).
+    4. `smart_search` (Recensioni e critica).
+
+  ### Errori Comuni:
+  - ❌ Cercare musica con tool video (usare `youtube-music`).
+  - ❌ Inventare trama o cast se `tmdb-mcp` non restituisce dati certi.
+  - ❌ Confondere ISBN-10 con ISBN-13 (i tool moderni gestiscono entrambi, ma non inventarli).
+
+tools:
+  tmdb_search_movie:
+    description: "Cerca film su TMDB per titolo e anno."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string", description: "Titolo del film da cercare" }
+          year: { type: "integer", description: "Anno di uscita opzionale" }
+    hard_rules: |
+      RULE 1: Se la query è vuota, annulla la chiamata.
+      RULE 2: Massimo 10 risultati restituiti (gestito internamente).
+    few_shot_examples:
+      - description: "Ricerca film specifica"
+        content: |
+          USER: "Cerca il film Inception diretto da Nolan"
+          THOUGHT: "L'utente fornisce un titolo specifico. Uso tmdb_search_movie."
+          CALL: {"query": "Inception"}
+          RESULT: {"results": [{"id": 27205, "title": "Inception", "release_date": "2010-07-15"}]}
+      - description: "Ricerca con anno"
+        content: |
+          USER: "Trova il film Dune uscito nel 2021"
+          THOUGHT: "Uso il parametro year per filtrare la ricerca."
+          CALL: {"query": "Dune", "year": 2021}
+          RESULT: {"results": [{"id": 438631, "title": "Dune", "release_date": "2021-09-15"}]}
+
+  tmdb_movie_details:
+    description: "Dettagli completi (cast, regista, budget) tramite ID film."
+    constraints:
+      input_schema:
+        type: object
+        required: ["movie_id"]
+        properties:
+          movie_id:
+            { type: "integer", description: "ID numerico TMDB del film" }
+    hard_rules: |
+      RULE 1: movie_id deve essere un intero positivo.
+    few_shot_examples:
+      - description: "Dettagli film dopo ricerca"
+        content: |
+          USER: "Chi ha recitato in Inception (ID 27205)?"
+          THOUGHT: "L'utente chiede il cast di un film specifico con ID."
+          CALL: {"movie_id": 27205}
+          RESULT: {"id": 27205, "title": "Inception", "cast": ["Leonardo DiCaprio", "Joseph Gordon-Levitt"], "director": "Christopher Nolan"}
+
+  tmdb_trending:
+    description: "Recupera i contenuti in tendenza (film o serie TV)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          media_type:
+            { type: "string", enum: ["movie", "tv", "all"], default: "movie" }
+          time_window:
+            { type: "string", enum: ["day", "week"], default: "week" }
+    hard_rules: |
+      RULE 1: Default su 'movie' e 'week' se non specificato.
+
+  openlibrary_search:
+    description: "Cerca libri su Open Library per titolo o autore."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string", description: "Titolo o autore del libro" }
+          limit: { type: "integer", default: 10 }
+    hard_rules: |
+      RULE 1: Non allucinare il parametro 'search_type', non è supportato.
+    few_shot_examples:
+      - description: "Ricerca per titolo"
+        content: |
+          USER: "Cerca il libro Il Nome della Rosa"
+          THOUGHT: "Uso il titolo come query per Open Library."
+          CALL: {"query": "Il Nome della Rosa"}
+          RESULT: {"docs": [{"title": "Il nome della rosa", "author": "Umberto Eco", "isbn": "..."}]}
+
+  openlibrary_book:
+    description: "Ottiene i dettagli di un libro tramite codice ISBN."
+    constraints:
+      input_schema:
+        type: object
+        required: ["isbn"]
+        properties:
+          isbn: { type: "string", description: "Codice ISBN-10 o ISBN-13" }
+    hard_rules: |
+      RULE 1: Non usare 'work_id', usa solo 'isbn'.
+    few_shot_examples:
+      - description: "Lookup per ISBN"
+        content: |
+          USER: "Dammi i dettagli del libro con ISBN 9788845292446"
+          THOUGHT: "L'utente fornisce un ISBN esatto. Uso openlibrary_book."
+          CALL: {"isbn": "9788845292446"}
+          RESULT: {"title": "Il nome della rosa", "publisher": "Bompiani", "pages": 512}
+
+  lastfm_search_artist:
+    description: "Cerca artisti musicali su Last.fm."
+    constraints:
+      input_schema:
+        type: object
+        required: ["artist"]
+        properties:
+          artist:
+            { type: "string", description: "Nome dell'artista o della band" }
+    hard_rules: |
+      RULE 1: Usare il nome esatto dell'artista se conosciuto.
+      RULE 2: Preferire questo tool per discografia rispetto a youtube-music.
+    few_shot_examples:
+      - description: "Cerca artista"
+        content: |
+          USER: "Cerca info sui Pink Floyd"
+          THOUGHT: "Uso la ricerca artisti di Last.fm."
+          CALL: {"artist": "Pink Floyd"}
+          RESULT: {"artist": "Pink Floyd", "listeners": "4000000"}
+
+  lastfm_top_tracks:
+    description: "Recupera le canzoni più popolari di un artista."
+    constraints:
+      input_schema:
+        type: object
+        required: ["artist"]
+        properties:
+          artist: { type: "string" }
+    hard_rules: |
+      RULE 1: Richiede il nome esatto dell'artista restituito da lastfm_search_artist.
+
+  tmdb-mcp:
+    description: "Integrazione ufficiale TMDB per ricerca film, TV, trailer, e persone dello spettacolo via MCP."
+    constraints:
+      input_schema:
+        type: object
+        required: ["action"]
+        properties:
+          action:
+            {
+              type: "string",
+              enum: ["search", "discover", "trending", "credits"],
+            }
+          query: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare 'search' per titoli specifici e 'trending' per novità.
+      RULE 2: Obbligatorio citare TMDB come fonte dei dati.
+
+  youtube-music:
+    description: "Ricerca brani, album, artisti e gestione playlist su YouTube Music."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          search_type:
+            {
+              type: "string",
+              enum: ["songs", "albums", "playlists"],
+              default: "songs",
+            }
+    hard_rules: |
+      RULE 1: Specificare search_type per evitare ambiguità fra brano e album.
+      RULE 2: Non usare questo tool per trailer cinematografici (usare tmdb-mcp).
+
+  books-search:
+    description: "Ricerca approfondita libri, anteprime ed estratti via Google Books API."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          filter:
+            { type: "string", enum: ["free-ebooks", "paid-ebooks", "full"] }
+    hard_rules: |
+      RULE 1: Usare 'full' solo se l'utente richiede esplicitamente anteprime di testo.
+      RULE 2: Preferire questo tool per rating e snippet di testo rispetto a openlibrary.
+
+  spotify-applescript:
+    description: "Controllo dell'app desktop Spotify via AppleScript (macOS). Playback, playlist e ricerca."
+    constraints:
+      input_schema:
+        type: object
+        required: ["action"]
+        properties:
+          action: { type: "string", enum: ["play", "pause", "next", "track"] }
+    hard_rules: |
+      RULE 1: Assicurarsi che l'app Spotify sia aperta prima di inviare comandi.
+
+  mcp-applemusic:
+    description: "Integrazione con Apple Music via AppleScript o MusicKit (macOS)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["action"]
+        properties:
+          action: { type: "string", enum: ["play", "pause", "list_albums"] }
+    hard_rules: |
+      RULE 1: Usare 'list_albums' per esplorare la libreria locale dell'utente.
+
+few_shot_examples:
+  - description: "Ricerca film e trailer via TMDB MCP"
+    content: |
+      USER: "Cerca il trailer dell'ultimo film di Batman"
+      THOUGHT: "Uso tmdb-mcp per cercare il film e poi i crediti/trailer."
+      CALL: {"action": "search", "query": "Batman"}
+      RESULT: {"results": [{"id": 12345, "title": "The Batman", "type": "movie"}]}
+  - description: "Creazione playlist YouTube Music"
+    content: |
+      USER: "Crea una playlist con le migliori canzoni dei Queen"
+      THOUGHT: "Uso youtube-music per cercare le canzoni e creare la playlist."
+      CALL: {"query": "Queen top songs", "search_type": "songs"}
+      RESULT: {"playlist_created": "Queen Essentials", "tracks_added": 20}
+  - description: "Ricerca libro e anteprima"
+    content: |
+      USER: "Trova il libro 'Il Problema dei Tre Corpi' e fammi vedere un'anteprima."
+      THOUGHT: "Uso books-search per trovare il libro con filtro full/preview."
+      CALL: {"query": "Il Problema dei Tre Corpi", "filter": "full"}
+      RESULT: {"books": [{"title": "Il Problema dei Tre Corpi", "snippet": "Un segnale inviato nello spazio...", "source": "Google Books"}]}

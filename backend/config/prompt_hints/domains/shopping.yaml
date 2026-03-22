@@ -1,0 +1,70 @@
+version: "2.0"
+domain: "shopping"
+last_updated: "2026-02-23"
+author: "Antigravity_Execution_Agent"
+
+description: |
+  Dominio per lo shopping intelligente, ricerca di prodotti su marketplace (nuovo e usato) e automazione acquisti.
+  Supporta aggregatori multi-piattaforma, monitoraggio prezzi e consulenza d'acquisto esperta.
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Priorità Risparmio**: Se l'utente non specifica "nuovo", usa prioritariamente `marketplace-aggregator` o `subito-search`/`vinted-search` per trovare affari sull'usato.
+  - **Sicurezza Acquisti**: Prima di procedere a un ordine (`buy-anything`), conferma sempre il prodotto esatto e il prezzo finale trovato via `amazon-search`.
+  - **Geolocalizzazione**: Per Subito e Wallapop, specifica la localizzazione se l'utente desidera il ritiro a mano.
+  - **Expertise**: Usa `shopping-expert` se l'utente è indeciso tra più modelli o chiede "qual è il migliore".
+
+  ### Errori Comuni
+  - NON confondere i marketplace (es. cercare su Vinted prodotti non legati alla moda a meno che non sia specificato).
+  - NON ignorare le spese di spedizione se riportate nei risultati.
+  - Evita di inviare link di acquisto senza aver verificato la disponibilità.
+
+tools:
+  marketplace-aggregator:
+    description: "Ricerca simultanea su tutti i marketplace (Subito, eBay, Vinted, Wallapop, Amazon). Ideale per confronti rapidi."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string", description: "Prodotto da cercare" }
+          category: { type: "string", description: "Settore merceologico" }
+    hard_rules: |
+      RULE 1: Se la query è generica, attivare filtri per 'usato' se non specificato altrimenti.
+    few_shot_examples:
+      - description: "Cerca ovunque"
+        content: |
+          INPUT: "Cerco una scivania da ufficio usata"
+          THOUGHT: L'utente vuole confrontare più piattaforme per l'usato.
+          CALL: {"query": "scrivania ufficio", "category": "arredamento"}
+          RESULT: {"results": [{"item": "Scrivania IKEA", "price": "45€", "source": "Subito"}]}
+
+  amazon-search:
+    description: "Ricerca prodotti nuovi e usati su Amazon Italia."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          only_prime: { type: "boolean", default: false }
+    hard_rules: |
+      RULE 1: Evidenziare sempre la dicitura 'Spedito da Amazon' per la garanzia A-Z.
+    few_shot_examples:
+      - description: "Ricerca Amazon"
+        content: |
+          INPUT: "Quanto costa il Kindle Paperwhite?"
+          THOUGHT: Ricerca prezzo diretto su Amazon.
+          CALL: {"query": "Kindle Paperwhite"}
+          RESULT: {"results": [{"title": "Kindle Paperwhite 16GB", "price": "169€", "url": "..."}]}
+
+  buy-anything:
+    description: "Processo di acquisto conversazionale su Amazon via link prodotto."
+    constraints:
+      input_schema:
+        type: object
+        required: ["url"]
+        properties:
+          url: { type: "string", description: "URL Amazon del prodotto" }
+    hard_rules: |
+      RULE 1: Richiedi conferma esplicita dell'utente prima di finalizzare.

@@ -1,0 +1,178 @@
+version: "2.0"
+domain: "science_research"
+last_updated: "2026-02-23"
+author: "AI_AUTHORING_AGENT"
+
+description: |
+  Dominio avanzato per la ricerca di letteratura scientifica, preprint e grafi di citazione.
+  Interfaccia verso ArXiv, Crossref, OpenAlex, Semantic Scholar, PubMed ed Europe PMC.
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Identificazione Paper:** Per ricerche generiche di preprint (CS, Fisica, Math), usa `arxiv_search`.
+  - **Peer-Review e DOI:** Per paper pubblicati e metadati rigorosi, usa `crossref_search` o `semanticscholar_search`.
+  - **Grafi di Citazione:** Per analizzare l'impatto di un paper o trovare lavori correlati, usa `semanticscholar_citations`.
+  - **Ambito Biomedico:** Se la query riguarda medicina o biologia, usa `pubmed_search` o `europepmc_search`.
+  - **DOI Lookup:** Se l'utente fornisce un DOI, usa `crossref_doi` per ottenere i metadati esatti.
+  - **TL;DR:** Semantic Scholar fornisce mini-riassunti (TLDR) molto utili per scremare velocemente i risultati.
+
+  ### Strategia di Sequenziamento
+  1. **Scansione:** Usa `semanticscholar_search` o `arxiv_search` per trovare i paper rilevanti.
+  2. **Dettaglio:** Usa `semanticscholar_paper` con il `paper_id` ottenuto per leggere l'abstract e il TLDR.
+  3. **Espansione:** Usa `semanticscholar_citations` se l'utente vuole approfondire lo stato dell'arte basato su quel lavoro.
+
+  ### Errori Comuni
+  - NON allucinare DOI o ID. Usa solo quelli ritornati dai tool.
+  - NON tentare di scaricare il PDF se il tool non fornisce un `open_access_pdf` URL.
+  - NON confondere preprint (ArXiv) con articoli peer-reviewed se non specificato.
+
+tools:
+  arxiv_search:
+    description: "Cerca preprint su ArXiv (Computer Science, Fisica, Matematica, Biologia Quantitativa)."
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "Termini di ricerca (es. 'attention is all you need').",
+            }
+          max_results:
+            {
+              type: "integer",
+              default: 10,
+              description: "Numero massimo di risultati.",
+            }
+    hard_rules: |
+      RULE 1: Massimo 50 risultati per query.
+      RULE 2: Preferire query in Inglese per ArXiv.
+    few_shot_examples:
+      - description: "Ricerca di paper recenti su LLM"
+        content: |
+          USER: "Trova gli ultimi paper su ArXiv riguardo i Large Language Models e l'efficienza."
+          THOUGHT: "L'utente cerca preprint recenti su un tema tecnico (LLM). ArXiv è la fonte ideale."
+          CALL: {"name": "arxiv_search", "arguments": {"query": "Large Language Models efficiency", "max_results": 5}}
+          RESULT: {"results": [{"title": "Scaling Laws for Neural Language Models", "id": "2001.08361"}]}
+
+  crossref_doi:
+    description: "Ottiene i metadati di un paper partendo dal DOI (Digital Object Identifier)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["doi"]
+        properties:
+          doi:
+            {
+              type: "string",
+              description: "Stringa DOI (es. 10.1038/nature12373).",
+            }
+    hard_rules: |
+      RULE 1: Rimuovere prefissi come 'https://doi.org/' se presenti nell'input utente.
+    few_shot_examples:
+      - description: "Lookup metadati tramite DOI"
+        content: |
+          USER: "Chi sono gli autori del paper con DOI 10.1145/335109.335128?"
+          THOUGHT: "Ho un DOI specifico, uso crossref_doi per i metadati ufficiali."
+          CALL: {"name": "crossref_doi", "arguments": {"doi": "10.1145/335109.335128"}}
+          RESULT: {"message": {"title": ["Attention is all you need"], "author": [{"family": "Vaswani"}]}}
+
+  semanticscholar_search:
+    description: "Ricerca avanzata con ranking AI su Semantic Scholar. Ottimo per trovare paper influenti."
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            { type: "string", description: "Query di ricerca scientifica." }
+          limit:
+            {
+              type: "integer",
+              default: 10,
+              description: "Numero di paper da ritornare.",
+            }
+    hard_rules: |
+      RULE 1: Usare 'semanticscholar_search' come prima scelta per l'analisi generale dell'impatto (citazioni).
+    few_shot_examples:
+      - description: "Ricerca paper più citati"
+        content: |
+          USER: "Quali sono i paper più importanti sulla CRISPR?"
+          THOUGHT: "La CRISPR è un tema vasto. Uso Semantic Scholar per vedere il conteggio delle citazioni e l'impatto."
+          CALL: {"name": "semanticscholar_search", "arguments": {"query": "CRISPR gene editing", "limit": 10}}
+          RESULT: {"total": 5000, "data": [{"title": "A Précis of CRISPR", "paperId": "..."}]}
+
+  semanticscholar_paper:
+    description: "Recupera i dettagli completi di un paper specifico (Abstract, TLDR, Citations count)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["paper_id"]
+        properties:
+          paper_id:
+            {
+              type: "string",
+              description: "ID del paper (Semantic Scholar ID o DOI).",
+            }
+    hard_rules: |
+      RULE 1: Usare questo tool dopo una ricerca per approfondire il contenuto di un abstract.
+    few_shot_examples:
+      - description: "Lettura abstract e TLDR"
+        content: |
+          USER: "Puoi riassumermi il contenuto del paper ID 10.1038/nature12373?"
+          THOUGHT: "L'utente fornisce un DOI. Semantic Scholar può risolverlo e fornire un TLDR."
+          CALL: {"name": "semanticscholar_paper", "arguments": {"paper_id": "10.1038/nature12373"}}
+          RESULT: {"title": "The CRISPR/Cas system...", "abstract": "...", "tldr": "In this paper we show..."}
+
+  semanticscholar_citations:
+    description: "Ottiene l'elenco dei paper che citano l'articolo specificato."
+    constraints:
+      input_schema:
+        type: object
+        required: ["paper_id"]
+        properties:
+          paper_id: { type: "string", description: "ID del paper sorgente." }
+          limit: { type: "integer", default: 10 }
+    hard_rules: |
+      RULE 1: Utile per trovare chi ha costruito sopra una determinata ricerca.
+    few_shot_examples:
+      - description: "Analisi impatto (follow-up)"
+        content: |
+          USER: "Chi ha citato il lavoro di Vaswani et al. (Attention is all you need) recentemente?"
+          THOUGHT: "Voglio vedere i lavori che citano il paper originale per tracciare l'evoluzione."
+          CALL: {"name": "semanticscholar_citations", "arguments": {"paper_id": "CorpusID:13756489", "limit": 5}}
+          RESULT: {"data": [{"title": "BERT: Pre-training of Deep Bidirectional Transformers"}, ...]}
+
+  pubmed_search:
+    description: "Cerca letteratura biomedica nel database PubMed (NCBI)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          max_results: { type: "integer", default: 10 }
+    hard_rules: |
+      RULE 1: Usare solo per query mediche, cliniche o farmacologiche.
+    few_shot_examples:
+      - description: "Ricerca studi clinici"
+        content: |
+          USER: "Ci sono studi su PubMed riguardanti l'uso di semaglutide per l'Alzheimer?"
+          THOUGHT: "Ricerca in ambito medico specifico. PubMed è la fonte benchmark."
+          CALL: {"name": "pubmed_search", "arguments": {"query": "semaglutide Alzheimer clinical trials", "max_results": 5}}
+          RESULT: {"count": 12, "ids": ["34567890", "34567891"]}
+
+  europepmc_search:
+    description: "Cerca nell'archivio Open Access di Europe PMC (Life Sciences)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          max_results: { type: "integer", default: 10 }
+    hard_rules: |
+      RULE 1: Ottimo per trovare paper biomedici con link a full-text Open Access.

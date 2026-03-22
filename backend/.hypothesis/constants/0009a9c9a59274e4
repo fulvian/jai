@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/memory/episodic.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.1, 0.5, 0.7, 1.0, 100, 1024, 10000, 50000, 86400, 'consolidated', 'content', 'conversation', 'created_at', 'created_at_ts', 'entities', 'episode_added', 'episode_deleted', 'episode_updated', 'event_time', 'id', 'importance', 'ingestion_time', 'memories', 'metadata', 'related_episodes', 'relations', 'score', 'source', 'summary', 'tags', 'tenant_id', 'timestamp', 'unknown', 'user_forgotten', 'user_id']

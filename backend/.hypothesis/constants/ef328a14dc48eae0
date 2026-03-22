@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/intent_monitoring.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.05, 0.1, 0.7, 300, 1000, 'accuracy', 'alert_type', 'avg_confidence', 'avg_latency_ms', 'cache_hit_rate', 'conversational', 'critical', 'domain_distribution', 'error_rate', 'failed_queries', 'high_error_rate', 'high_latency', 'inf', 'info', 'json_parse_failure', 'json_parse_failures', 'llm_api_failure', 'llm_api_failures', 'low_confidence', 'max_latency_ms', 'message', 'min_latency_ms', 'severity', 'total_queries', 'warning']

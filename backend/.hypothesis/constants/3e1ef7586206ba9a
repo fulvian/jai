@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/hybrid_router/query_decomposer.py
+# hypothesis_version: 6.151.9
+
+[0.1, 2000, '"', "'", ', ', 'NanoGPTClient', '\\', '\\[[\\s\\S]*\\]', 'after that', 'also', 'analiz', 'analysis', 'and then', 'approfond', 'calendar', 'calendario', 'call', 'cartell', 'cerca tutt', 'collect', 'compile', 'content', 'cross', 'cross_reference', 'direct', 'documenti', 'domain', 'dopodiché', 'drive', 'e inoltre', 'email', 'eventi', 'fallback', 'file', 'gather', 'gmail', 'incrocia', 'infine', 'intent', 'investiga', 'mail', 'meet', 'message', 'poi', 'prima', 'query', 'query_decomposed', 'quindi', 'raccoglie', 'recupera tutt', 'report', 'report_generation', 'riassun', 'riunion', 'simple_query', 'sintetiz', 'sub_query', 'successivamente', 'summarize', 'summary', 'synthesis', 'text', 'then', 'using_original_query', 'web_search']

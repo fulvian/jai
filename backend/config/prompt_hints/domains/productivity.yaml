@@ -1,0 +1,81 @@
+version: "2.0"
+domain: "productivity"
+last_updated: "2026-02-23"
+author: "Antigravity_Execution_Agent"
+
+description: |
+  Dominio dedicato alla gestione della produttività personale, ufficio e organizzazione. 
+  Include integrazioni con Slack, Email, Calendari, Note (Apple Notes, Obsidian) e Task Manager (Todoist, Apple Reminders).
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Identificazione Canale**: Distingui tra comunicazione aziendale interna (`slack-personal`) e comunicazione formale esterna (`email` o `apple-mail`).
+  - **Context Switching**: Se l'utente chiede di "organizzare" o "pianificare", controlla sempre prima il calendario (`apple-calendar`) e poi crea i task necessari (`apple-reminders` o `todoist`).
+  - **Note Management**: Usa `apple-notes` per note rapide/personali e `obsidian` per basi di conoscenza strutturate o gestione vault markdown.
+  - **Sequenziamento**: Prima cerca le informazioni esistenti (search), poi agisci (create/update).
+
+  ### Errori Comuni
+  - NON confondere `apple-notes` (CLI `memo`) con `obsidian`.
+  - NON inviare messaggi Slack a indirizzi email e viceversa.
+  - Evita di creare task duplicati se già presenti nei reminder.
+
+tools:
+  slack-personal:
+    description: "Gestione messaggi Slack: lettura, invio, ricerca e controllo messaggi non letti via slk CLI."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action:
+            {
+              type: "string",
+              enum: ["read", "send", "search", "unreads", "threads"],
+            }
+          channel: { type: "string", description: "Nome del canale o user ID" }
+          message:
+            {
+              type: "string",
+              description: "Contenuto del messaggio da inviare",
+            }
+    hard_rules: |
+      RULE 1: Per i messaggi non letti, usa sempre l'azione 'unreads'.
+      RULE 2: Specifica sempre il canale se l'azione è 'send'.
+    few_shot_examples:
+      - description: "Controlla Slack"
+        content: |
+          INPUT: "Ho messaggi su Slack?"
+          THOUGHT: L'utente vuole controllare i messaggi non letti.
+          CALL: {"action": "unreads"}
+          RESULT: {"unreads": [{"channel": "general", "from": "Alice", "text": "Hello!"}]}
+      - description: "Invia messaggio a team"
+        content: |
+          INPUT: "Scrivi sul canale #generale che la riunione è posticipata"
+          THOUGHT: Invio messaggio Slack su canale specifico.
+          CALL: {"action": "send", "channel": "generale", "message": "La riunione è posticipata"}
+          RESULT: {"status": "success", "message_id": "MSG-123"}
+
+  apple-calendar:
+    description: "Integrazione con Apple Calendar.app per gestire eventi, appuntamenti e ricerche su calendario."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action:
+            { type: "string", enum: ["create", "list", "search", "delete"] }
+          title: { type: "string" }
+          start_time:
+            {
+              type: "string",
+              description: "Formato ISO8601 o linguaggio naturale",
+            }
+    hard_rules: |
+      RULE 1: Verificare sempre conflitti con altri impegni nella stessa fascia oraria.
+    few_shot_examples:
+      - description: "Nuovo appuntamento"
+        content: |
+          INPUT: "Segna incontro con cliente domani alle 15"
+          THOUGHT: Devo creare un evento nel calendario Apple.
+          CALL: {"action": "create", "title": "Incontro con cliente", "start_time": "domani 15:00"}
+          RESULT: {"status": "event_created", "event_id": "CAL-456", "conflict": false}
+
+  # ... Altri tool verranno espansi nelle iterazioni successive ...

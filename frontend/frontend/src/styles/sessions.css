@@ -1,0 +1,2122 @@
+/**
+ * Session Management Components CSS
+ * 
+ * Stili per CreateSessionDialog, TemplatePromptBar e PromptEditorModal.
+ * Coerenti con macOS Tahoe Liquid Glass design system.
+ */
+
+/* ==========================================================================
+   CreateSessionDialog
+   ========================================================================== */
+
+.create-session-dialog {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    max-width: 560px;
+    width: 90vw;
+    background: var(--glass-bg-heavy, rgba(28, 28, 30, 0.92));
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    color: var(--text-primary, #f5f5f7);
+    animation: dialogSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.create-session-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+@keyframes dialogSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.dialog-content {
+    padding: 24px;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dialog-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary, #98989d);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary, #f5f5f7);
+}
+
+/* Type Cards */
+.type-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 12px;
+    border-radius: 12px;
+    border: 1.5px solid transparent;
+    background: var(--card-gradient, rgba(255, 255, 255, 0.04));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: inherit;
+    font-family: inherit;
+}
+
+.type-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.type-card.selected {
+    border-color: var(--accent-blue, rgba(0, 122, 255, 0.6));
+    background: rgba(0, 122, 255, 0.08);
+    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.2), 0 4px 12px rgba(0, 122, 255, 0.12);
+}
+
+.type-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.type-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.type-desc {
+    font-size: 11px;
+    color: var(--text-secondary, #98989d);
+    line-height: 1.3;
+}
+
+/* Config Sections */
+.config-section {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 16px;
+    animation: configFadeIn 0.25s ease forwards;
+}
+
+@keyframes configFadeIn {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 400px;
+    }
+}
+
+.config-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary, #98989d);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.config-label:not(:first-child) {
+    margin-top: 12px;
+}
+
+.config-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.config-input:focus {
+    border-color: var(--accent-blue, rgba(0, 122, 255, 0.6));
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.config-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+    min-height: 60px;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.config-textarea:focus {
+    border-color: var(--accent-blue, rgba(0, 122, 255, 0.6));
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Tags */
+.tags-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.tags-input {
+    flex: 1;
+}
+
+.add-tag-btn {
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(52, 199, 89, 0.3);
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--accent-green, #34c759);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.add-tag-btn:hover:not(:disabled) {
+    background: rgba(52, 199, 89, 0.2);
+}
+
+.add-tag-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background: rgba(52, 199, 89, 0.12);
+    border: 1px solid rgba(52, 199, 89, 0.2);
+    color: var(--accent-green, #34c759);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tag-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 10px;
+    opacity: 0.6;
+    padding: 0 2px;
+    transition: opacity 0.15s ease;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+}
+
+/* Template Prompts in Dialog */
+.prompts-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.prompt-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background: rgba(175, 82, 222, 0.12);
+    border: 1px solid rgba(175, 82, 222, 0.2);
+    color: var(--accent-purple, #af52de);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.prompt-chip-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 10px;
+    opacity: 0.6;
+    padding: 0 2px;
+    transition: opacity 0.15s ease;
+}
+
+.prompt-chip-remove:hover {
+    opacity: 1;
+}
+
+.add-prompt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.add-prompt-btn {
+    align-self: flex-start;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(175, 82, 222, 0.3);
+    background: rgba(175, 82, 222, 0.1);
+    color: var(--accent-purple, #af52de);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.add-prompt-btn:hover:not(:disabled) {
+    background: rgba(175, 82, 222, 0.2);
+}
+
+.add-prompt-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Dialog Footer */
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cancel-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--text-secondary, #98989d);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary, #f5f5f7);
+}
+
+.create-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent-blue, #007aff), rgba(88, 86, 214, 0.9));
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.create-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+}
+
+.create-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   TemplatePromptBar
+   ========================================================================== */
+
+.template-prompt-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin: 0 16px 4px 16px;
+    border-radius: 10px;
+    background: rgba(175, 82, 222, 0.06);
+    border: 1px solid rgba(175, 82, 222, 0.12);
+    animation: barSlideDown 0.2s ease forwards;
+}
+
+@keyframes barSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.prompt-bar-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-purple, #af52de);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.prompt-bar-icon {
+    font-size: 14px;
+}
+
+.prompt-chips-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex: 1;
+    scrollbar-width: none;
+}
+
+.prompt-chips-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.prompt-chip-btn {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(175, 82, 222, 0.2);
+    background: rgba(175, 82, 222, 0.08);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.prompt-chip-btn:hover,
+.prompt-chip-btn.hovered {
+    background: rgba(175, 82, 222, 0.18);
+    border-color: rgba(175, 82, 222, 0.35);
+    transform: translateY(-1px);
+}
+
+.prompt-chip-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.manage-prompts-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.manage-prompts-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   PromptEditorModal
+   ========================================================================== */
+
+.prompt-editor-modal {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    max-width: 640px;
+    width: 90vw;
+    max-height: 80vh;
+    background: var(--glass-bg-heavy, rgba(28, 28, 30, 0.95));
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    color: var(--text-primary, #f5f5f7);
+    animation: dialogSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-editor-modal::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.editor-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 80vh;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.editor-header h2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.editor-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+}
+
+/* Prompt Rows */
+.prompts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.prompt-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.prompt-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.prompt-row.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.prompt-row.disabled {
+    opacity: 0.5;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--text-secondary, #98989d);
+    font-size: 14px;
+    padding: 4px 2px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Toggle Switch */
+.toggle-btn {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.toggle-btn.on {
+    background: var(--accent-green, #34c759);
+}
+
+.toggle-btn.off {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.toggle-knob {
+    position: absolute;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn.on .toggle-knob {
+    left: 18px;
+}
+
+.toggle-btn.off .toggle-knob {
+    left: 2px;
+}
+
+.prompt-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.prompt-label-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #f5f5f7);
+}
+
+.prompt-content-preview {
+    font-size: 12px;
+    color: var(--text-secondary, #98989d);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.edit-label-input {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 122, 255, 0.4);
+    background: rgba(0, 122, 255, 0.06);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.edit-content-textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 122, 255, 0.3);
+    background: rgba(0, 122, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+    min-height: 50px;
+    box-sizing: border-box;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.prompt-row:hover .delete-btn {
+    opacity: 0.6;
+}
+
+.delete-btn:hover {
+    opacity: 1 !important;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px;
+    color: var(--text-secondary, #98989d);
+}
+
+.empty-icon {
+    font-size: 32px;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Add Prompt Section */
+.add-prompt-section {
+    padding: 16px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.add-prompt-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #98989d);
+    margin: 0 0 10px 0;
+}
+
+.add-input,
+.add-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+}
+
+.add-input:focus,
+.add-textarea:focus {
+    border-color: var(--accent-blue, rgba(0, 122, 255, 0.5));
+}
+
+.add-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.add-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, rgba(175, 82, 222, 0.8), rgba(255, 55, 95, 0.7));
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.add-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3);
+}
+
+.add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Editor Footer */
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prompt-count {
+    font-size: 12px;
+    color: var(--text-secondary, #98989d);
+}
+
+.footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.save-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent-blue, #007aff), rgba(88, 86, 214, 0.9));
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+}
+
+/* ==========================================================================
+   Session Filter Pills (Sidebar)
+   ========================================================================== */
+
+.session-filter-bar {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.session-filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-pill {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary, #98989d);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+    line-height: 1.2;
+}
+
+.filter-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary, #f5f5f7);
+}
+
+.filter-pill.active {
+    background: rgba(0, 122, 255, 0.12);
+    border-color: rgba(0, 122, 255, 0.3);
+    color: var(--accent-blue, #007aff);
+    font-weight: 600;
+}
+
+.filter-pill.active[data-type="free"] {
+    background: rgba(0, 122, 255, 0.12);
+    border-color: rgba(0, 122, 255, 0.3);
+    color: var(--accent-blue, #007aff);
+}
+
+.filter-pill.active[data-type="topic"] {
+    background: rgba(52, 199, 89, 0.12);
+    border-color: rgba(52, 199, 89, 0.3);
+    color: var(--accent-green, #34c759);
+}
+
+.filter-pill.active[data-type="template"] {
+    background: rgba(175, 82, 222, 0.12);
+    border-color: rgba(175, 82, 222, 0.3);
+    color: var(--accent-purple, #af52de);
+}
+
+.filter-count {
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+/* ==========================================================================
+   Session Progress Bar (Sidebar)
+   ========================================================================== */
+
+.session-progress-wrapper {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.session-progress-bar {
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.session-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-blue, #007aff), rgba(88, 86, 214, 0.9));
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 6px rgba(0, 122, 255, 0.4);
+}
+
+.session-progress-indeterminate {
+    height: 100%;
+    width: 40%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-blue, #007aff), transparent);
+    animation: progressSlide 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes progressSlide {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(350%);
+    }
+}
+
+.session-progress-label {
+    font-size: 9px;
+    color: var(--accent-blue, #007aff);
+    margin-top: 2px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* Pulsating icon for active sessions */
+.session-icon-active {
+    animation: sessionPulse 2s ease-in-out infinite;
+}
+
+@keyframes sessionPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0);
+    }
+}
+
+/* ==========================================================================
+   Session Cluster Sidebar (Knowledge Graph)
+   ========================================================================== */
+
+.session-cluster-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
+}
+
+.cluster-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cluster-search-icon {
+    color: var(--text-secondary, #98989d);
+    flex-shrink: 0;
+}
+
+.cluster-search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #f5f5f7);
+    font-size: 12px;
+    font-family: inherit;
+}
+
+.cluster-search-input::placeholder {
+    color: var(--text-secondary, #98989d);
+    opacity: 0.6;
+}
+
+/* Cluster tree */
+.cluster-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cluster-loading,
+.cluster-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    font-size: 12px;
+    color: var(--text-secondary, #98989d);
+}
+
+.cluster-loading-icon,
+.cluster-empty-icon {
+    opacity: 0.5;
+}
+
+.cluster-empty {
+    flex-direction: column;
+    text-align: center;
+}
+
+.cluster-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cluster-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: var(--text-primary, #f5f5f7);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.cluster-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.cluster-toggle {
+    color: var(--text-secondary, #98989d);
+    flex-shrink: 0;
+}
+
+.cluster-icon {
+    color: var(--accent-blue, #007aff);
+    flex-shrink: 0;
+}
+
+.cluster-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cluster-count {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0, 122, 255, 0.12);
+    color: var(--accent-blue, #007aff);
+}
+
+.cluster-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 2px 8px 4px 28px;
+}
+
+.cluster-topic-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--accent-green, #34c759);
+    border: 1px solid rgba(52, 199, 89, 0.15);
+}
+
+.cluster-sessions {
+    padding-left: 20px;
+}
+
+.cluster-session-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 8px;
+    background: none;
+    border: none;
+    color: var(--text-secondary, #98989d);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.cluster-session-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+}
+
+.cluster-session-active {
+    background: rgba(0, 122, 255, 0.08);
+    color: var(--accent-blue, #007aff);
+}
+
+.cluster-session-id {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Search results */
+.cluster-search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cluster-search-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-purple, #af52de);
+}
+
+.search-result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+    color: inherit;
+}
+
+.search-result-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.search-result-active {
+    border-color: rgba(0, 122, 255, 0.3);
+    background: rgba(0, 122, 255, 0.06);
+}
+
+.search-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-result-title {
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-result-score {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--accent-green, #34c759);
+}
+
+.search-result-topics {
+    display: flex;
+    gap: 4px;
+}
+
+.search-result-tag {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(255, 149, 0, 0.1);
+    color: var(--accent-orange, #ff9500);
+}
+
+.search-result-meta {
+    font-size: 10px;
+    color: var(--text-secondary, #98989d);
+    display: flex;
+    gap: 4px;
+}
+
+/* ==========================================================================
+   Related Sessions (Chat Panel)
+   ========================================================================== */
+
+.related-sessions {
+    padding: 8px 12px;
+    margin: 0 16px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.related-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-blue, #007aff);
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 6px;
+}
+
+.related-spinner {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.related-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: var(--text-primary, #f5f5f7);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.related-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.related-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.related-item-icon {
+    color: var(--text-secondary, #98989d);
+    flex-shrink: 0;
+}
+
+.related-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.related-item-title {
+    font-size: 12px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.related-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.related-topic-tag {
+    font-size: 9px;
+    padding: 0 4px;
+    border-radius: 6px;
+    background: rgba(52, 199, 89, 0.1);
+    color: var(--accent-green, #34c759);
+}
+
+.related-item-turns {
+    font-size: 9px;
+    color: var(--text-secondary, #98989d);
+}
+
+.related-item-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.related-score-bar {
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.related-score-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-blue, #007aff), var(--accent-green, #34c759));
+}
+
+.related-chevron {
+    color: var(--text-secondary, #98989d);
+}
+
+/* ==========================================================================
+   Prompt Library Modal (Knowledge Graph)
+   ========================================================================== */
+
+.prompt-library-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.prompt-library {
+    width: 90vw;
+    max-width: 640px;
+    max-height: 80vh;
+    background: var(--glass-bg-heavy, rgba(28, 28, 30, 0.95));
+    backdrop-filter: blur(40px) saturate(180%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.prompt-library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prompt-library-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prompt-library-title h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.prompt-library-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.prompt-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+    transition: all 0.15s;
+}
+
+.prompt-btn-primary {
+    background: linear-gradient(135deg, var(--accent-blue, #007aff), rgba(88, 86, 214, 0.9));
+    color: white;
+}
+
+.prompt-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.prompt-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary, #98989d);
+}
+
+.prompt-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #f5f5f7);
+}
+
+.prompt-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 20px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prompt-search-icon {
+    color: var(--text-secondary, #98989d);
+    flex-shrink: 0;
+}
+
+.prompt-search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #f5f5f7);
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.prompt-search-spinner {
+    animation: spin 0.8s linear infinite;
+    color: var(--accent-blue, #007aff);
+}
+
+.prompt-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prompt-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 40px 20px;
+    color: var(--text-secondary, #98989d);
+    text-align: center;
+}
+
+.prompt-empty-icon {
+    opacity: 0.3;
+}
+
+.prompt-empty-hint {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.prompt-card {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.15s;
+}
+
+.prompt-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.prompt-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.prompt-card-label {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.prompt-card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.prompt-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary, #98989d);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.prompt-action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary, #f5f5f7);
+}
+
+.prompt-action-use {
+    color: var(--accent-blue, #007aff);
+    background: rgba(0, 122, 255, 0.08);
+}
+
+.prompt-action-use:hover {
+    background: rgba(0, 122, 255, 0.15);
+}
+
+.prompt-copied {
+    color: var(--accent-green, #34c759);
+}
+
+.prompt-card-content {
+    font-size: 12px;
+    color: var(--text-secondary, #98989d);
+    line-height: 1.4;
+    margin: 0 0 6px;
+}
+
+.prompt-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.prompt-category {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--accent-blue, #007aff);
+    font-weight: 500;
+}
+
+.prompt-vars {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(175, 82, 222, 0.1);
+    color: var(--accent-purple, #af52de);
+}
+
+.prompt-topic {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(52, 199, 89, 0.08);
+    color: var(--accent-green, #34c759);
+}
+
+.prompt-usage {
+    font-size: 10px;
+    color: var(--text-secondary, #98989d);
+    opacity: 0.6;
+    margin-left: auto;
+}
+
+/* Prompt Editor */
+.prompt-editor-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.prompt-editor {
+    width: 90vw;
+    max-width: 500px;
+    padding: 20px;
+    background: var(--glass-bg-heavy, rgba(28, 28, 30, 0.98));
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.prompt-editor-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 16px;
+}
+
+.prompt-editor-field {
+    margin-bottom: 12px;
+}
+
+.prompt-editor-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary, #98989d);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+.prompt-editor-field input,
+.prompt-editor-field select,
+.prompt-editor-field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.prompt-editor-field input:focus,
+.prompt-editor-field select:focus,
+.prompt-editor-field textarea:focus {
+    border-color: var(--accent-blue, rgba(0, 122, 255, 0.5));
+}
+
+.prompt-editor-field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.prompt-editor-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.prompt-editor-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(175, 82, 222, 0.12);
+    border: 1px solid rgba(175, 82, 222, 0.2);
+    color: var(--accent-purple, #af52de);
+    font-size: 11px;
+}
+
+.prompt-editor-tag-topic {
+    background: rgba(52, 199, 89, 0.12);
+    border-color: rgba(52, 199, 89, 0.2);
+    color: var(--accent-green, #34c759);
+}
+
+.prompt-editor-tag button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+.prompt-editor-tag button:hover {
+    opacity: 1;
+}
+
+.prompt-editor-tag-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.prompt-editor-tag-input input {
+    width: 120px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #f5f5f7);
+    font-size: 11px;
+    font-family: inherit;
+    outline: none;
+}
+
+.prompt-editor-tag-input button {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary, #98989d);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.prompt-editor-tag-input button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.prompt-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+
+/* =============================================================================
+   GraphExplorer — Dropdown Nodi Connessi
+   macOS Tahoe Liquid Glass
+   ============================================================================= */
+
+.graph-explorer {
+    position: relative;
+    margin: 8px 0;
+}
+
+.graph-explorer__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.graph-explorer__toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(167, 139, 250, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.graph-explorer__toggle-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.graph-explorer__toggle-text {
+    flex: 1;
+    text-align: left;
+    font-weight: 500;
+}
+
+.graph-explorer__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.4), rgba(96, 165, 250, 0.4));
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.graph-explorer__chevron {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    display: inline-block;
+}
+
+/* ── Dropdown Panel ────────────────────────────────────────────────── */
+
+.graph-explorer__dropdown {
+    overflow: hidden;
+    margin-top: 6px;
+    background: rgba(20, 20, 30, 0.85);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.graph-explorer__loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+}
+
+.graph-explorer__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(167, 139, 250, 0.2);
+    border-top-color: rgba(167, 139, 250, 0.8);
+    border-radius: 50%;
+    animation: graph-spin 0.8s linear infinite;
+}
+
+@keyframes graph-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.graph-explorer__empty {
+    padding: 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+}
+
+/* ── Node List ─────────────────────────────────────────────────────── */
+
+.graph-explorer__list {
+    list-style: none;
+    padding: 6px;
+    margin: 0;
+}
+
+.graph-explorer__item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.graph-explorer__item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.graph-explorer__item+.graph-explorer__item {
+    margin-top: 2px;
+}
+
+.graph-explorer__item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.graph-explorer__item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--node-color, #a78bfa) 20%, transparent);
+}
+
+.graph-explorer__item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.graph-explorer__item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.graph-explorer__item-type {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.graph-explorer__item-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.graph-explorer__score-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1;
+}
+
+.graph-explorer__score-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.graph-explorer__item-desc {
+    margin: 6px 0 4px 42px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.4;
+}
+
+/* ── Score Bar ─────────────────────────────────────────────────────── */
+
+.graph-explorer__score-bar {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    margin: 6px 0 0 42px;
+    overflow: hidden;
+}
+
+.graph-explorer__score-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg,
+            var(--node-color, #a78bfa),
+            color-mix(in srgb, var(--node-color, #a78bfa) 60%, #fff));
+}
+
+
+/* =============================================================================
+   Sidebar View Toggle (Lista / Cluster)
+   ============================================================================= */
+
+.sidebar-view-toggle {
+    display: flex;
+    gap: 2px;
+    margin: 8px 12px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+}
+
+.sidebar-view-btn {
+    flex: 1;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-view-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-view-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 767px) {
+    .sidebar-view-toggle {
+        margin: 12px 16px;
+        padding: 4px;
+        border-radius: 12px;
+        gap: 4px;
+    }
+
+    .sidebar-view-btn {
+        padding: 10px 8px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+}
+
+
+/* =============================================================================
+   Chat Graph Bar (GraphExplorer + RelatedSessions inline)
+   ============================================================================= */
+
+.chat-graph-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 16px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    background: rgba(20, 20, 30, 0.3);
+}
+
+.chat-graph-bar .graph-explorer {
+    flex: 1 1 auto;
+    min-width: 200px;
+    margin: 0;
+}
+
+/* Related Sessions chips */
+
+.chat-related-sessions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 200px;
+}
+
+.chat-related-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.chat-related-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(96, 165, 250, 0.08);
+    border: 1px solid rgba(96, 165, 250, 0.15);
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-related-chip:hover {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.3);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.chat-related-score {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(96, 165, 250, 0.7);
+    margin-left: 2px;
+}
+
+
+/* =============================================================================
+   PromptLibrary Inline Mode (inside IntelDeck tab)
+   Override del layout modale per renderlo come pannello inline.
+   ============================================================================= */
+
+.flex-1>.prompt-library-overlay {
+    position: static;
+    inset: auto;
+    background: transparent;
+    backdrop-filter: none;
+    z-index: auto;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.flex-1>.prompt-library-overlay>.prompt-library {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 12px;
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(28, 28, 30, 0.6);
+}

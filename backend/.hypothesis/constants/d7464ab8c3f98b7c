@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/domain_router.py
+# hypothesis_version: 6.151.9
+
+[0.3, 0.5, 5.0, 1000, 'Unknown error', 'all_handlers_failed', 'circuit_closed', 'circuit_half_open', 'circuit_open', 'circuit_opened', 'circuit_reopened', 'circuit_reset', 'closed', 'fallback', 'fallback_success', 'half_open', 'no_handler_found', 'open', 'timeout', 'unknown']

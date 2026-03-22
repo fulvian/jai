@@ -1,0 +1,39 @@
+# System & Mac Skills
+# macbook-optimizer, mactop, mac-tts, homebrew, homekit, mole-mac-cleanup, zellij
+
+category: system_mac
+description: "macOS system utilities, performance, automation"
+
+patterns:
+  - "mac*"
+  - "homebrew"
+  - "homekit"
+  - "mole-*"
+  - "zellij"
+
+hints: |
+  HOMEBREW:
+  - formula: nome pacchetto (es. "python@3.11")
+  - cask: per applicazioni GUI
+  - tap: per repository custom
+  - Comandi: install, uninstall, upgrade, search
+
+  SYSTEM MONITORING (mactop):
+  - metrics: cpu, memory, disk, network, battery
+  - interval: secondi tra aggiornamenti
+  - format: json, table, pretty
+
+  CLEANUP (mole):
+  - target: cache, logs, downloads, trash
+  - dry_run: true per preview senza eliminare
+  - older_than: giorni (es. 30)
+
+  HOMEKIT:
+  - device_name: nome dispositivo HomeKit
+  - action: on, off, toggle, set_brightness
+  - value: valore numerico se applicabile
+
+  TTS (Text-to-Speech):
+  - text: testo da pronunciare
+  - voice: nome voce (es. "Alice", "Luca")
+  - rate: velocità parlato (0.5-2.0)

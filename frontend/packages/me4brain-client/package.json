@@ -1,0 +1,31 @@
+{
+    "name": "@persan/me4brain-client",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "lint": "eslint src/",
+        "test": "vitest",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@persan/shared": "*",
+        "ofetch": "^1.4.1",
+        "undici": "^7.21.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.14.0",
+        "typescript": "^5.8.0",
+        "vitest": "^2.1.8"
+    }
+}

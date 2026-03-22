@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/hybrid_router/types.py
+# hypothesis_version: 6.151.9
+
+[0.4, 0.5, 0.52, 0.62, 0.72, 0.8, 28000, 'high', 'low', 'medium', 'web_search']

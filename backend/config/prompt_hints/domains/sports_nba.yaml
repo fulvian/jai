@@ -1,0 +1,175 @@
+version: "2.0"
+domain: sports_nba
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Centrale Scommesse e Analisi Tecnica NBA: analisi statistica avanzata, 
+  identificazione Value Bet, monitoraggio infortuni e tattica di gioco via NBA Analytics.
+  Ottimizzato per pronostici basati su modelli probabilistici e analisi della forma.
+
+content: |
+  ## REGOLE CRITICHE (Professional Betting Analysis)
+
+  ### 1. Protocollo di Analisi Obbligatorio
+  Per emettere un pronostico o una proposta di scommessa ("NBA Betting Insight"), segui rigorosamente questo ordine:
+  1. **Injury Report**: Controlla chi è OUT, Questionable o Game-Time Decision (GTD). Le assenze dei "Star Players" invalidano le medie statistiche.
+  2. **Recency Bias Adj**: Analizza le ultime 5 partite (`nba_api_team_games`) per rilevare trend di stanchezza o cali di forma, preferendo i dati recenti alla classifica generale.
+  3. **Betting Context**: Recupera le quote correnti (`nba_betting_odds`). 
+  4. **Probabilistic Engine**: Usa `nba_betting_analysis` per ottenere la probabilità attesa (Expected Win Prob).
+  5. **Tactical Depth**: Usa `nba-game-analysis` per capire i matchup tattici (es: Curry vs Holiday) e l'impatto dei lineup.
+  6. **Sintesi**: Genera l'Insight finale con Confidence Score.
+
+  ### 2. Identificazione del Valore (Value Betting)
+  - Una **Value Bet** si verifica quando la probabilità del modello è significativamente superiore alla probabilità implicita della quota (1/Quota).
+  - Suggerisci puntate solo con un "Edge" positivo verificato.
+
+  ### 3. Costruzione della Multipla (Professional Combo)
+  - Quando l'utente chiede una multipla, seleziona i match con la `confidence` più alta (> 0.75).
+  - Non inserire più di 3-4 eventi per multipla per mantenere un profilo di rischio professionale.
+
+  ### Errori Comuni da Evitare:
+  - ❌ Ignorare i "Back-to-Back" (squadre che giocano due notti di fila).
+  - ❌ Basarsi su record H2H di stagioni passate se i roster sono cambiati radicalmente.
+  - ❌ Sbagliare i Team ID: usa sempre la risoluzione automatica dei nomi squadre tramite gli handler.
+
+  ### Sequenze Consigliate per il Betting Expert:
+  1. `espn_nba_injuries` -> Filtro giocatori chiave.
+  2. `nba_daily_betting_analysis` -> Scansione rapida della giornata.
+  3. `nba-game-analysis` -> Matchup tattici e trend.
+  4. `nba_betting_analysis` -> Analisi probabilistica finale.
+  5. `nba_betting_odds` -> Verifica quote.
+
+tools:
+  nba_daily_betting_analysis:
+    description: "Analisi massiva di tutte le partite NBA dell'odierna 'slate'. Identifica automaticamente le migliori opportunità e value bet della giornata."
+    version: "2.0"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          date: { type: "string", description: "Data in formato YYYY-MM-DD" }
+    hard_rules: |
+      RULE 1: Deve essere il primo tool usato per query generali sulla serata NBA.
+      RULE 2: Se la data non è specificata, usa sempre la giornata odierna (ora italiana/EST).
+    few_shot_examples:
+      - description: "Scansione partite NBA per scommesse"
+        content: |
+          INPUT: "Quali sono le partite NBA di stasera e dove vedi valore per scommettere?"
+          THOUGHT: "Eseguo la scansione giornaliera del palinsesto NBA per identificare le partite con il payout probabilistico migliore."
+          CALL: {}
+          RESULT: "Trovate 8 partite. 3 Value Bet identificate: LAL vs BOS (Over), PHX vs GSW (H2H), DEN vs SAC (Spread)."
+
+  nba_betting_analysis:
+    description: "Analisi profonda di una singola partita NBA. Include: Win Probability, Expected Margin, Total Points e identificazione Edge vs Odds."
+    version: "2.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["home_team", "away_team"]
+        properties:
+          home_team: { type: "string", description: "Nome squadra di casa" }
+          away_team: { type: "string", description: "Nome squadra ospite" }
+          game_date: { type: "string", description: "Data (YYYY-MM-DD)" }
+    hard_rules: |
+      RULE 1: Richiedi questo tool prima di dare un consiglio 'Lock' o 'Value'.
+      RULE 2: Incrocia sempre i nomi squadre con l'Injury Report prima di validare l'output.
+    few_shot_examples:
+      - description: "Analisi partita specifica"
+        content: |
+          INPUT: "Analizza Lakers vs Celtics e dimmi se conviene puntare sull'Under."
+          THOUGHT: "Processo i dati di matchup tramite il motore probabilistico di betting per valutare l'Under 228.5 rispetto al totale atteso."
+          CALL: { "home_team": "Lakers", "away_team": "Celtics" }
+          RESULT: {"win_prob_home": 0.45, "win_prob_away": 0.55, "predicted_total": 224.5}
+
+  espn_nba_injuries:
+    description: "Recupera l'Injury Report aggiornato in tempo reale. Cruciale per individuare assenze di star che cambiano le quote."
+    version: "1.2"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          team: { type: "string" }
+    hard_rules: |
+      RULE 1: Segnalare sempre se un giocatore chiave è 'Game-Time Decision'.
+    few_shot_examples:
+      - description: "Controllo infortuni per betting"
+        content: |
+          INPUT: "Chi mancherà stasera nei Warriors e come impatta la quota?"
+          THOUGHT: "Recupero l'elenco infortuni per verificare la presenza di Steph Curry o Draymond Green, fattori chiave per il movimento quote."
+          CALL: {}
+          RESULT: {"injuries": [{"player": "Andrew Wiggins", "status": "OUT"}]}
+
+  nba_api_live_scoreboard:
+    description: "Scoreboard ufficiale NBA. Fornisce orari (EST), record attuali (W-L) e punteggi live se in corso."
+    version: "2.0"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          date: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare 'date' per controllare risultati di giorni passati.
+    few_shot_examples:
+      - description: "Verifica orari partite"
+        content: |
+          INPUT: "A che ora giocano i Bulls stasera?"
+          THOUGHT: "Controllo lo scoreboard ufficiale per estrarre l'orario d'inizio e lo stato della partita."
+          CALL: {}
+          RESULT: {"games": [{"home": "CHI", "away": "DET", "time": "8:00 PM EST"}]}
+
+  nba_betting_odds:
+    description: "Recupera le quote attuali (Moneyline, Spread, Over/Under) dai principali bookmakers."
+    version: "2.0"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          regions:
+            {
+              type: "string",
+              default: "eu",
+              description: "Regione (eu, us, uk)",
+            }
+          markets: { type: "string", default: "h2h,spreads,totals" }
+    hard_rules: |
+      RULE 1: Confrontare sempre le quote di almeno due bookmakers differenti.
+    few_shot_examples:
+      - description: "Recupero quote correnti"
+        content: |
+          INPUT: "Che quote ci sono per i Clippers stasera?"
+          THOUGHT: "Estraggo le quote h2h e spread per confrontarle con il modello probabilistico."
+          CALL: { "regions": "eu", "markets": "h2h,spreads" }
+          RESULT: {"odds": [{"bookmaker": "Bet365", "h2h": [1.90, 1.90]}]}
+
+  nba_player_season_stats:
+    description: "Statistiche medie stagionali di un giocatore. Utile per il mercato Player Props (punti, assist, rimbalzi)."
+    version: "1.5"
+    constraints:
+      input_schema:
+        type: object
+        required: ["player_id"]
+        properties:
+          player_id: { type: "integer" }
+          season: { type: "string", default: "2025-26" }
+    hard_rules: |
+      RULE 1: Usare il 'player_id' numerico ufficiale NBA.
+    few_shot_examples:
+      - description: "Analisi Player Props"
+        content: |
+          INPUT: "Quanto sta facendo di media Jayson Tatum quest'anno?"
+          THOUGHT: "Recupero le stats stagionali per valutare se le linee prodotte dai bookmaker sui suoi punti sono corrette."
+          CALL: { "player_id": 1628369, "season": "2025-26" }
+          RESULT: {"avg_points": 27.5, "avg_rebounds": 8.2}
+
+  nba-game-analysis:
+    description: "Analisi tattica avanzata: matchup individuali, efficienza lineup e trend storici specifici."
+    constraints:
+      input_schema:
+        type: object
+        required: ["game_id"]
+        properties:
+          game_id: { type: "string" }
+          metric: { type: "string", enum: ["matchup", "lineup", "clutch"] }
+    hard_rules: |
+      RULE 1: Usare 'matchup' per analizzare lo scontro tra le due stelle delle squadre.

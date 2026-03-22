@@ -1,0 +1,174 @@
+/**
+ * Approval Dialog Styles
+ */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.dialog {
+    background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+    border-radius: 20px;
+    padding: 24px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+.dialog.high {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow:
+        0 0 30px rgba(239, 68, 68, 0.2),
+        0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.dialog.medium {
+    border-color: rgba(234, 179, 8, 0.5);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.urgencyBadge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.timer {
+    font-size: 13px;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+}
+
+.content {
+    text-align: center;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: var(--text-primary, #fff);
+}
+
+.toolBadge {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'SF Mono', monospace;
+    margin-bottom: 16px;
+}
+
+.message {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+    margin: 0 0 16px;
+}
+
+.details {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
+.details summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.details pre {
+    margin: 10px 0 0;
+    font-size: 11px;
+    overflow-x: auto;
+    color: var(--text-primary, #fff);
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+}
+
+.actions button {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.denyButton {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.denyButton:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.approveButton {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+.approveButton:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+.actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

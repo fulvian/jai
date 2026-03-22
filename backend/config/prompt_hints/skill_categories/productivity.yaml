@@ -1,0 +1,35 @@
+# Productivity Skills
+# todoist, pomodoro, timer, obsidian, second-brain
+
+category: productivity
+description: "Task management, timers, note-taking systems"
+
+patterns:
+  - "todoist"
+  - "pomodoro"
+  - "timer"
+  - "obsidian"
+  - "second-brain"
+
+hints: |
+  TASK MANAGEMENT (Todoist):
+  - project: nome progetto
+  - content: descrizione task
+  - due_string: "today", "tomorrow", "next monday"
+  - priority: 1 (normal) to 4 (urgent)
+  - labels: lista etichette
+
+  TIMER/POMODORO:
+  - duration: minuti (default 25 per pomodoro)
+  - task_name: descrizione attività
+  - break_duration: pausa tra sessioni
+
+  OBSIDIAN:
+  - vault_path: path alla vault
+  - note_title: titolo nota
+  - content: contenuto markdown
+  - tags: lista tag senza #
+
+  SECOND BRAIN:
+  - Usa linking [[nota]] per connessioni
+  - Categorizza con folder o tag

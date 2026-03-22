@@ -1,0 +1,38 @@
+# Antigravity Workspace Ignore File
+# Prevents indexing of large/generated directories
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# AI Models (large binary files)
+models/
+
+# Data directories with large files
+data/
+
+# Python caches
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Node modules (if any)
+node_modules/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# IDE caches
+.idea/
+.vscode/
+
+# Git internals
+.git/

@@ -1,0 +1,35 @@
+# Common YAML Anchors for GraphRAG Tool Schemas
+
+definitions:
+  pagination: &pagination
+    limit:
+      type: "integer"
+      description: "Massimo numero di risultati da restituire."
+      default: 20
+      minimum: 1
+      maximum: 100
+    offset:
+      type: "integer"
+      description: "Numero di risultati da saltare."
+      default: 0
+
+  search_filters: &search_filters
+    query:
+      type: "string"
+      description: "Query di ricerca testuale."
+      minLength: 1
+    date_from:
+      type: "string"
+      description: "Data inizio filtro (ISO8601)."
+    date_to:
+      type: "string"
+      description: "Data fine filtro (ISO8601)."
+
+  geo_location: &geo_location
+    latitude:
+      type: "number"
+    longitude:
+      type: "number"
+    radius_km:
+      type: "number"
+      default: 10

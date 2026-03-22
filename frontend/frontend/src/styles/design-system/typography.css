@@ -1,0 +1,205 @@
+/**
+ * macOS Tahoe Typography System
+ * SF Pro Font Stack with Fallbacks
+ */
+
+:root {
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     FONT FAMILIES
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    /* System font stack (SF Pro with fallbacks) */
+    --font-system: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+        system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* Monospace for code */
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, 'Cascadia Code',
+        'Roboto Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     FONT SIZES (Apple Design Guidelines)
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --text-lg: 17px;
+    --text-xl: 20px;
+    --text-2xl: 24px;
+    --text-3xl: 28px;
+    --text-4xl: 34px;
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     LINE HEIGHTS
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    --leading-tight: 1.2;
+    --leading-snug: 1.35;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.65;
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     FONT WEIGHTS
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* ═══════════════════════════════════════════════════════════════════════════════
+     LETTER SPACING
+     ═══════════════════════════════════════════════════════════════════════════════ */
+
+    --tracking-tighter: -0.02em;
+    --tracking-tight: -0.01em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+body {
+    font-family: var(--font-system);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    font-weight: var(--font-regular);
+    letter-spacing: var(--tracking-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HEADING STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.heading-1 {
+    font-size: var(--text-4xl);
+    font-weight: var(--font-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tighter);
+}
+
+.heading-2 {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+}
+
+.heading-3 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-tight);
+}
+
+.heading-4 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+}
+
+.heading-5 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-normal);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BODY TEXT STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.body-large {
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+}
+
+.body-default {
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+}
+
+.body-small {
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+}
+
+.body-caption {
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UI TEXT STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.ui-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-tight);
+}
+
+.ui-button {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: 1;
+    letter-spacing: var(--tracking-wide);
+}
+
+.ui-tab {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CODE TEXT STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.code-inline {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    padding: 2px 6px;
+    background: var(--glass-tint-light);
+    border-radius: 4px;
+}
+
+.code-block {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.text-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Selection color */
+::selection {
+    background: rgba(10, 132, 255, 0.3);
+}

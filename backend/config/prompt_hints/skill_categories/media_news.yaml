@@ -1,0 +1,29 @@
+# Media & News Skills
+# bbc-news, news-summary, spotify-applescript, mcp-applemusic
+
+category: media_news
+description: "News aggregation, media playback"
+
+patterns:
+  - "bbc-*"
+  - "news-*"
+  - "spotify-*"
+
+hints: |
+  NEWS:
+  - topic: argomento o keyword
+  - category: world, business, tech, sports, entertainment
+  - country: codice paese (it, us, uk)
+  - max_articles: numero articoli (10-50)
+  - date_from: data inizio (YYYY-MM-DD)
+
+  SPOTIFY:
+  - Controlla che Spotify sia in esecuzione
+  - action: play, pause, next, previous, volume
+  - search_query: per cercare brani/album/artisti
+  - playlist_name: nome playlist
+  - volume_level: 0-100
+
+  APPLE MUSIC:
+  - Simile a Spotify ma via osascript
+  - Richiede Apple Music app attiva

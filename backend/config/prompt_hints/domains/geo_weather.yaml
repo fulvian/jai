@@ -1,0 +1,156 @@
+version: "2.0"
+domain: "geo_weather"
+last_updated: "2026-02-23"
+author: "Antigravity"
+
+description: |
+  Dominio avanzato per meteo in tempo reale, previsioni, dati storici climatici, 
+  monitoraggio sismico globale, qualità dell'aria (WAQI) e festività nazionali.
+  Integra servizi localizzati come Meteo.it (IT) e National Weather Service (US).
+
+content: |
+  ### Errori Comuni (Anti-pattern)
+  - ❌ Ignorare il fuso orario quando si confrontano orari di alba/tramonto tra città diverse.
+  - ❌ Non verificare l'attendibilità della stazione WAQI (alcune stazioni rurali possono essere offline).
+
+tools:
+  openmeteo_weather:
+    description: "Recupera le condizioni meteo attuali (temperatura, umidità, vento, codice meteo) per una città specifica."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city"]
+        properties:
+          city:
+            type: string
+            description: "SOLO Nome della città senza nazione e senza virgole (es. 'Milano', NON 'Milano, IT')."
+    hard_rules: |
+      RULE 1: Se la città è ambigua, aggiungi la nazione (es. 'Paris, FR').
+      RULE 2: Massimo 1 chiamata per risposta utente se la città è la stessa.
+    few_shot_examples:
+      - description: "Meteo attuale a Roma"
+        content: |
+          USER: Com'è il tempo ora a Roma?
+          THOUGHT: L'utente chiede il meteo attuale. Uso openmeteo_weather.
+          CALL: {"city": "Rome"}
+          RESULT: {"city": "Rome", "temperature": 15.2, "humidity": 65, "weather_code": 1}
+      - description: "Piove a Milano?"
+        content: |
+          USER: Devo prendere l'ombrello a Milano?
+          THOUGHT: Domanda sulle condizioni correnti.
+          CALL: {"city": "Milan"}
+          RESULT: {"city": "Milan", "temperature": 12.0, "weather_code": 3}
+
+  openmeteo_forecast:
+    description: "Ottieni previsioni meteo giornaliere (min/max temp, precipitazioni) per i prossimi N giorni (max 16)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city"]
+        properties:
+          city:
+            type: string
+            description: "SOLO Nome della città senza nazione e senza virgole (es. 'Milano', NON 'Milano, IT')."
+          days:
+            type: integer
+            default: 7
+            description: "Numero di giorni di previsione (1-16)."
+    hard_rules: |
+      RULE 1: Se 'days' non è specificato, usa il default di 7.
+      RULE 2: Se 'days' > 16, forza il valore a 16.
+    few_shot_examples:
+      - description: "Previsioni weekend a Londra"
+        content: |
+          USER: Che tempo farà a Londra questo weekend?
+          THOUGHT: Siamo a giovedì, chiedo 4 giorni per coprire il weekend.
+          CALL: {"city": "London", "days": 4}
+          RESULT: {"city": "London", "forecasts": [{"date": "2026-02-28", "temp_max": 10.5}]}
+
+  openmeteo_historical:
+    description: "Accedi all'archivio storico Open-Meteo per dati climatici fino a 80 anni fa."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city", "start_date", "end_date"]
+        properties:
+          city:
+            {
+              type: "string",
+              description: "SOLO Nome della città senza nazione e senza virgole (es. 'Milano', NON 'Milano, IT').",
+            }
+          start_date: { type: "string", description: "YYYY-MM-DD" }
+          end_date: { type: "string", description: "YYYY-MM-DD" }
+    hard_rules: |
+      RULE 1: Le date devono essere nel passato rispetto ad oggi (2026-02-23).
+      RULE 2: Il range massimo consigliato è di 31 giorni per singola chiamata per evitare timeout.
+    few_shot_examples:
+      - description: "Analisi clima Gennaio 2024"
+        content: |
+          USER: Com'era la temperatura a Parigi a Gennaio 2024?
+          THOUGHT: Richiesta di dati storici.
+          CALL: {"city": "Paris", "start_date": "2024-01-01", "end_date": "2024-01-31"}
+          RESULT: {"city": "Paris", "avg_temp": 4.5, "max_temp": 12.0, "min_temp": -2.1}
+
+  usgs_earthquakes:
+    description: "Monitoraggio terremoti recenti via USGS (Magnitudo > 4.5)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          days: { type: "integer", default: 7 }
+          min_magnitude: { type: "number", default: 4.5 }
+    hard_rules: |
+      RULE 1: Non allarmare l'utente; riporta i dati in modo neutro e scientifico.
+      RULE 2: Fornisci sempre il link URL USGS presente nel risultato.
+    few_shot_examples:
+      - description: "Terremoti ultima settimana"
+        content: |
+          USER: Ci sono stati terremoti forti negli ultimi giorni?
+          THOUGHT: Controllo attività sismica globale.
+          CALL: {"days": 7}
+          RESULT: {"earthquakes": [{"magnitude": 5.2, "location": "Japan", "url": "..."}]}
+
+  nager_holidays:
+    description: "Elenco delle festività nazionali per un anno e paese specifico."
+    constraints:
+      input_schema:
+        type: object
+        required: ["country"]
+        properties:
+          country: { type: "string" }
+          year: { type: "integer", default: 2026 }
+    hard_rules: |
+      RULE 1: Usare il codice ISO del paese (es. 'IT', 'US', 'ES').
+
+  meteo-it:
+    description: "Previsioni meteo localizzate e radar per l'Italia via Meteo.it."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city"]
+        properties:
+          city: { type: "string" }
+    hard_rules: |
+      RULE 1: Prioritario per previsioni su territorio italiano rispetto a openmeteo.
+
+  national-weather-service:
+    description: "Dati meteo ufficiali e alert (NOAA) per il territorio degli Stati Uniti."
+    constraints:
+      input_schema:
+        type: object
+        required: ["location"]
+        properties:
+          location: { type: "string", description: "City, ST or GPS" }
+    hard_rules: |
+      RULE 1: Obbligatorio riportare gli 'Active Alerts' (tornado, flood, etc.) se presenti.
+
+  waqi-air-quality:
+    description: "Qualità dell'aria in tempo reale (AQI) e inquinanti da stazioni globali."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city"]
+        properties:
+          city: { type: "string" }
+    hard_rules: |
+      RULE 1: Se AQI > 100, avvisare le categorie sensibili.

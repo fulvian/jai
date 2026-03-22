@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/memory/semantic.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.001, 0.85, 1.0, 100, 3600, 'Concept', 'Entity', 'RELATES_TO', 'created_at', 'depth', 'driver not available', 'entities', 'entities_merged', 'entity_added', 'entity_deleted', 'entity_id', 'entity_type', 'episode_consolidated', 'graph_traversal', 'id', 'ids', 'keep_all_properties', 'limit', 'max_nodes', 'merged_from', 'merged_id', 'name', 'neo4j_auth_failed', 'neo4j_closed', 'neo4j_connected', 'node_id', 'node_name', 'node_props', 'node_type', 'offset', 'old_id', 'prefer_first', 'properties', 'query', 'rel_source', 'rel_target', 'rel_type', 'relation_added', 'relations', 'score', 'source', 'source_id', 'start_id', 'target', 'target_id', 'tenant_id', 'type', 'updated_at', 'weight', '|']

@@ -1,0 +1,330 @@
+version: "2.1"
+domain: finance_crypto
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Mercati finanziari, Cripto-attività e analisi Quantamentale avanzata. 
+  Ottimizzato per la ricerca profonda via Polygon/FMP, l'analisi tecnica (Binance/Coingecko) 
+  e la sintesi di segnali di investimento (FVMC Protocol). Supporto per stock US, Crypto ed economia macro.
+
+content: |
+  ## REGOLE CRITICHE (Finance & Crypto Research)
+
+  ### 1. Strategie di Ricerca Avanzata (Deep Intel Workflow)
+  - **Analisi 360° (Protocollo Consulente)**: Per query complesse (es: "Analizza MANH"), l'LLM deve seguire rigorosamente questa sequenza:
+    1. `yahoo_quote` / `coingecko_price` -> Stato attuale e prezzo.
+    2. `edgar_filings` -> Identifica gli ultimi 10-K/10-Q per i fondamentali ufficiali SEC.
+    3. `fmp_key_metrics` / `fmp_dcf` -> Estrai metriche chiave (P/E, Debt/Equity) e Fair Value.
+    4. **Ricerca News & Sentiment (CRITICO)**: Usa `sentiment-analyzer` per il polso della community e `nasdaq-alerts` per breaking news tech.
+    5. **Insider & Rumors**: Usa `insider-trades-alerts` per monitorare vendite/acquisti del management.
+    6. `technical_indicators` -> Calcola RSI, MACD e Ichimoku Cloud via binance_klines (per crypto) o polygon_data (per stock).
+    7. **FVMC Validation**: Applica il filtro Quantamentale (DCF vs Sentiment) per la sintesi finale.
+    8. **Sintesi**: Genera una raccomandazione BUY/HOLD/SELL con Stop Loss e Take Profit.
+
+  ### 2. Analisi del Sentiment e Insider Trading
+  - **Incrocio Dati**: Non dare mai un segnale basato solo sulla tecnica se il `rumor_scanner` rileva impatti elevati. Una news di "Insiders selling aggressively" o "Potential acquisition" ha la precedenza sui livelli di RSI.
+  - **Sentiment Crypto**: Usa `hot_scanner` per misurare la viralità social e i trending movers 24h.
+  - **Dati Real-time Esterni**: Se i tool interni di finance falliscono o mancano di notizie macro-economiche fresche (es. dati FED oggi), usa `smart_search` o `tavily_search` (topic: finance) dal dominio `web_search`.
+
+
+  ### 2. Analisi Tecnica (Pandas-TA)
+  - **Indicatori**: Usa `technical_indicators` per calcolare localmente:
+    - `rsi`: Relative Strength Index (ipervenduto < 30, ipercomprato > 70).
+    - `macd`: Moving Average Convergence Divergence (crossover segnale).
+    - `ichimoku`: Supporti/resistenze dinamiche (prezzo sopra/sotto la Cloud).
+    - `bbands`: Volatilità e breakout.
+  - **Interpretazione**: Spiega SEI SEMPRE l'impatto tecnico (es. "RSI a 25 = Forte ipervenduto").
+
+  ### 3. Analisi Quantamentale
+  - **Fair Value**: Confronta sempre il prezzo attuale con `fmp_dcf`. Se il prezzo è > 20% sotto il DCF, evidenzia l'opportunità di "Undervalued Asset".
+  - **Sintesi Multi-Dimensionale**: Per raccomandazioni rapide ma pesate, usa `multi_dimensional_analysis` (depth='deep').
+
+  ### 4. Gestione Errori e Anti-Pattern
+  - ❌ **Ticker Warning**: Per le crypto, USARE SEMPRE gli ID testuali di CoinGecko (es. `bitcoin`, `ethereum`) e non i ticker brevi (BTC, ETH) nei tool `coingecko_*`.
+  - ❌ **Allucinazioni**: Se un tool restituisce un errore, non inventare i dati. Riporta il fallimento e prova un tool alternativo (es. se `yahoo` fallisce, usa `alpaca_quote`).
+  - ❌ **Stop Loss**: Non omettere mai i livelli di rischio in una raccomandazione "Expert Advisor".
+
+  ### 5. Source of Truth (Data Precedence)
+  - RULE: Per i **Dati di Bilancio / SEC**, FMP (Financial Modeling Prep) è la fonte primaria.
+  - RULE: Per il **Prezzo Real-time / Quote**, Yahoo Finance è la fonte primaria per Stock, CoinGecko per Crypto.
+
+  ### 6. Monitoraggio e Automazione (Utility Linkage) [NEW]
+  - **Alert Prezzi**: Quando l'utente chiede di essere avvisato per un prezzo (es: "avvisami se BTC va a 100k"), usa il tool `create_autonomous_agent` con `agent_type: 'price_watch'`.
+  - **Monitoraggio Ricorrente**: Per analisi periodiche (es: "controlla il sentiment ogni 4 ore"), usa `create_autonomous_agent` con `agent_type: 'scheduled'`.
+
+tools:
+  multi_dimensional_analysis:
+    description: Orchestratore di analisi Alpha. Pesa fondamentali, tecnica e sentiment.
+    version: "1.2"
+    constraints:
+      input_schema:
+        type: object
+        required: ["symbol"]
+        properties:
+          symbol:
+            {
+              type: "string",
+              description: "Ticker (AAPL) o Crypto-ID (bitcoin)",
+            }
+          depth:
+            {
+              type: "string",
+              enum: ["quick", "standard", "deep"],
+              default: "standard",
+            }
+    hard_rules: |
+      RULE 1: Se `depth` è 'deep', il sistema DEVE attendere l'incrocio di almeno 3 layer (Fondamentali, Tecnici, Sentiment).
+      RULE 2: Output finale DEVE contenere un 'Confidence Score' da 0 a 1.
+    few_shot_examples:
+      - description: "Analisi profonda NVIDIA"
+        content: |
+          INPUT: "Dammi un'analisi approfondita su NVIDIA e dimmi se è il momento di comprare"
+          THOUGHT: "Eseguo un'analisi multi-dimensionale deep per pesare ogni aspetto dell'asset."
+          CALL: { "symbol": "NVDA", "depth": "deep" }
+          RESULT: "Signal: BUY (Score 0.85). DCF indica sottovalutazione del 15%. RSI neutro."
+      - description: "Check rapido Bitcoin"
+        content: |
+          INPUT: "Bitcoin è da tenere?"
+          THOUGHT: "Eseguo check rapido standard su sentiment e prezzo."
+          CALL: { "symbol": "bitcoin", "depth": "standard" }
+          RESULT: {"signal": "HOLD", "sentiment": 65, "price": 52000}
+
+  technical_indicators:
+    description: Calcola indicatori tecnici via Pandas/Pandas-TA.
+    version: "1.5"
+    constraints:
+      input_schema:
+        type: object
+        required: ["symbol", "indicator"]
+        properties:
+          symbol: { type: "string" }
+          indicator:
+            {
+              type: "string",
+              enum: ["rsi", "macd", "bbands", "ichimoku", "adx", "atr", "sar"],
+            }
+          period: { type: "integer", default: 14 }
+    hard_rules: |
+      RULE 1: Se l'indicatore è 'ichimoku', il `period` viene ignorato e si usano i settaggi standard (9, 26, 52).
+      RULE 2: Massimo 3 indicatori diversi per singola risposta per evitare cluttering.
+    few_shot_examples:
+      - description: "Analisi tecnica breakout Tesla"
+        content: |
+          INPUT: "Controlla RSI e Bande di Bollinger di Tesla"
+          THOUGHT: "Calcolo momentum e volatilità per identificare breakout."
+          CALL: { "symbol": "TSLA", "indicator": "rsi" }
+          RESULT: "RSI(14): 32 (Ipervenduto)."
+      - description: "Ichimoku Cloud su BTC"
+        content: |
+          INPUT: "Com'è la nuvola su Bitcoin?"
+          THOUGHT: "Calcolo Ichimoku per supporti dinamici."
+          CALL: { "symbol": "BTC-USD", "indicator": "ichimoku" }
+          RESULT: {"tenkan_sen": 51000, "kijun_sen": 50500, "cloud": "above"}
+
+  edgar_filings:
+    description: Ottieni filings SEC EDGAR (10-K, 10-Q).
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["ticker"]
+        properties:
+          ticker: { type: "string" }
+          form_type: { type: "string", default: "10-K" }
+          limit: { type: "integer", default: 5 }
+    hard_rules: |
+      RULE 1: Per analisi fondamentali annuali, usa sempre `form_type='10-K'`.
+      RULE 2: Analizza sempre l'ultimo filing disponibile prima di emettere un giudizio BUY/SELL.
+    few_shot_examples:
+      - description: "Ricerca ultimi bilanci Amazon"
+        content: |
+          INPUT: "Prendimi gli ultimi report annuali di Amazon"
+          THOUGHT: "Accedo al database SEC EDGAR per i 10-K."
+          CALL: { "ticker": "AMZN", "form_type": "10-K", "limit": 2 }
+          RESULT: {"filings": [{"accessionNumber": "...", "reportDate": "2024-02-02"}]}
+      - description: "Check trimestrale Apple"
+        content: |
+          INPUT: "Com'è andata l'ultima trimestrale di Apple?"
+          THOUGHT: "Scarico l'ultimo 10-Q."
+          CALL: { "ticker": "AAPL", "form_type": "10-Q", "limit": 1 }
+          RESULT: {"filings": [{"accessionNumber": "...", "reportDate": "2024-05-01"}]}
+
+  fmp_dcf:
+    description: Ottieni fair value DCF calcolato da Financial Modeling Prep.
+    version: "1.1"
+    constraints:
+      input_schema:
+        type: object
+        required: ["symbol"]
+        properties:
+          symbol: { type: "string" }
+    hard_rules: |
+      RULE 1: Evidenziare SEMPRE la discrepanza percentuale tra prezzo attuale e DCF.
+    few_shot_examples:
+      - description: "Fair Value Google"
+        content: |
+          INPUT: "Qual è il valore intrinseco di Google?"
+          THOUGHT: "Recupero il modello DCF da FMP."
+          CALL: { "symbol": "GOOGL" }
+          RESULT: "Stock Price: 140$, DCF: 165$. Undervalued by 17.8%."
+
+  stock_key_metrics:
+    description: Metriche fondamentali (P/E, ROE, etc).
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["symbol"]
+    hard_rules: |
+      RULE 1: Se Debt/Equity > 2, segnala un alert di rischio finanziario elevato.
+    few_shot_examples:
+      - description: "Metriche fondamentali MANH"
+        content: |
+          INPUT: "Che fondamentali ha Manhattan Associates (MANH)?"
+          THOUGHT: "Etraggo P/E, Margini e Debt/Equity."
+          CALL: { "symbol": "MANH" }
+          RESULT: {"peRatio": 45.2, "debtEquity": 0.15, "roe": 22.5}
+
+  binance_klines:
+    description: Candlestick OHLCV per crypto.
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["symbol"]
+        properties:
+          symbol: { type: "string" }
+          interval: { type: "string", default: "1h" }
+          limit: { type: "integer", default: 10 }
+    hard_rules: |
+      RULE 1: `symbol` deve essere in formato PAIR (es. BTCUSDT).
+    few_shot_examples:
+      - description: "Analisi candele orarie Bitcoin"
+        content: |
+          INPUT: "Fammi vedere le ultime candele orarie di Bitcoin su Binance"
+          THOUGHT: "Scarico dati OHLCV pair BTCUSDT."
+          CALL: { "symbol": "BTCUSDT", "interval": "1h", "limit": 10 }
+          RESULT: {"klines": [[1708682400000, "51200.00", "51300.00", ...]]}
+
+  market_context_analysis:
+    description: VIX, SPY trend e risk detection.
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+    hard_rules: |
+      RULE 1: Se VIX > 30, suggerisci cautela estrema ("Extreme Fear regime").
+    few_shot_examples:
+      - description: "Check regime mercato"
+        content: |
+          INPUT: "Come sono messi i mercati oggi? C'è paura?"
+          THOUGHT: "Analizzo VIX e trend SPY."
+          CALL: {}
+          RESULT: {"vix": 14.5, "spy_trend": "bullish", "risk_level": "low"}
+
+  rumor_scanner:
+    description: Scansiona per rumors, segnali precoci, M&A, insider activity.
+    version: "1.1"
+    constraints:
+      input_schema:
+        type: object
+    hard_rules: |
+      RULE 1: Se `impact_score` >= 4, la raccomandazione finale DEVE citare il rumor come fattore dominante.
+      RULE 2: In caso di keyword "insider buying", evidenzialo come forte segnale di fiducia del management.
+    few_shot_examples:
+      - description: "Ricerca insider trading e rumors"
+        content: |
+          INPUT: "Ci sono news di acquisizione o insider trading su Apple?"
+          THOUGHT: "Attivo lo scanner per identificare rumors e attività insider."
+          CALL: {}
+          RESULT: "Rumor: Acquisition talks with XYZ (Impact: 5)."
+
+  hot_scanner:
+    description: Scanner per trend virali, crypto trending e news social.
+    version: "1.1"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          include_social: { type: "boolean", default: true }
+    hard_rules: |
+      RULE 1: Usare prioritariamente per query su crypto volatili o market movers.
+    few_shot_examples:
+      - description: "Cosa bolle in pentola oggi?"
+        content: |
+          INPUT: "Quali sono le crypto più calde del momento?"
+          THOUGHT: "Cerco trend virali e trending coins via social e CoinGecko."
+          CALL: { "include_social": true }
+          RESULT: {"trending": [{"symbol": "SOL", "rank": 1}, {"symbol": "PEPE", "rank": 2}]}
+
+  finnhub_news:
+    description: Notizie di borsa e mercati in tempo reale.
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          category: { type: "string" }
+    hard_rules: |
+      RULE 1: Filtrare le news per 'relevance' se > 10 risultati.
+
+  polygon-api:
+    description: "Accesso a dati di mercato istituzionali Stock, Opzioni, Forex e Crypto via Polygon.io."
+    constraints:
+      input_schema:
+        type: object
+        required: ["action", "symbol"]
+        properties:
+          action:
+            {
+              type: "string",
+              enum: ["quote", "aggregates", "snapshot", "news"],
+            }
+          symbol: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare 'aggregates' per analisi storiche e 'snapshot' per lo stato attuale del book.
+
+  binance-mcp:
+    description: "Integrazione avanzata con Binance per exchange data e gestione portafoglio (Read/Write)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["action"]
+        properties:
+          action:
+            { type: "string", enum: ["balance", "order", "ticker", "klines"] }
+          symbol: { type: "string" }
+    hard_rules: |
+      RULE 1: Richiedere doppia conferma esplicita all'utente prima di eseguire 'order' (SEND/SELL).
+
+  sentiment-analyzer:
+    description: "Analisi del sentiment di mercato tramite scraping di news, Reddit e social crypto."
+    constraints:
+      input_schema:
+        type: object
+        required: ["topic"]
+        properties:
+          topic: { type: "string" }
+    hard_rules: |
+      RULE 1: Aggregare dati da almeno 2 fonti social diverse.
+
+  insider-trades-alerts:
+    description: "Monitoraggio e alert su transazioni insider SEC (Form 4) e rumors M&A."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          ticker: { type: "string" }
+    hard_rules: |
+      RULE 1: Segnalare solo transazioni di 'Officer' o 'Director' (insider primari).
+
+  nasdaq-alerts:
+    description: "Alert real-time per titoli quotati al NASDAQ, sospensioni e breaking news tech."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          category: { type: "string", enum: ["halt", "news", "earnings"] }
+    hard_rules: |
+      RULE 1: In caso di 'halt' (sospensione), avvisare immediatamente l'utente del rischio liquidità.

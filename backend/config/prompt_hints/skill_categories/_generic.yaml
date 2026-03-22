@@ -1,0 +1,20 @@
+# Generic Skill Category Hints
+# Fallback for uncategorized skills
+
+category: _generic
+description: "Generic hints for skills without specific category"
+
+patterns: []
+
+hints: |
+  REGOLE GENERALI:
+  - Fornisci TUTTI i parametri richiesti dal tool
+  - Usa JSON valido per ogni tool call
+  - Evita placeholder generici, usa valori specifici
+  - Date/Time: formato ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+  - Path: usa sempre path assoluti
+
+  BEST PRACTICES:
+  - Leggi la descrizione del tool per capire i parametri
+  - Se un parametro è opzionale ma utile, includilo
+  - Per output file, specifica path e formato desiderato

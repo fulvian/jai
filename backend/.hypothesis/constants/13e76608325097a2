@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/skills/registry_deprecated.py
+# hypothesis_version: 6.151.9
+
+[0.5, 1000, 1024, '.me4brain', 'code', 'created_at', 'crystallized', 'description', 'enabled', 'explicit', 'failure_count', 'id', 'key', 'last_used', 'match', 'me4brain_skills', 'must', 'name', 'points', 'skill_delete_error', 'skill_get_error', 'skills', 'success_count', 'tenant_id', 'tool_signature', 'type', 'usage_count', 'value']

@@ -1,0 +1,38 @@
+# Web Data & Scraping Skills
+# crawl, reddit-scraper, exa-web-search-free, playwriter
+
+category: web_data
+description: "Web scraping, crawling, data extraction"
+
+patterns:
+  - "crawl"
+  - "*-scraper"
+  - "exa-*"
+  - "playwriter"
+
+hints: |
+  CRAWLING:
+  - url: URL completo con https://
+  - depth: profondità crawl (1-3 consigliato)
+  - include_patterns: glob per URL da includere
+  - exclude_patterns: glob per URL da escludere
+
+  SCRAPING:
+  - selector: CSS selector o XPath per elementi
+  - wait_for: selector da attendere prima di scrape
+  - timeout: ms da attendere (default 30000)
+
+  REDDIT:
+  - subreddit: nome senza r/ (es. "programming")
+  - sort: hot, new, top, rising
+  - time_filter: hour, day, week, month, year, all
+  - limit: numero post (max 100)
+
+  EXA SEARCH:
+  - query: ricerca semantica
+  - num_results: numero risultati
+  - use_autoprompt: true per query optimization
+
+  PLAYWRIGHT:
+  - headless: true per esecuzione senza UI
+  - screenshot: true per catturare pagina

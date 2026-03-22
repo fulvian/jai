@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Me4BrAIn API metrics
+  - job_name: "me4brain"
+    static_configs:
+      - targets: ["me4brain:8000"]
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Redis (via redis_exporter se installato)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

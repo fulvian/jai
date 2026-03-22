@@ -1,0 +1,35 @@
+# Apple Ecosystem Skills
+# apple-calendar, apple-mail, apple-notes, apple-photos, apple-reminders
+
+category: apple_ecosystem
+description: "Apple ecosystem skills using osascript, memo CLI, and native macOS integration"
+
+patterns:
+  - "apple-*"
+  - "mcp-applemusic"
+
+hints: |
+  AMBIENTE:
+  - Queste skill usano osascript o CLI dedicati (memo, etc.)
+  - Richiedono macOS con app Apple installate
+  - Permessi Automation potrebbero essere richiesti
+
+  APPLE NOTES (memo CLI):
+  - Lista note: memo notes
+  - Cerca: memo notes -s "query"
+  - Crea: memo new "titolo" --body "contenuto"
+  - Folder: specifica -f "Nome Cartella" per filtrare
+
+  APPLE CALENDAR:
+  - Formato date: YYYY-MM-DD o "today", "tomorrow"
+  - calendar_name: nome esatto del calendario
+  - Per eventi ricorrenti, specifica recurrence rule
+
+  APPLE REMINDERS:
+  - list_name: nome lista promemoria
+  - due_date: ISO 8601 o relative ("in 2 hours")
+  - priority: low, medium, high
+
+  APPLE MAIL:
+  - Cerca per sender, subject, date range
+  - Per allegati, specifica save_path

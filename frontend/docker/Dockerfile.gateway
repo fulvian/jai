@@ -1,0 +1,48 @@
+# Fase 1: Build
+FROM node:20-alpine AS builder
+
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# Copia files di configurazione
+COPY package.json turbo.json tsconfig.base.json ./
+COPY packages/gateway/package.json ./packages/gateway/
+COPY packages/me4brain-client/package.json ./packages/me4brain-client/
+COPY packages/shared/package.json ./packages/shared/
+
+# Installa dipendenze
+RUN npm install
+
+# Copia sorgenti
+COPY packages/ ./packages/
+
+# Build tutti i packages
+RUN npm run build
+
+# Fase 2: Runtime
+FROM node:20-alpine AS runner
+
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copia solo i dist necessari
+COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
+COPY --from=builder /app/packages/gateway/package.json ./packages/gateway/
+COPY --from=builder /app/packages/me4brain-client/dist ./packages/me4brain-client/dist
+COPY --from=builder /app/packages/me4brain-client/package.json ./packages/me4brain-client/
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+# Porta gateway
+EXPOSE 3030
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3030}/health || exit 1
+
+# Start gateway
+CMD ["node", "packages/gateway/dist/index.js"]

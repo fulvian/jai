@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/skills/approval.py
+# hypothesis_version: 6.151.9
+
+['Rejected by user', 'SAFE', 'approved', 'created_at', 'description', 'expired', 'id', 'name', 'pending', 'rejected', 'reviewed_at', 'risk_level', 'skill_approved', 'skill_auto_approved', 'skill_rejected', 'status', 'tool_chain']

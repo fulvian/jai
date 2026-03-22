@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/skills/parser.py
+# hypothesis_version: 6.151.9
+
+['.md', '; ', 'SKILL.md', 'description', 'instructions', 'name', 'skill_discovered', 'skill_parse_error', 'utf-8']

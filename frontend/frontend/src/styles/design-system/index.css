@@ -1,0 +1,16 @@
+/**
+ * macOS Tahoe Design System
+ * Liquid Glass - WWDC 2025
+ * 
+ * Main entry point - imports all design system modules
+ */
+
+/* Core tokens */
+@import './colors.css';
+@import './typography.css';
+
+/* Visual effects */
+@import './glass.css';
+@import './shadows.css';
+@import './animations.css';
+@import './responsive.css';

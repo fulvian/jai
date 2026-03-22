@@ -1,0 +1,55 @@
+# =============================================================================
+# PersAn Frontend Dockerfile - For Docker Compose Deployment
+# =============================================================================
+# Build stage
+FROM node:20-alpine AS builder
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# Copy root package files for workspaces
+COPY package.json turbo.json tsconfig.base.json ./
+COPY packages/ ./packages/
+COPY frontend/package.json ./frontend/
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend source
+COPY frontend/ ./frontend/
+WORKDIR /app/frontend
+
+# Build the frontend - these become baked into the build
+ARG NEXT_PUBLIC_API_URL=http://localhost:3030
+ARG NEXT_PUBLIC_GATEWAY_URL=ws://localhost:3030/ws
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3020
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Copy necessary files from builder
+COPY --from=builder /app/frontend/public ./public
+COPY --from=builder /app/frontend/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/frontend/package.json ./package.json
+
+EXPOSE 3020
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3020 || exit 1
+
+CMD ["node_modules/.bin/next", "start", "-p", "3020"]

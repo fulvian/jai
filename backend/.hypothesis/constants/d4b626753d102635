@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/hybrid_router/domain_classifier.py
+# hypothesis_version: 6.151.9
+
+[0.1, 0.5, 0.8, 200, '%Y-%m-%d %H:%M:%S', ', ', '```', 'complexity', 'confidence', 'domains', 'json', 'medium', 'name', 'query_summary', 'unknown']

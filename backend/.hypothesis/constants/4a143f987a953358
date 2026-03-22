@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/memory/decay.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.0001, 0.0005, 0.001, 0.01, 0.02, 0.25, 0.3, 0.4, 0.5, 1.0, 168, 720, 3600, 4320, 8760, 17520, 'duckduckgo_search', 'finance_crypto', 'geo_weather', 'google_workspace', 'knowledge_media', 'medical', 'no_cleanup_needed', 'science_research', 'sports_nba', 'starting_cleanup', 'user_preferences', 'utility']

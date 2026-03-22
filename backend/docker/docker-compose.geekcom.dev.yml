@@ -1,0 +1,64 @@
+# =============================================================================
+# Me4Brain Docker Compose - GeekCom Development (Hot Reload)
+# =============================================================================
+# ESTESO DA: docker-compose.geekcom.yml
+#
+# QUESTO FILE AGGIUNGE:
+#   - Volumi per sorgenti Python (hot reload)
+#   - Volumi per configurazione (hot reload)
+#   - Variabile UVICORN_RELOAD per auto-restart
+#
+# USO:
+#   docker compose -f docker-compose.geekcom.yml -f docker-compose.geekcom.dev.yml up -d me4brain
+#
+# ATTENZIONE:
+#   - Usare SOLO durante sviluppo/iterazione rapida
+#   - NON usare per deploy production stabili
+#   - Passare a docker-compose.geekcom.yml (senza override) per deploy finali
+#
+# TEMPI:
+#   - Restart con volumi: ~5-10 secondi
+#   - Build immagine: ~5-8 minuti
+# =============================================================================
+
+services:
+  me4brain:
+    # Override: monta sorgenti come volumi per hot reload
+    volumes:
+      # === HOT RELOAD - Sorgenti Python ===
+      # Modifiche a questi file sono immediatamente visibili dopo restart
+      - ../src:/app/src:ro
+      - ../config:/app/config:ro
+      # === DATI PERSISTENTI (ereditati da base) ===
+      - hf_cache:/home/appuser/.cache/huggingface
+      - ../models:/app/models
+      - ../data:/app/data
+      - ~/.me4brain/skills:/home/appuser/.me4brain/skills:ro
+    environment:
+      # === ABILITA RELOAD AUTOMATICO UVICORN ===
+      # Nota: richiede uvicorn con --reload, che e gia nel CMD del Dockerfile
+      # quando DEBUG=true. Alternativamente, usare restart manuale.
+      - ME4BRAIN_DEBUG=true
+      - PYTHONUNBUFFERED=1
+    # Opzionale: command con reload esplicito
+    # command: ["uvicorn", "me4brain.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# =============================================================================
+# NOTE TECNICHE
+# =============================================================================
+#
+# PERCHE :ro (read-only)?
+#   - Sicurezza: il container non puo modificare i sorgenti
+#   - Evita modifiche accidentali da parte di processi nel container
+#   - I permessi di scrittura rimangono sul host
+#
+# PERCHE NON HOT RELOAD AUTOMATICO?
+#   - uvicorn --reload ha overhead e puo causare problemi con multiprocess
+#   - Meglio restart esplicito quando si vuole testare
+#   - Comando: docker compose -f docker-compose.geekcom.yml -f docker-compose.geekcom.dev.yml restart me4brain
+#
+# COME TORNARE ALLA MODALITA STABILE:
+#   1. docker compose -f docker-compose.geekcom.yml down me4brain
+#   2. docker compose -f docker-compose.geekcom.yml build me4brain
+#   3. docker compose -f docker-compose.geekcom.yml up -d me4brain
+#
+# =============================================================================

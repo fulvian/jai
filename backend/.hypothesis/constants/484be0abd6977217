@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/state.py
+# hypothesis_version: 6.151.9
+
+[0.0, 'ai', 'complex', 'episodic', 'graph', 'graph_only', 'human', 'hybrid', 'merged', 'procedural', 'semantic', 'simple', 'system', 'tool', 'tool_required', 'vector', 'vector_only']

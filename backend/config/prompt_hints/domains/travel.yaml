@@ -1,0 +1,228 @@
+version: "2.0"
+domain: "travel"
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Dominio Travel & Transport avanzato (SOTA 2026). Gestisce la pianificazione logistica complessa, 
+  prenotazioni voli (Amadeus/Skiplagged), tracking real-time, concierge per alloggi e pianificazione 
+  itinerari tramite event-planner. Include integrazione meteo contestuale.
+
+content: |
+  ## REGOLE CRITICHE LLM (Cross-Domain Travel & Logistics)
+
+  ### 1. Workflow Voli (Amadeus)
+  La prenotazione voli DEVE seguire rigorosamente questo ordine:
+  1. `amadeus_airport_search`: (Opzionale) Se non conosci il codice IATA esatto di partenza/destinazione.
+  2. `amadeus_search_flights`: Ricerca delle offerte di volo.
+  3. `amadeus_confirm_price`: **OBBLIGATORIO** per confermare disponibilità e prezzo finale di un'offerta prima del book.
+  4. `amadeus_book_flight`: Booking effettivo con i dettagli del passeggero.
+
+  ### 2. Sinergia Cross-Dominio (Vacation & Event Planning)
+  Per pianificare una vacanza completa, orchestra i tool in modo intelligente:
+  - **Meteo (`openmeteo_forecast`)**: Verifica le previsioni prima di proporre itinerari all'aperto.
+  - **Ricerca Offerte Voli**: Usa `amadeus_search_flights` per voli standard e `skiplagged-flights` per opzioni "hidden city" o tariffe ultra-low-cost.
+  - **Logistica e Tracking**: Usa `flight-tracker` per monitorare voli in tempo reale (OpenSky Network) o arrivi specifici.
+  - **Pianificazione Attività (`event-planner`)**: Automatizza la creazione di itinerari basati su budget, location e preferenze (Google Places integration).
+  - **Concierge Alloggi (`travel-concierge`)**: Recupera contatti diretti per host/strutture da Airbnb, Booking, etc.
+  - **Attrazioni ad hoc (`smart_search`)**: Identifica eventi locali e recensioni aggiornate.
+  - **Food & Dining**: Integra ricerche per ristoranti tipici sfruttando la knowledge geografica.
+
+  ### 3. Gestione Target "Nested" (es. Bambini/Infanti)
+  - Quando si viaggia con infanti/bambini (es. 19 mesi), adatta le ricerche per trovare attività child-friendly.
+  - Specifica sempre il numero corretto di passeggeri e le categorie demografiche in fase di ricerca `amadeus_search_flights`.
+
+  ### Errori Comuni da Evitare:
+  - ❌ Chiamare `amadeus_search_flights` con nomi di città ("Rome") invece di codici IATA ("FCO"). Usa prima `amadeus_airport_search`.
+  - ❌ Rispondere con itinerari o eventi inventati senza usare `smart_search` per validare che l'evento/mostra esista in quelle precise date.
+  - ❌ Procedere al booking (`amadeus_book_flight`) senza aver prima validato l'offerta con `amadeus_confirm_price`.
+
+  ### Sequenze Consigliate:
+  1. `amadeus_airport_search` (Identificazione IATA).
+  2. `amadeus_search_flights` + `skiplagged-flights` (Confronto offerte).
+  3. `flight-tracker` (Check status se il volo è oggi/domani).
+  4. `event-planner` (Costruzione itinerario locale).
+  5. `travel-concierge` (Dettagli alloggio).
+
+tools:
+  amadeus_airport_search:
+    description: "Cerca e risolvi codici IATA per città o aeroporti."
+    constraints:
+      max_results: 10
+      input_schema:
+        type: object
+        required: ["keyword"]
+        properties:
+          keyword:
+            {
+              type: "string",
+              description: "Nome della città o aeroporto (es. 'Siviglia', 'Catania')",
+            }
+    hard_rules: |
+      RULE 1: Usare sempre prima di cercare voli se il codice IATA a 3 lettere non è noto e certo.
+      RULE 2: La keyword non deve essere più corta di 3 caratteri.
+
+  amadeus_search_flights:
+    description: "Cerca voli disponibili. Usa SOLAMENTE codici IATA."
+    constraints:
+      max_results: 10
+      input_schema:
+        type: object
+        required: ["origin", "destination", "date"]
+        properties:
+          origin:
+            { type: "string", description: "IATA code partenza (es. CTA)" }
+          destination:
+            { type: "string", description: "IATA code arrivo (es. SVQ)" }
+          date: { type: "string", description: "Data partenza YYYY-MM-DD" }
+          return_date:
+            { type: "string", description: "Data ritorno YYYY-MM-DD" }
+          adults: { type: "integer", default: 1 }
+    hard_rules: |
+      RULE 1: `origin` e `destination` devono essere rigorosamente stringhe di 3 lettere maiuscole (IATA codes).
+      RULE 2: Le date devono essere in formato YYYY-MM-DD e future.
+
+  amadeus_confirm_price:
+    description: "Conferma prezzo di un'offerta volo trovata."
+    constraints:
+      input_schema:
+        type: object
+        required: ["flight_offer"]
+        properties:
+          flight_offer:
+            {
+              type: "object",
+              description: "Oggetto payload dell'offerta da confermare.",
+            }
+    hard_rules: |
+      RULE 1: Deve essere passato l'intero oggetto JSON dell'offerta.
+
+  amadeus_book_flight:
+    description: "Prenota il volo dopo la conferma del prezzo."
+    constraints:
+      input_schema:
+        type: object
+        required:
+          [
+            "flight_offer",
+            "traveler_first_name",
+            "traveler_last_name",
+            "traveler_date_of_birth",
+            "traveler_gender",
+            "traveler_email",
+            "traveler_phone",
+          ]
+        properties:
+          flight_offer: { type: "object" }
+          traveler_first_name: { type: "string" }
+          traveler_last_name: { type: "string" }
+          traveler_date_of_birth: { type: "string", description: "YYYY-MM-DD" }
+          traveler_gender: { type: "string", description: "MALE o FEMALE" }
+          traveler_email: { type: "string" }
+          traveler_phone: { type: "string" }
+    hard_rules: |
+      RULE 1: L'offerta del volo DEVE essere validata precedentemente.
+
+  openmeteo_forecast:
+    description: "Recupera previsioni meteo per adattare l'itinerario a pioggia o intemperie."
+    constraints:
+      input_schema:
+        type: object
+        required: ["city"]
+        properties:
+          city: { type: "string" }
+          days: { type: "integer", default: 7 }
+    hard_rules: |
+      RULE 1: Usare per confermare l'idoneità di attrazioni all'aperto nei giorni di viaggio.
+
+  smart_search:
+    description: "Ricerca web intelligente per attrazioni, eventi in programma, musei e auto a noleggio."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+    hard_rules: |
+      RULE 1: Includere sempre la città e l'anno (es. 2026) nella query.
+
+  flight-tracker:
+    description: "Tracking voli in tempo reale e orari aeroportuali tramite OpenSky Network."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          callsign: { type: "string" }
+          airport_icao: { type: "string" }
+    hard_rules: |
+      RULE 1: Usare 'airport_icao' per monitorare partenze e arrivi di un intero aeroporto.
+
+  skiplagged-flights:
+    description: "Ricerca voli super-scontati (hidden city) via Skiplagged MCP."
+    constraints:
+      input_schema:
+        type: object
+        required: ["origin", "destination"]
+        properties:
+          origin: { type: "string" }
+          destination: { type: "string" }
+    hard_rules: |
+      RULE 1: Avvisare sempre l'utente sui potenziali rischi del 'hidden city ticketing'.
+
+  travel-concierge:
+    description: "Recupera contatti per host di alloggi (Airbnb, Booking.com, VRBO)."
+    constraints:
+      input_schema:
+        type: object
+        required: ["listing_url"]
+        properties:
+          listing_url: { type: "string" }
+    hard_rules: |
+      RULE 1: Richiede un URL valido di una piattaforma di alloggi.
+
+  event-planner:
+    description: "Pianificazione automatizzata itinerari e ricerca venue via Google Places API."
+    constraints:
+      input_schema:
+        type: object
+        required: ["location"]
+        properties:
+          location: { type: "string" }
+          budget: { type: "string", enum: ["low", "medium", "high"] }
+          party_size: { type: "integer" }
+    hard_rules: |
+      RULE 1: Proporre sempre un mix di attività gratuite e a pagamento.
+
+few_shot_examples:
+  - description: "Ricerca IATA e Voli per Vacanza Famiglia (Siviglia)"
+    content: |
+      USER: "Il mese prossimo io, mia moglie e mia figlia di 19 mesi vorremmo andare a visitare Siviglia. Vorremmo partire intorno al 3 aprile da Catania. Trovami i voli."
+      THOUGHT: "Devo trovare i codici IATA per Siviglia e Catania, poi cercare i voli per due adulti e un neonato/infante (o 3 passeggeri totali per spazio), con partenza 3 aprile."
+      CALL: {"tool_name": "amadeus_airport_search", "arguments": {"keyword": "Siviglia"}}
+      RESULT: {"airports": [{"iata": "SVQ", "name": "Seville Airport"}]}
+      THOUGHT: "Codice confermato: SVQ. Cerco Catania."
+      CALL: {"tool_name": "amadeus_airport_search", "arguments": {"keyword": "Catania"}}
+      RESULT: {"airports": [{"iata": "CTA", "name": "Catania Fontanarossa"}]}
+      THOUGHT: "Ora cerco i voli passando 2 adulti e indicando necessità di opzioni family friendly."
+      CALL: {"tool_name": "amadeus_search_flights", "arguments": {"origin": "CTA", "destination": "SVQ", "date": "2026-04-03", "adults": 2}}
+
+  - description: "Creazione Itinerario Multi-Dominio (Meteo + Web Search per Attrattive)"
+    content: |
+      USER: "Elabora un piano di vacanza a Siviglia per i giorni in cui saremo lì, considerando le esigenze della bambina di 19 mesi. Cerca anche eventi e noleggio auto per una gita."
+      THOUGHT: "Per elaborare l'itinerario mi serve prima il meteo. Poi farò ricerche specifiche con smart_search per attività toddler-friendly a Siviglia, mostre ed autonoleggi."
+      CALL: {"tool_name": "openmeteo_forecast", "arguments": {"city": "Siviglia", "days": 7}}
+      RESULT: {"forecast": [{"date": "2026-04-03", "weather": "Sunny"}, {"date": "2026-04-04", "weather": "Cloudy"}]}
+      THOUGHT: "Il meteo è buono, ideale per i parchi. Cerco eventi musicali o adatti a bambini ad Aprile e opzioni noleggio auto."
+      CALL: {"tool_name": "smart_search", "arguments": {"query": "Siviglia eventi bambini 1-2 anni aprile 2026"}}
+      RESULT: {"results": [{"title": "Parque di María Luisa - Attività primavera", "snippet": "Ideale per i piccoli in primavera..."}]}
+      THOUGHT: "Cerco gite fuori porta adatte alle famiglie e noleggio auto."
+      CALL: {"tool_name": "smart_search", "arguments": {"query": "Noleggio auto Siviglia aeroporto migliori recensioni famiglie gite Andalusia"}}
+
+  - description: "Ottimizzazione Trasferta Operativa + Policy"
+    content: |
+      USER: "Organizzami la trasferta a Londra di martedì prossimo. Trova ristoranti veloci in zona e un volo che mi consenta di arrivare entro le 10."
+      THOUGHT: "Prima trovo il volo per un adulto, poi cercherò ristoranti nelle vicinanze degli eventi in agenda."
+      CALL: {"tool_name": "amadeus_search_flights", "arguments": {"origin": "MXP", "destination": "LHR", "date": "2026-03-03", "adults": 1}}
+      RESULT: {"flights": [{"offerId": "123", "departure": "06:30", "price": "140.00"}]}
+      THOUGHT: "Il volo va bene, ora controllo un ristorante per pranzo vicino al centro congressi con smart_search."
+      CALL: {"tool_name": "smart_search", "arguments": {"query": "Migliori ristoranti quick business lunch Londra centro vicino Excel"}}

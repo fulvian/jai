@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/memory/working.py
+# hypothesis_version: 6.151.9
+
+[b'content', b'metadata', b'role', b'timestamp', 100, 86400, 'FOCUS_ON', 'comment', 'content', 'created_at', 'feedback_comment', 'feedback_score', 'free', 'id', 'message_count', 'metadata', 'prompts', 'role', 'schedule', 'score', 'session_id', 'session_registered', 'session_type', 'stm_entity_added', 'stm_feedback_updated', 'stm_graph_created', 'stm_graph_loaded', 'stm_graph_persisted', 'stm_message_added', 'stm_message_deleted', 'stm_relation_added', 'stm_session_cleared', 'tags', 'template', 'timestamp', 'title', 'topic', 'type', 'updated_at']

@@ -1,0 +1,41 @@
+# Build stage
+FROM node:20-alpine AS builder
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# Copy root package files for workspaces
+COPY package.json turbo.json tsconfig.base.json ./
+COPY packages/ ./packages/
+COPY frontend/package.json ./frontend/
+
+# Install dependencies
+RUN npm install
+
+# Build the frontend
+COPY frontend/ ./frontend/
+WORKDIR /app/frontend
+# Pass env vars needed at build time
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GATEWAY_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3020
+
+# Copy necessary files from builder
+COPY --from=builder /app/frontend/public ./public
+COPY --from=builder /app/frontend/.next ./.next
+COPY --from=builder /app/frontend/node_modules ./node_modules
+COPY --from=builder /app/frontend/package.json ./package.json
+
+EXPOSE 3020
+
+CMD ["node_modules/.bin/next", "start", "-p", "3020"]

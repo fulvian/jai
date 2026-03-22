@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/executor.py
+# hypothesis_version: 6.151.9
+
+[0.5, 120.0, 300, 1000, '-search', 'Unknown error', '__name__', '_get', '_global_', '_list', '_search', 'aggregator', 'amadeus_', 'aviationstack_', 'body', 'coingecko_', 'content', 'content_injected', 'dependency_detected', 'duckduckgo_', 'executor_complete', 'executor_hitl_error', 'executor_starting', 'executor_tool_denied', 'executor_tool_error', 'executor_tool_notify', 'fmp_', 'google_docs_create', 'google_gmail_reply', 'google_gmail_send', 'result', 'smart_search', 'tasks_deduplicated', 'tavily_', 'technical_', 'text', 'values']

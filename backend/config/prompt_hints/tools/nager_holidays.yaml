@@ -1,0 +1,19 @@
+tool_id: "nager_holidays"
+description: "Public holidays for a given year and country."
+domain: "weather_geo"
+constraints:
+  input_schema:
+    type: "object"
+    properties:
+      year: { "type": "integer", "minimum": 1900, "maximum": 2100 }
+      countryCode: { "type": "string", "pattern": "^[A-Z]{2}$" }
+    required: ["year", "countryCode"]
+  few_shot_examples:
+    - input: "Quali sono i giorni festivi in Italia nel 2024?"
+      output: '{"tool": "nager_holidays", "params": {"year": 2024, "countryCode": "IT"}}'
+  pre_execution_validators:
+    - type: "format_check"
+      description: "countryCode must be 2-letter ISO (e.g., IT, US, FR)."
+hard_rules: |
+  1. Use for holiday queries.
+  2. Never guess holidays; always fetch.

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/plugin_registry.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 'PluginRegistry', 'default', 'get_handler', 'handler_registered', 'invalid_handler_type', 'me4brain.domains', 'no_handler_matched', 'query_routed']

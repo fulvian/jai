@@ -1,0 +1,280 @@
+version: "2.0"
+domain: "tech_coding"
+last_updated: "2026-02-23"
+author: "AI_AUTHORING_AGENT"
+
+description: |
+  Strumenti per lo sviluppo software: ricerca GitHub, NPM, PyPI, Stack Overflow, esecuzione codice in sandbox (Piston/Docker), 
+  gestione Git, database SQL, automazione SSH e diagnostica di sistema macOS.
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Ricerca Prima di Rispondere**: Se l'utente chiede informazioni su una libreria, un errore o un repository, usa sempre i tool di ricerca (`github_search_repos`, `stackoverflow_search`, `npm_search`) prima di tentare una spiegazione basata solo sulla conoscenza interna.
+  - **Verifica Versioni**: Quando suggerisci un pacchetto (NPM/PyPI), verifica sempre l'ultima versione disponibile e le sue dipendenze usando `npm_package` o `pypi_package`.
+  - **Esecuzione Sicura**: Usa `piston_execute` per validare snippet isolati o `docker-sandbox` per ambienti complessi con dipendenze esterne.
+  - **Gestione Infrastruttura**: Usa `ssh-exec` per task remoti tramite Tailscale e `homebrew` per la gestione pacchetti locale su macOS.
+  - **Database & Data**: Per operazioni SQL, usa `sql-toolkit` o `postgres` per gestire schemi e query. Usa `csv-pipeline` per trasformazioni massive di dati.
+  - **Diagnostics & CleanUp**: Utilizza `mactop` per monitoraggio hardware e `npkill` o `mole-mac-cleanup` per liberare spazio su disco.
+  - **Sequenziamento Logico**:
+    1. Identifica il problema o la libreria.
+    2. Cerca documentazione/manuali (Stack Overflow / GitHub README).
+    3. Verifica integrità/versione (Registry API).
+    4. Configura l'ambiente (Docker/Homebrew) se necessario.
+    5. Testa il codice (Sandbox Execution).
+    6. Gestisci la versione (Git Essentials).
+
+  ### Errori Comuni
+  - NON allucinare parametri di input per le API (es: `piston_execute` non accetta `context`).
+  - NON fornire link a repository GitHub senza averli prima verificati tramite `github_search_repos`.
+
+  ### 3. Collaborazione Inter-Agente (Utility Linkage) [NEW]
+  - **Delega Specialistica**: Se incontri un problema architettonico complesso o serve una review formale, usa `sessions_handoff` per passare il task a un agente specializzato (es: delegare a un 'architect_agent').
+  - **Comunicazione**: Usa `sessions_send` per inviare aggiornamenti di stato o richiedere dati a sub-agenti attivi.
+
+  ### 4. Integrazione con Ricerca Scientifica [NEW]
+  - **ArXiv & AI Research**: Per approfondimenti su nuovi algoritmi, architetture (LLM, Transformer) o preprint non ancora indicizzati nei registry tech, consulta il dominio `science_research` (es: `arxiv_search`).
+
+tools:
+  github_repo:
+    description: "Recupera dettagli di un repository GitHub specifico."
+    constraints:
+      input_schema:
+        type: object
+        required: ["owner", "repo"]
+        properties:
+          owner: { type: "string", description: "Username o Org proprietaria" }
+          repo: { type: "string", description: "Nome del repository" }
+    hard_rules: |
+      RULE 1: Fornisci sempre il conteggio delle star e la data dell'ultimo aggiornamento.
+      RULE 2: Includi il link HTML ufficiale del repository.
+
+  github_search_repos:
+    description: "Cerca repository su GitHub tramite parole chiave o topic."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "Query di ricerca (es: 'fastapi language:python')",
+            }
+          sort:
+            {
+              type: "string",
+              enum: ["stars", "forks", "updated"],
+              default: "stars",
+            }
+          limit: { type: "integer", maximum: 10, default: 5 }
+    hard_rules: |
+      RULE 1: Se la query è generica, limita a 5 risultati per non sovraccaricare il contesto.
+
+  github_search_code:
+    description: "Cerca snippet di codice o pattern specifici nei file di GitHub."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            {
+              type: "string",
+              description: "Es: 'useEffect repo:facebook/react'",
+            }
+          limit: { type: "integer", maximum: 10, default: 5 }
+    hard_rules: |
+      RULE 1: Richiede GITHUB_TOKEN (valida internamente prima di procedere).
+
+  stackoverflow_search:
+    description: "Cerca soluzioni tecniche e risposte su Stack Overflow."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string", description: "Errore o domanda tecnica" }
+          tagged:
+            {
+              type: "string",
+              description: "Tag separati da ';' (es: 'python;django')",
+            }
+          limit: { type: "integer", maximum: 10, default: 5 }
+    hard_rules: |
+      RULE 1: Priorità alle risposte caricate come 'is_answered: true'.
+    few_shot_examples:
+      - description: "Ricerca errore Python specifico"
+        content: |
+          INPUT: "Come risolvere KeyError in un dizionario Python?"
+          THOUGHT: "L'utente ha un errore comune in Python. Cerco su Stack Overflow filtrando per il tag python per ottenere le migliori pratiche."
+          CALL: |
+            {
+              "tool": "stackoverflow_search",
+              "parameters": {
+                "query": "handle KeyError dictionary",
+                "tagged": "python",
+                "limit": 5
+              }
+            }
+          RESULT: "Lista di discussioni con soluzioni su .get() e try-except."
+
+  piston_execute:
+    description: "Esegue codice sorgente in una sandbox sicura per oltre 50 linguaggi."
+    constraints:
+      input_schema:
+        type: object
+        required: ["language", "code"]
+        properties:
+          language:
+            {
+              type: "string",
+              description: "Linguaggio (python, javascript, rust, etc.)",
+            }
+          code: { type: "string", description: "Codice da eseguire" }
+          stdin:
+            { type: "string", description: "Input opzionale per il programma" }
+    hard_rules: |
+      RULE 1: Non eseguire mai loop infiniti o tentativi di accesso alla rete (bloccati a livello sandbox).
+      RULE 2: Output troncato se > 1000 caratteri.
+    few_shot_examples:
+      - description: "Validazione di uno snippet JavaScript"
+        content: |
+          INPUT: "Cosa stampa questo codice in JS? [1,2,3].map(x => x * 2)"
+          THOUGHT: "Per essere preciso al 100%, eseguo il codice JS nella sandbox Piston."
+          CALL: |
+            {
+              "tool": "piston_execute",
+              "parameters": {
+                "language": "javascript",
+                "code": "console.log([1,2,3].map(x => x * 2));"
+              }
+            }
+          RESULT: "[2, 4, 6]"
+
+  npm_package:
+    description: "Recupera i metadati di un pacchetto dal registry NPM."
+    constraints:
+      input_schema:
+        type: object
+        required: ["name"]
+        properties:
+          name: { type: "string", description: "Nome esatto (es: 'lodash')" }
+    hard_rules: |
+      RULE 1: Mostra sempre le top 5 dipendenze del pacchetto.
+
+  docker-sandbox:
+    description: "Crea e gestisce ambienti sandbox Docker sicuri per l'esecuzione di codice o test di pacchetti."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["start", "stop", "run", "status"] }
+          image: { type: "string", description: "Immagine Docker da usare" }
+          command: { type: "string", description: "Comando da eseguire" }
+    hard_rules: |
+      RULE 1: Usare solo immagini certificate.
+      RULE 2: Preferire 'run' per esecuzioni one-shot.
+    few_shot_examples:
+      - description: "Esegui test in Docker"
+        content: |
+          INPUT: "Testa questo script python in un container ubuntu"
+          THOUGHT: Devo avviare una sandbox docker per isolare l'esecuzione.
+          CALL: {"action": "run", "image": "ubuntu", "command": "python3 script.py"}
+          RESULT: {"status": "success", "output": "Tests passed"}
+
+  git-essentials:
+    description: "Comandi Git essenziali per il controllo di versione, branching e collaborazione."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          command:
+            {
+              type: "string",
+              description: "Comando git (commit, push, pull, status, etc.)",
+            }
+          message: { type: "string", description: "Messaggio di commit" }
+    hard_rules: |
+      RULE 1: Richiedere sempre un messaggio per il commit.
+
+  sql-toolkit:
+    description: "Query, design e ottimizzazione di database SQL (SQLite, PostgreSQL, MySQL)."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action: { type: "string", enum: ["query", "describe", "migrate"] }
+          sql: { type: "string", description: "Query SQL da eseguire" }
+    hard_rules: |
+      RULE 1: Non eseguire mai DROP DATABASE o troncamenti massivi senza conferma.
+
+  ssh-exec:
+    description: "Esecuzione di comandi remoti su nodi Tailscale via SSH."
+    constraints:
+      input_schema:
+        type: object
+        required: ["host", "command"]
+        properties:
+          host:
+            { type: "string", description: "Hostname o IP del nodo Tailscale" }
+          command: { type: "string", description: "Comando da eseguire" }
+    hard_rules: |
+      RULE 1: Verificare la raggiungibilità dell'host via Tailscale prima dell'esecuzione.
+
+  homebrew:
+    description: "Gestore pacchetti Homebrew per macOS: installazione e gestione software."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          action:
+            { type: "string", enum: ["install", "search", "update", "list"] }
+          package: { type: "string", description: "Nome del pacchetto o cask" }
+    hard_rules: |
+      RULE 1: Usare 'search' per trovare il nome esatto prima di 'install'.
+
+  mactop:
+    description: "Monitoraggio real-time di hardware e performance su Mac Apple Silicon."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          category:
+            { type: "string", enum: ["all", "cpu", "gpu", "thermal", "power"] }
+    hard_rules: |
+      RULE 1: Fornire un riassunto delle metriche più critiche (es. Thermal Pressure).
+
+  npkill:
+    description: "Pulizia automatizzata di node_modules e cartelle di build per liberare spazio."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          path:
+            { type: "string", description: "Percorso radice per la scansione" }
+    hard_rules: |
+      RULE 1: Mostrare lo spazio totale recuperabile prima della pulizia.
+
+  log-analyzer:
+    description: "Analisi, ricerca e monitoraggio di log applicativi in vari formati."
+    constraints:
+      input_schema:
+        type: object
+        required: ["file_path"]
+        properties:
+          file_path: { type: "string" }
+          query: { type: "string", description: "Pattern o errore da cercare" }
+    hard_rules: |
+      RULE 1: Effettuare il parsing solo degli ultimi 100 log se non diversamente specificato.
+
+  csv-pipeline:
+    description: "Trasformazione, analisi e pulizia di file CSV/JSON massivi."
+    constraints:
+      input_schema:
+        type: object
+        properties:
+          input_file: { type: "string" }
+          operation:
+            { type: "string", enum: ["filter", "aggregate", "convert", "join"] }
+    hard_rules: |
+      RULE 1: Validare lo schema del file prima di ogni operazione di join o aggregazione.

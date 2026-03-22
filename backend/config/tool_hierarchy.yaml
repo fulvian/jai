@@ -1,0 +1,215 @@
+# Tool Hierarchy Configuration
+# Maps each tool to: domain > category > skill
+# Used by ToolIndexManager for enhanced retrieval filtering
+
+# =============================================================================
+# GOOGLE WORKSPACE (59 tools)
+# =============================================================================
+google_workspace:
+  gmail:
+    search: [gmail_search]
+    get: [gmail_get_message, gmail_get_attachments]
+    send: [gmail_send, gmail_reply, gmail_forward]
+  drive:
+    search: [drive_search, drive_list]
+    get: [drive_get_file, drive_get_content]
+    manage: [drive_create_folder, drive_copy_file, drive_export]
+  calendar:
+    list: [calendar_list_events, calendar_upcoming]
+    search: [calendar_search]
+    manage: [calendar_create_event]
+  docs:
+    manage: [google_docs_create, google_docs_read, google_docs_append]
+  sheets:
+    read: [sheets_read]
+    write: [sheets_write, sheets_create]
+  meet:
+    manage: [meet_create, meet_list, meet_get_recording]
+  forms:
+    manage: [forms_create, forms_get_responses]
+
+# =============================================================================
+# FINANCE & CRYPTO (25 tools)
+# =============================================================================
+finance_crypto:
+  crypto:
+    price: [coingecko_price, binance_price, hyperliquid_price]
+    trending: [coingecko_trending]
+    chart: [coingecko_chart]
+    account: [hyperliquid_account, hyperliquid_positions]
+  stocks:
+    quote: [yahoo_quote, finnhub_quote, alpaca_quote, nasdaq_quote]
+    news: [finnhub_news]
+    bars: [alpaca_bars]
+    account: [alpaca_account, alpaca_positions]
+  macro:
+    fred: [fred_series, fred_search]
+    filings: [edgar_filings, edgar_company_info]
+  technicals:
+    indicators: [technical_indicators]
+  fundamentals:
+    metrics: [fmp_key_metrics, fmp_ratios, fmp_dcf]
+
+# =============================================================================
+# TRAVEL (12 tools)
+# =============================================================================
+travel:
+  flights:
+    search: [amadeus_search_flights]
+    book: [amadeus_book_flight, amadeus_confirm_price]
+    airports: [amadeus_airport_search, aviationstack_airports]
+    status: [aviationstack_flight]
+  tracking:
+    live: [opensky_flights_live, adsb_aircraft_by_location]
+    specific:
+      [
+        opensky_flight_track,
+        opensky_arrivals,
+        adsb_aircraft_by_icao,
+        adsb_aircraft_by_callsign,
+      ]
+
+# =============================================================================
+# MEDICAL (9 tools)
+# =============================================================================
+medical:
+  drugs:
+    info: [rxnorm_drug_info]
+    interactions: [rxnorm_interactions]
+    spelling: [rxnorm_spelling]
+  research:
+    pubmed: [pubmed_search, pubmed_abstract]
+    europepmc: [europepmc_search]
+  trials:
+    search: [clinicaltrials_search]
+  citations:
+    metrics: [icite_metrics, icite_batch]
+
+# =============================================================================
+# SPORTS BOOKING (6 tools)
+# =============================================================================
+sports_booking:
+  playtomic:
+    search: [playtomic_search_clubs, playtomic_court_details]
+    availability: [playtomic_club_availability]
+    book:
+      [playtomic_book_court, playtomic_my_bookings, playtomic_cancel_booking]
+
+# =============================================================================
+# UTILITY (15 tools)
+# =============================================================================
+utility:
+  browser:
+    navigate: [browser_open, browser_navigate, browser_close]
+    interact: [browser_act, browser_extract, browser_screenshot]
+  sessions:
+    manage:
+      [
+        sessions_list,
+        sessions_history,
+        sessions_send,
+        sessions_handoff,
+        sessions_monitor,
+        sessions_recall,
+      ]
+  automation:
+    schedule: [schedule_task]
+    agents: [create_autonomous_agent, list_agents, delete_agent]
+  system:
+    info: [get_ip, get_headers]
+
+# =============================================================================
+# WEB SEARCH (5 tools)
+# =============================================================================
+web_search:
+  general:
+    search: [duckduckgo_search, brave_search, tavily_search]
+    news: [duckduckgo_news]
+    images: [duckduckgo_images]
+
+# =============================================================================
+# GEO & WEATHER (8 tools)
+# =============================================================================
+geo_weather:
+  weather:
+    forecast: [openmeteo_forecast, openmeteo_current]
+    historical: [openmeteo_historical]
+  location:
+    geocode: [geocode_address, reverse_geocode]
+    timezone: [get_timezone]
+  air:
+    quality: [air_quality]
+
+# =============================================================================
+# ENTERTAINMENT (6 tools)
+# =============================================================================
+entertainment:
+  movies:
+    search: [tmdb_search, tmdb_movie_details]
+    trending: [tmdb_trending]
+  music:
+    search: [spotify_search]
+    playlist: [spotify_playlist]
+
+# =============================================================================
+# FOOD (5 tools)
+# =============================================================================
+food:
+  recipes:
+    search: [recipe_search]
+    nutrition: [nutrition_info]
+  restaurants:
+    search: [restaurant_search]
+    menu: [restaurant_menu]
+
+# =============================================================================
+# KNOWLEDGE & MEDIA (6 tools)
+# =============================================================================
+knowledge_media:
+  encyclopedia:
+    search: [wikipedia_search, wikipedia_summary]
+  news:
+    headlines: [news_headlines, news_search]
+    sources: [news_sources]
+
+# =============================================================================
+# SCIENCE & RESEARCH (5 tools)
+# =============================================================================
+science_research:
+  papers:
+    arxiv: [arxiv_search, arxiv_paper]
+    semantic: [semantic_scholar_search, semantic_scholar_paper]
+  citations:
+    cite: [generate_citations]
+
+# =============================================================================
+# TECH & CODING (5 tools)
+# =============================================================================
+tech_coding:
+  github:
+    repos: [github_search_repos, github_repo_info]
+    issues: [github_issues]
+  stackoverflow:
+    search: [stackoverflow_search, stackoverflow_question]
+
+# =============================================================================
+# JOBS (4 tools)
+# =============================================================================
+jobs:
+  search:
+    linkedin: [linkedin_jobs_search]
+    indeed: [indeed_search]
+  company:
+    info: [company_info, glassdoor_reviews]
+
+# =============================================================================
+# SPORTS NBA (5 tools)
+# =============================================================================
+sports_nba:
+  stats:
+    player: [nba_player_stats]
+    team: [nba_team_stats]
+  schedule:
+    games: [nba_schedule, nba_live_scores]
+  standings:
+    rankings: [nba_standings]

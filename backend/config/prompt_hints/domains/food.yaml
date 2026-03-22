@@ -1,0 +1,315 @@
+version: "2.0"
+domain: "food"
+last_updated: "2026-02-23"
+author: "Antigravity_SOTA_Agent"
+
+description: |
+  Dominio Food & Recipes avanzato (SOTA 2026). Gestisce ricerca ricette internazionali 
+  (TheMealDB/Tasty), analisi nutrizionale professionale (Edamam/Open Food Facts) e si integra 
+  nativamente con Travel, Web Search, Entertainment e GeoWeather per esperienze 
+  culinarie complete. Ottimizzato per pianificazione dietetica e scoperta gastronomica.
+
+content: |
+  ## REGOLE CRITICHE LLM (Food & Culinary Intelligence)
+
+  ### 1. Workflow Ricerca Ricette (TheMealDB)
+  La ricerca ricette DEVE seguire questa sequenza logica:
+  1. Query specifica → `mealdb_search` con nome piatto
+  2. Se risultati vuoti → `mealdb_by_ingredient` con ingrediente principale
+  3. Per idee casuali → `mealdb_random`
+  4. Per esplorazione → `mealdb_categories` poi filtra per categoria
+
+  ### 2. Workflow Analisi Nutrizionale (Deep Intel)
+  Per analisi prodotti e dieta:
+  - **Prodotti Confezionati**: Usa `openfoodfacts_search` per scan barcode o ricerca brand.
+  - **Analisi Ricette/Ingredienti**: Usa `edamam-nutrition` per estrarre macro e micro-nutrienti da testo libero (es. "100g pollo e 50g riso").
+  - **Interpretazione**: Applica NutriScore (A-E) e NOVA Group (1-4). Aiuta l'utente a bilanciare il pasto.
+  - **Regola**: Se nova_group >= 3, avvisa sui rischi di cibo ultra-processato.
+
+  ### 3. Cross-Domain Orchestration (CRITICO)
+  Il dominio food DEVE orchestrare attivamente con altri domini:
+
+  | Trigger | Dominio | Tool | Use Case |
+  |---------|---------|------|----------|
+  | "ristoranti a [città]" | travel | `smart_search` | Scoperta ristoranti in viaggio |
+  | "recensioni [piatto]" | web_search | `smart_search` | Blog, articoli, review |
+  | "film sul cibo" | entertainment | `tmdb_search` | Documentari/cucina |
+  | "cibo stagionale" | geo_weather | `openmeteo_forecast` | Abbinamento meteo-piatto |
+
+  **REGOLA**: Quando l'utente chiede ristoranti o cibo in una località, USA SEMPRE 
+  `smart_search` dal dominio web_search, NON i tool TheMealDB (che sono per ricette).
+
+  ### 4. Nutrizione Score Interpretation
+  Quando analizzi prodotti, interpreta SEMPRE i valori:
+  - **NutriScore**: A (ottimo) → E (pessimo)
+  - **NOVA Group**: 1 (non processato) → 4 (ultra-processato)
+  - **Alert**: Se nova_group >= 3, avvisa l'utente sui rischi per la salute
+
+  ### Errori Comuni da Evitare
+  - ❌ NON usare TheMealDB per cercare ristoranti (usare `smart_search`)
+  - ❌ NON allucinare ingredienti non presenti nei risultati API
+  - ❌ NON inventare valori nutrizionali se non forniti da Open Food Facts
+  - ❌ NON chiamare tool cross-domain senza contesto geografico (es. città per meteo)
+  - ❌ NON saltare l'interpretazione di nutriscore/nova_group
+
+  ### Sequenze Consigliate:
+  1. `mealdb_search` / `tasty-recipes` (Ricetta).
+  2. `edamam-nutrition` (Calcolo calorie/macro della ricetta).
+  3. `openfoodfacts_search` (Check ingredienti confezionati).
+  4. `smart_search` (Booking ristorante se l'utente non vuole cucinare).
+
+tools:
+  mealdb_search:
+    description:
+      "Cerca ricette per nome piatto. Ritorna ingredienti, istruzioni di cottura e immagini.
+      Usa quando l'utente chiede 'ricetta per X', 'come fare Y', 'cerca piatto Z'."
+    version: "1.0"
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            type: "string"
+            description: "Nome del piatto o ricetta (es. 'pasta carbonara', 'chicken curry', 'tiramisu')"
+    hard_rules: |
+      RULE 1: La query deve contenere almeno 2 caratteri.
+      RULE 2: Se la ricerca ritorna 0 risultati, suggerisci automaticamente `mealdb_by_ingredient`.
+      RULE 3: Non limitare le istruzioni a meno che non richiesto (max 500 char default).
+    few_shot_examples:
+      - description: "Ricerca ricetta specifica"
+        content: |
+          INPUT: "Come si fa la carbonara?"
+          THOUGHT: "L'utente cerca una ricetta specifica. Uso mealdb_search con query='carbonara'."
+          CALL: {"query": "carbonara"}
+          RESULT: {"results": [{"id": "52804", "name": "Carbonara", "category": "Pasta", "area": "Italian", "ingredients": ["200g Spaghetti", "100g Guanciale", "2 Egg Yolks", "50g Pecorino Romano", "Black Pepper"], "instructions": "Bring water to boil...", "thumbnail": "https://..."}], "count": 1}
+
+      - description: "Ricerca senza risultati - fallback ingredienti"
+        content: |
+          INPUT: "Cerco una ricetta con i carciofi"
+          THOUGHT: "Query generica su ingrediente. Provo mealdb_search, se vuoto uso mealdb_by_ingredient."
+          CALL: {"query": "carciofi"}
+          RESULT: {"results": [], "count": 0}
+          THOUGHT: "Nessun risultato diretto. Provo per ingrediente."
+          CALL: {"tool_name": "mealdb_by_ingredient", "arguments": {"ingredient": "artichoke"}}
+
+  mealdb_random:
+    description:
+      "Ottieni una ricetta casuale con tutti i dettagli. Usa quando l'utente chiede
+      'suggerisci una ricetta', 'idea casuale', 'cosa cucino oggi'."
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        properties: {}
+    hard_rules: |
+      RULE 1: Non richiede parametri.
+      RULE 2: Ritorna SEMPRE una ricetta completa con ingredienti e istruzioni.
+    few_shot_examples:
+      - description: "Idea casuale per cena"
+        content: |
+          INPUT: "Non so cosa cucinare stasera, dammi un'idea"
+          THOUGHT: "L'utente vuole un'ispirazione casuale. Uso mealdb_random."
+          CALL: {}
+          RESULT: {"id": "52772", "name": "Teriyaki Chicken Casserole", "category": "Chicken", "area": "Japanese", "ingredients": ["500g Chicken", "100ml Soy Sauce", "2 tbsp Mirin", ...], "instructions": "Preheat oven to 350°F...", "youtube": "https://youtube.com/..."}
+
+  mealdb_by_ingredient:
+    description:
+      "Cerca ricette che usano un ingrediente specifico. Usa quando l'utente chiede
+      'ricette con X', 'cosa posso fare con Y', 'piatti usando Z'."
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["ingredient"]
+        properties:
+          ingredient:
+            type: "string"
+            description: "Ingrediente principale in inglese (es. 'chicken', 'beef', 'salmon', 'tomato')"
+    hard_rules: |
+      RULE 1: L'ingrediente DEVE essere in inglese (API requirement).
+      RULE 2: Se l'utente scrive in italiano, traduci automaticamente (es. 'pollo' → 'chicken').
+      RULE 3: Risultati limitati a preview (nome + thumbnail), usa mealdb_search per dettagli completi.
+    few_shot_examples:
+      - description: "Ricerca per ingrediente (traduzione IT→EN)"
+        content: |
+          INPUT: "Cosa posso cucinare con il pollo?"
+          THOUGHT: "L'utente chiede ricette per ingrediente. 'Pollo' = 'chicken' in inglese."
+          CALL: {"ingredient": "chicken"}
+          RESULT: {"ingredient": "chicken", "results": [{"id": "52795", "name": "Chicken Congee", "thumbnail": "..."}, {"id": "52803", "name": "Chicken Fajitas", "thumbnail": "..."}], "count": 47}
+
+      - description: "Ingrediente specifico con few options"
+        content: |
+          INPUT: "Ho del salmone in frigo, cosa posso fare?"
+          THOUGHT: "Ingrediente in italiano, traduco in 'salmon'."
+          CALL: {"ingredient": "salmon"}
+          RESULT: {"ingredient": "salmon", "results": [{"id": "52955", "name": "Salmon Prawn Risotto", "thumbnail": "..."}], "count": 3}
+
+  mealdb_categories:
+    description:
+      "Lista tutte le categorie di ricette disponibili (Seafood, Breakfast, Dessert, etc.).
+      Usa quando l'utente chiede 'tipi di ricette', 'categorie cibo', 'quali cucine'."
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        properties: {}
+    hard_rules: |
+      RULE 1: Non richiede parametri.
+      RULE 2: Ritorna massimo 14 categorie standard.
+    few_shot_examples:
+      - description: "Esplorazione categorie"
+        content: |
+          INPUT: "Che tipi di ricette hai disponibili?"
+          THOUGHT: "L'utente vuole esplorare le categorie. Uso mealdb_categories."
+          CALL: {}
+          RESULT: {"categories": [{"id": "1", "name": "Beef", "description": "..."}, {"id": "2", "name": "Breakfast", ...}, ...], "count": 14}
+
+  openfoodfacts_search:
+    description:
+      "Cerca prodotti alimentari nel database Open Food Facts per info nutrizionali,
+      ingredienti e nutriscore. Usa quando l'utente chiede 'nutrizione X', 'X è sano', 'ingredienti Y'."
+    version: "1.0"
+    constraints:
+      max_results: 50
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query:
+            type: "string"
+            description: "Nome del prodotto (es. 'Nutella', 'Coca-Cola', 'pasta barilla')"
+          page_size:
+            type: "integer"
+            default: 10
+            description: "Numero risultati (default 10, max 50)"
+    hard_rules: |
+      RULE 1: Interpreta SEMPRE nutriscore_grade (A-E) e nova_group (1-4) nei risultati.
+      RULE 2: Se nova_group >= 3, avvisa sui rischi di cibo ultra-processato.
+      RULE 3: page_size non deve superare 50.
+    few_shot_examples:
+      - description: "Analisi prodotto con alert salute"
+        content: |
+          INPUT: "La Nutella fa male? Analizzala"
+          THOUGHT: "L'utente vuole analisi nutrizionale. Cerco in Open Food Facts."
+          CALL: {"query": "Nutella", "page_size": 5}
+          RESULT: {"results": [{"code": "8000500310427", "name": "Nutella", "brand": "Ferrero", "nutriscore_grade": "e", "nova_group": 4, "ingredients": "Sugar, palm oil, hazelnuts, cocoa, milk..."}], "count": 15}
+          OUTPUT: "⚠️ **Analisi Nutella**: NutriScore **E** (pessimo), NOVA **4** (ultra-processato). Alto contenuto di zuccheri e oli vegetali. Consumo occasionale raccomandato."
+
+      - description: "Confronto prodotti"
+        content: |
+          INPUT: "Qual è più sano tra Coca-Cola e Pepsi?"
+          THOUGHT: "Confronto nutrizionale. Cerco entrambi i prodotti."
+          CALL: {"query": "Coca-Cola", "page_size": 3}
+          CALL: {"query": "Pepsi", "page_size": 3}
+          RESULT: {"results": [{"name": "Coca-Cola", "nutriscore_grade": "e", "nutrition": {"sugars": "10.6g/100ml"}}], ...}
+
+  openfoodfacts_product:
+    description:
+      "Dettagli completi prodotto per barcode (EAN/UPC). Ritorna nutrizione, ingredienti,
+      allergeni e nutriscore. Usa quando l'utente scansiona un barcode o chiede 'lookup codice'."
+    version: "1.0"
+    constraints:
+      input_schema:
+        type: object
+        required: ["barcode"]
+        properties:
+          barcode:
+            type: "string"
+            description: "Codice a barre prodotto (EAN/UPC, es. '8000500310427' per Nutella)"
+    hard_rules: |
+      RULE 1: Il barcode deve essere una stringa numerica (8, 12, o 13 cifre).
+      RULE 2: Se prodotto non trovato, suggerisci all'utente di cercare per nome.
+      RULE 3: Elenca SEMPRE gli allergeni se presenti.
+    few_shot_examples:
+      RESULT:
+        {
+          "code": "8000500310427",
+          "name": "Nutella",
+          "brand": "Ferrero",
+          "nutriscore_grade": "e",
+          "nova_group": 4,
+          "nutrition":
+            { "energy_kcal": 539, "fat": 30.9, "carbs": 57.5, "proteins": 6.3 },
+          "allergens": "en:milk, en:hazelnuts, en:soybeans",
+        }
+      OUTPUT: "**Nutella** (Ferrero) | 🔴 NutriScore: E | ⚠️ NOVA: 4 (Ultra-processato) | 🥜 Allergeni: Latte, Nocciole, Soia"
+
+  edamam-nutrition:
+    description: "Analisi nutrizionale avanzata di ingredienti e intere ricette via Edamam API."
+    constraints:
+      input_schema:
+        type: object
+        required: ["ingr"]
+        properties:
+          ingr:
+            {
+              type: "array",
+              items: { type: "string" },
+              description: "Lista di ingredienti (es. ['1 cup rice', '10oz chicken'])",
+            }
+    hard_rules: |
+      RULE 1: Inserire le quantità esatte fornite dall'utente.
+      RULE 2: In caso di ricette complesse, analizzare ingrediente per ingrediente.
+
+  tasty-recipes:
+    description: "Accesso al catalogo ricette premium di Tasty (Buzzfeed) con video e tag specifici."
+    constraints:
+      input_schema:
+        type: object
+        required: ["query"]
+        properties:
+          query: { type: "string" }
+          tags:
+            {
+              type: "string",
+              description: "Es: 'low_carb', 'vegan', '5_ingredients_or_less'",
+            }
+    hard_rules: |
+      RULE 1: Usare i 'tags' per restringere le ricerche dietetiche.
+
+few_shot_examples:
+  - description: "Cross-Domain: Pianificazione cena con viaggio"
+    content: |
+      USER: "Sto andando a Barcellona domenica, cercami un ristorante e una ricetta tipica catalana"
+      THOUGHT: "Cross-domain request: Travel + Food. Per ristoranti serve web_search (smart_search), per ricette TheMealDB."
+      CALL: {"tool_name": "smart_search", "arguments": {"query": "migliori ristoranti cucina catalana Barcellona 2026"}}
+      RESULT: {"results": [{"title": "Can Culleretes - Ristorante più antico di Barcellona", "snippet": "Cucina catalana tradizionale..."}, {"title": "7 Portes - Paella e specialità catalane", ...}]}
+      THOUGHT: "Ottengo ristoranti. Ora cerco ricetta catalana tipica."
+      CALL: {"tool_name": "mealdb_search", "arguments": {"query": "catalan cream"}}
+      RESULT: {"results": [{"name": "Crema Catalana", "category": "Dessert", "area": "Spanish", ...}]}
+      OUTPUT: "🍽️ **Ristoranti a Barcellona**: Can Culleretes (tradizionale), 7 Portes (paella)\n📝 **Ricetta tipica**: Crema Catalana - dessert catalano per eccellenza!"
+
+  - description: "Cross-Domain: Cibo stagionale con meteo"
+    content: |
+      USER: "Che cosa dovrei cucinare oggi? Fa freddo qui a Milano"
+      THOUGHT: "L'utente vuole un consiglio culinario basato sul meteo. Cross-domain: geo_weather + food."
+      CALL: {"tool_name": "openmeteo_forecast", "arguments": {"city": "Milano", "days": 1}}
+      RESULT: {"forecast": [{"date": "2026-02-23", "temp": 4, "weather": "Cloudy", "precipitation": 20}]}
+      THOUGHT: "Meteo freddo e nuvoloso. Perfetto per una zuppa o un piatto caldo."
+      CALL: {"tool_name": "mealdb_search", "arguments": {"query": "hot soup"}}
+      RESULT: {"results": [{"name": "French Onion Soup", "category": "Soup", ...}, {"name": "Tomato Soup", ...}]}
+      OUTPUT: "🌡️ Milano: 4°C, nuvoloso. Perfetto per: **French Onion Soup** o **Tomato Soup**. Ti passo la ricetta?"
+
+  - description: "Cross-Domain: Web Search per recensioni + analisi prodotto"
+    content: |
+      USER: "Ho sentito parlare della Beyond Burger, è davvero sana? Cerca recensioni e analizza il prodotto"
+      THOUGHT: "Richiesta multi-step: recensioni (web_search) + analisi nutrizionale (openfoodfacts)."
+      CALL: {"tool_name": "smart_search", "arguments": {"query": "Beyond Burger recensioni salute nutrizione 2026"}}
+      RESULT: {"results": [{"title": "Beyond Burger: è davvero più sano della carne?", "snippet": "Analisi nutrizionale..."}, ...]}
+      THOUGHT: "Ora cerco il prodotto in Open Food Facts per dati oggettivi."
+      CALL: {"tool_name": "openfoodfacts_search", "arguments": {"query": "Beyond Burger", "page_size": 3}}
+      RESULT: {"results": [{"name": "Beyond Burger", "brand": "Beyond Meat", "nutriscore_grade": "b", "nova_group": 4, "nutrition": {"proteins": 20, "fat": 18, "salt": 2.5}}]}
+      OUTPUT: "🔍 **Recensioni**: Opinioni miste, alcuni nutrizionisti sollevano dubbi sugli ingredienti ultra-processati.\n📊 **Analisi**: NutriScore **B** (buono), ma NOVA **4** (ultra-processato). ⚠️ Alternativa alla carne, ma non necessariamente più sana."
+
+  - description: "Analisi nutrizionale completa con confronto"
+    content: |
+      USER: "Analizza la Nutella e dimmi se c'è un'alternata più sana"
+      THOUGHT: "Analisi prodotto + ricerca alternativa. Prima analizzo Nutella, poi cerco alternative."
+      CALL: {"tool_name": "openfoodfacts_search", "arguments": {"query": "Nutella", "page_size": 1}}
+      RESULT: {"results": [{"name": "Nutella", "nutriscore_grade": "e", "nova_group": 4, "nutrition": {"sugars": 56.3, "fat": 30.9}}]}
+      THOUGHT: "Nutella: E, NOVA 4. Terribile. Cerco alternative crema spalmabile più sane."
+      CALL: {"tool_name": "openfoodfacts_search", "arguments": {"query": "pistachio cream spread organic", "page_size": 5}}
+      RESULT: {"results": [{"name": "Pistacchio Cream", "nutriscore_grade": "c", "nova_group": 3, ...}, {"name": "Organic Hazelnut Spread", "nutriscore_grade": "b", "nova_group": 2, ...}]}
+      OUTPUT: "⚠️ **Nutella**: NutriScore E, NOVA 4, 56% zuccheri\n✅ **Alternative migliori**: 'Organic Hazelnut Spread' (NutriScore B, NOVA 2) - molto più sana!"

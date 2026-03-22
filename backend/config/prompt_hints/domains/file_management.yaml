@@ -1,0 +1,73 @@
+version: "2.0"
+domain: file_management
+last_updated: "2026-02-23"
+author: "Antigravity"
+
+description: "Local file system operations (read, write, list, search, delete)"
+
+content: |
+  ### Errori Comuni (Anti-pattern)
+  - ❌ Cercare di scrivere file senza aver verificato l'esistenza della cartella di destinazione.
+  - ❌ Leggere file binari giganti senza specificare il range di righe.
+  - ❌ Usare `grep_search` con pattern troppo generici che restituiscono migliaia di risultati.
+
+tools:
+  read_file:
+    description: "Legge il contenuto di un file dal filesystem locale."
+    constraints:
+      input_schema:
+        type: object
+        required: ["file_path"]
+        properties:
+          file_path: { type: "string" }
+          start_line: { type: "integer" }
+          end_line: { type: "integer" }
+    hard_rules: |
+      RULE 1: Valida che il file esista prima di leggere.
+      RULE 2: Usa 'start_line' e 'end_line' per file grandi (>500 righe).
+    few_shot_examples:
+      - query: "Leggi le prime 50 righe di config.json"
+        tool_call:
+          file_path: "config.json"
+          start_line: 1
+          end_line: 50
+
+  write_file:
+    description: "Scrive contenuto in un file nel filesystem locale."
+    constraints:
+      input_schema:
+        type: object
+        required: ["file_path", "content"]
+        properties:
+          file_path: { type: "string" }
+          content: { type: "string" }
+          overwrite: { type: "boolean", default: false }
+    hard_rules: |
+      RULE 1: Imposta 'overwrite: true' solo se esplicitamente richiesto o necessario.
+      RULE 2: Assicurati che il contenuto sia coerente con l'estensione del file.
+    few_shot_examples:
+      - query: "Crea un file note.txt con scritto 'Hello World'"
+        tool_call:
+          file_path: "note.txt"
+          content: "Hello World"
+          overwrite: false
+
+  grep_search:
+    description: "Ricerca testuale all'interno di file e cartelle."
+    constraints:
+      input_schema:
+        type: object
+        required: ["pattern", "search_path"]
+        properties:
+          pattern: { type: "string" }
+          search_path: { type: "string" }
+          recursive: { type: "boolean", default: true }
+    hard_rules: |
+      RULE 1: Il parametro 'pattern' deve essere una stringa valida.
+      RULE 2: Usa 'recursive: true' per ricerche in sottocartelle.
+    few_shot_examples:
+      - query: "Cerca dove viene usata la funzione 'calculate_tax' nel codice"
+        tool_call:
+          pattern: "calculate_tax"
+          search_path: "./src"
+          recursive: true

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/llm/config.py
+# hypothesis_version: 6.151.9
+
+[5.0, 300.0, '.env', 'INTENT_CACHE_TTL', 'LLM_AGENTIC_MODEL', 'LLM_EXTRACTION_MODEL', 'LLM_FALLBACK_MODEL', 'LLM_PRIMARY_MODEL', 'LLM_ROUTING_MODEL', 'LLM_SYNTHESIS_MODEL', 'LLM_VISION_MODEL', 'NANOGPT_API_KEY', 'NANOGPT_BASE_URL', 'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'cloud_fallback', 'ignore', 'map_reduce', 'model_routing', 'qwen3.5-4b-mlx', 'truncate', 'utf-8']

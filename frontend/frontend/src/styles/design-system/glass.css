@@ -1,0 +1,265 @@
+/**
+ * macOS Tahoe Glassmorphism Utilities
+ * Liquid Glass Design System - WWDC 2025
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE GLASS LAYERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Liquid Glass Base - Standard panels and containers
+ * Use for: Modal dialogs, popover menus, floating cards
+ */
+.liquid-glass {
+    background: rgba(28, 28, 30, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.10));
+    border-radius: 16px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/**
+ * Sidebar Vibrancy - Heavy blur for navigation panels
+ * Use for: Main sidebar, secondary panels
+ */
+.glass-sidebar {
+    background: var(--glass-bg-sidebar, rgba(44, 44, 46, 0.5));
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border-right: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+/**
+ * TopBar Glass - Navigation bar with medium blur
+ * Use for: Header, toolbar, tab bars
+ */
+.glass-topbar {
+    background: rgba(28, 28, 30, 0.75);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FLOATING PANELS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Floating Panel - Elevated glass for important UI
+ * Use for: Dropdowns, tooltips, skill cards
+ */
+.glass-panel-floating {
+    background: var(--glass-bg-panel, rgba(58, 58, 60, 0.6));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.10));
+    border-radius: 20px;
+    box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 0 0 0.5px rgba(255, 255, 255, 0.05);
+}
+
+/**
+ * Glass Card - Light glass for content cards
+ * Use for: List items, stats cards, skill items
+ */
+.glass-card {
+    background: var(--glass-bg-card, rgba(72, 72, 74, 0.5));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+    border-radius: 14px;
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.glass-card:hover {
+    background: var(--glass-bg-elevated, rgba(90, 90, 94, 0.6));
+    border-color: var(--glass-border, rgba(255, 255, 255, 0.10));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CHAT BUBBLES (iMessage Style)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * User Bubble - Blue gradient (right aligned)
+ */
+.bubble-user {
+    background: linear-gradient(135deg, #0a84ff 0%, #007aff 100%);
+    border-radius: 20px 20px 6px 20px;
+    color: white;
+    box-shadow:
+        0 4px 12px rgba(10, 132, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/**
+ * Assistant Bubble - Glass effect (left aligned)
+ */
+.bubble-assistant {
+    background: var(--glass-bg-card, rgba(72, 72, 74, 0.6));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+    border-radius: 20px 20px 20px 6px;
+    color: var(--text-primary);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INPUT CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Glass Input Field
+ */
+.glass-input {
+    background: var(--glass-bg-input, rgba(28, 28, 30, 0.8));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.10));
+    border-radius: 12px;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+    outline: none;
+    border-color: var(--tahoe-blue, #0a84ff);
+    box-shadow:
+        0 0 0 3px rgba(10, 132, 255, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-input::placeholder {
+    color: var(--text-placeholder, rgba(235, 235, 245, 0.3));
+}
+
+/**
+ * Glass Button Primary
+ */
+.glass-button {
+    background: linear-gradient(135deg, #0a84ff 0%, #007aff 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow:
+        0 4px 12px rgba(10, 132, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 16px rgba(10, 132, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.glass-button:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
+
+.glass-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
+}
+
+/**
+ * Glass Button Secondary (Ghost)
+ */
+.glass-button-ghost {
+    background: var(--glass-tint-light, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.10));
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.glass-button-ghost:hover {
+    background: var(--glass-tint-medium, rgba(255, 255, 255, 0.10));
+    color: var(--text-primary);
+    border-color: var(--glass-border-strong, rgba(255, 255, 255, 0.15));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABS & SEGMENTED CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Segmented Control Container
+ */
+.glass-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--glass-tint-ultra-light, rgba(255, 255, 255, 0.03));
+    border-radius: 12px;
+    border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.glass-tab {
+    flex: 1;
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.glass-tab:hover {
+    color: var(--text-secondary);
+    background: var(--glass-tint-light, rgba(255, 255, 255, 0.06));
+}
+
+.glass-tab.active {
+    background: var(--tahoe-blue, #0a84ff);
+    color: white;
+    box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   OVERLAY & MODALS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Glass Overlay - Full screen backdrop
+ */
+.glass-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/**
+ * Glass Modal
+ */
+.glass-modal {
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.10));
+    border-radius: 20px;
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}

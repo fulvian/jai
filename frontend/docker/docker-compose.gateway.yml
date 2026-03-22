@@ -1,0 +1,110 @@
+# =============================================================================
+# PersAn Docker Compose - GeekCom Production
+# =============================================================================
+# Services:
+#   - Gateway: port 3030
+#   - Frontend: port 3020
+#   - Redis: port 6379
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # GATEWAY
+  # ===========================================================================
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gateway.prebuilt
+    container_name: persan-gateway
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    environment:
+      - NODE_ENV=production
+      - PORT=3030
+      - ME4BRAIN_URL=${ME4BRAIN_URL:-http://me4brain-api:8000/v1}
+      - LOG_LEVEL=info
+      - REDIS_URL=${REDIS_URL:-redis://persan-redis:6379}
+    env_file:
+      - ../.env
+    depends_on:
+      persan-redis:
+        condition: service_healthy
+    networks:
+      - persan-network
+      - me4brain-network
+    volumes:
+      - ../packages/gateway/dist:/app/packages/gateway/dist
+      - ../packages/me4brain-client/dist:/app/packages/me4brain-client/dist
+      - ../packages/shared/dist:/app/packages/shared/dist
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
+  # FRONTEND
+  # ===========================================================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://100.99.43.29:3030}
+        - NEXT_PUBLIC_GATEWAY_URL=${NEXT_PUBLIC_GATEWAY_URL:-ws://100.99.43.29:3030/ws}
+        - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-BL4oiu3dW48y7DG0O3nuJixDGVaXMjepI4aYvlAI4bbnDRVawfUO3NaAUB7KDpXZ6dO7_HLfD3jxjvpZKb0mrCo}
+    container_name: persan-frontend
+    restart: unless-stopped
+    ports:
+      - "3020:3020"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - gateway
+    networks:
+      - persan-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3020"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================================================
+  # REDIS (Session Storage) - usa porta 6381 per evitare conflitto con me4brain-redis
+  # ===========================================================================
+  persan-redis:
+    image: redis:7-alpine
+    container_name: persan-redis
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - persan-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  persan-network:
+    external: true
+    name: persan-network
+  me4brain-network:
+    external: true
+    name: me4brain-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  redis-data:

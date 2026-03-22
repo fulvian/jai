@@ -1,0 +1,24 @@
+tool_id: "openmeteo_weather"
+description: "Current weather conditions for a latitude/longitude pair."
+domain: "weather_geo"
+constraints:
+  input_schema:
+    type: "object"
+    properties:
+      latitude: { "type": "number", "minimum": -90, "maximum": 90 }
+      longitude: { "type": "number", "minimum": -180, "maximum": 180 }
+      current:
+        {
+          "type": "string",
+          "default": "temperature_2m,wind_speed_10m,weather_code",
+        }
+    required: ["latitude", "longitude"]
+  few_shot_examples:
+    - input: "Che tempo fa a Roma?"
+      output: '{"tool": "openmeteo_weather", "params": {"latitude": 41.89, "longitude": 12.51}}'
+  pre_execution_validators:
+    - type: "business_logic"
+      description: "Coordinates must be float. Auto-truncate to 2 decimal places."
+hard_rules: |
+  1. ONLY use if you have lat/lon or can resolve them.
+  2. DO NOT hallucinate weather data; use the tool response.

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "me4brain.fullname" . } }
+  labels: { { - include "me4brain.labels" . | nindent 4 } }
+spec:
+  type: { { .Values.service.type } }
+  ports:
+    - port: { { .Values.service.port } }
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector: { { - include "me4brain.selectorLabels" . | nindent 4 } }

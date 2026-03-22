@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/feature_flags.py
+# hypothesis_version: 6.151.9
+
+[0.0, 100, '0', 'accuracy', 'accuracy_diff', 'avg_latency_ms', 'beta', 'cache_hit_rate', 'cache_hit_rate_diff', 'canary', 'disabled', 'error_rate', 'error_rate_diff', 'failed_queries', 'latency_diff_ms', 'phase', 'production', 'queries_processed', 'successful_queries', 'traffic_percentage']

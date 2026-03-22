@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/embeddings/bge_m3.py
+# hypothesis_version: 6.151.9
+
+['BAAI/bge-m3', 'cpu', 'cuda', 'models', 'models/bge-m3-manual', 'mps']

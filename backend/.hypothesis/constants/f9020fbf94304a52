@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/engine/hybrid_router/constants.py
+# hypothesis_version: 6.151.9
+
+[0.48, 0.9, 1.0, 1.1, 1.3, 1024, 100000, 'crystallized', 'learned', 'me4brain_skills', 'muscle_memory', 'skill', 'static', 'tool', 'tool_catalog', 'tools', 'tools_and_skills']

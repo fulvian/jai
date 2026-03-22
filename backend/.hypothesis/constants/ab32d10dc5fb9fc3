@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/memory/procedural.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.1, 0.2, 0.3, 0.5, 0.8, 0.85, 1.0, 100, 200, 500, 1024, '1.0', 'ACTIVE', 'Intent', 'POST', 'SOLVES', 'Tool', '_', 'avg_latency_ms', 'category', 'description', 'empty_results', 'endpoint', 'executed_at', 'execution_not_saved', 'execution_saved', 'general', 'id', 'input_json', 'intent', 'intent_registered', 'latency_ms', 'method', 'muscle_memory', 'muscle_memory_hit', 'name', 'neo4j_not_available', 'neo4j_unavailable', 'no_tools_found', 'not_successful', 'output_json', 'properties', 'props', 'schema_json', 'status', 'success_rate', 'tenant_id', 'tool_id', 'tool_indexed_qdrant', 'tool_name', 'tool_registered', 'tool_weight_updated', 'total_calls', 'updated_at', 'user_id', 'version']

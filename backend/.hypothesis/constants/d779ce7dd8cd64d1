@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/conflict.py
+# hypothesis_version: 6.151.9
+
+[0.15, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0, 999999.0, 168, 3600, 'authority', 'confidence', 'episodic', 'merged', 'procedural', 'recency', 'semantic', 'working']

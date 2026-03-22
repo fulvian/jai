@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/core/modular_orchestrator.py
+# hypothesis_version: 6.151.9
+
+[30.0, 1000.0, 'ModularOrchestrator', '_domain', '_modular', 'circuit_states', 'data', 'default', 'domain', 'domains', 'domains_required', 'entities', 'error', 'errors', 'execution_time', 'failed_domains', 'failures', 'from_cache', 'handler_count', 'legacy', 'no_modular_handler', 'state', 'success', 'successes', 'successful_domains', 'tenant_id', 'tool_first_domain', 'tool_name', 'user_id']

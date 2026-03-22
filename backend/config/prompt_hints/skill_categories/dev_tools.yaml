@@ -1,0 +1,38 @@
+# Dev Tools Skills
+# git-essentials, docker-sandbox, sql-toolkit, postgres, npkill, ssh-exec
+
+category: dev_tools
+description: "Development utilities, git, docker, database tools"
+
+patterns:
+  - "git-*"
+  - "docker-*"
+  - "sql-*"
+  - "postgres"
+  - "npkill"
+  - "ssh-*"
+
+hints: |
+  GIT:
+  - repo_path: path assoluto al repository
+  - branch: nome branch (default: main/master)
+  - commit_message: messaggio descrittivo
+  - Per diff, specifica from_ref e to_ref
+
+  DOCKER:
+  - container_name o container_id
+  - image: nome:tag (es. python:3.11)
+  - command: comando da eseguire
+  - volumes: mapping host:container
+  - ports: mapping porta:porta
+
+  SQL/POSTGRES:
+  - connection_string: postgresql://user:pass@host:port/db
+  - query: SQL statement
+  - ATTENZIONE: evita query distruttive senza conferma
+
+  SSH:
+  - host: hostname o IP
+  - user: username SSH
+  - key_path: path chiave privata (opzionale)
+  - command: comando remoto

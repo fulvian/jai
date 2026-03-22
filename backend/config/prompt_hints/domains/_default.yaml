@@ -1,0 +1,12 @@
+# Default Domain Hints
+# Fallback hints for domains without specific configuration
+
+domain: _default
+description: "Generic domain hints for tool parameter selection"
+
+hints: |
+  - Fornisci tutti i parametri richiesti dal tool
+  - Usa JSON valido per ogni tool call
+  - Sii specifico nei valori, evita placeholder generici
+  - Se richiesti date/time, usa formato ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+  - Per ricerche, usa termini rilevanti al contesto della query

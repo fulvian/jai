@@ -1,0 +1,72 @@
+{
+  "worktrees": {
+    "wt-1773501768460-1": {
+      "branch": "kilo-1773501768283",
+      "path": "/Users/fulvio/coding/Me4BrAIn/.kilo/worktrees/kilo-1773501768283",
+      "parentBranch": "master",
+      "createdAt": "2026-03-14T15:22:48.460Z",
+      "remote": "origin"
+    },
+    "wt-1773611486273-1": {
+      "branch": "kilo-1773611486140",
+      "path": "/Users/fulvio/coding/Me4BrAIn/.kilo/worktrees/kilo-1773611486140",
+      "parentBranch": "master",
+      "createdAt": "2026-03-15T21:51:26.273Z",
+      "remote": "origin"
+    },
+    "wt-1773653341195-2": {
+      "branch": "kilo-1773653340998",
+      "path": "/Users/fulvio/coding/Me4BrAIn/.kilo/worktrees/kilo-1773653340998",
+      "parentBranch": "master",
+      "createdAt": "2026-03-16T09:29:01.195Z",
+      "remote": "origin"
+    },
+    "wt-1773748492989-2": {
+      "branch": "kilo-1773748492831",
+      "path": "/Users/fulvio/coding/Me4BrAIn/.kilo/worktrees/kilo-1773748492831",
+      "parentBranch": "master",
+      "createdAt": "2026-03-17T11:54:52.989Z",
+      "remote": "origin"
+    }
+  },
+  "sessions": {
+    "ses_31316c88effeVB9T416b5VjI5p": {
+      "worktreeId": "wt-1773501768460-1",
+      "createdAt": "2026-03-14T15:22:48.460Z"
+    },
+    "ses_30a6894baffe2vFwCNyuiSPpQg": {
+      "worktreeId": "wt-1773611486273-1",
+      "createdAt": "2026-03-16T07:41:07.278Z"
+    },
+    "ses_30a2ae40bffea8nVQTB1mYyWfy": {
+      "worktreeId": "wt-1773653341195-2",
+      "createdAt": "2026-03-16T09:29:01.196Z"
+    },
+    "ses_309df7e51ffeKzfu0bmiiqcLVH": {
+      "worktreeId": "wt-1773653341195-2",
+      "createdAt": "2026-03-16T10:10:51.441Z"
+    },
+    "ses_3045b1610ffecwEQeHqjHgqgS5": {
+      "worktreeId": null,
+      "createdAt": "2026-03-17T11:53:34.960Z"
+    },
+    "ses_30459d920ffeCCqc8lBAK3YVpj": {
+      "worktreeId": "wt-1773748492989-2",
+      "createdAt": "2026-03-17T11:54:56.097Z"
+    },
+    "ses_304503b53ffeU76cjCaLfOYCgc": {
+      "worktreeId": "wt-1773748492989-2",
+      "createdAt": "2026-03-17T12:05:26.318Z"
+    },
+    "ses_3044c2d72ffeGc4eUJF0BLUNrt": {
+      "worktreeId": "wt-1773748492989-2",
+      "createdAt": "2026-03-17T12:09:52.014Z"
+    }
+  },
+  "tabOrder": {
+    "local": [
+      "ses_30d612557ffejWeZM1EO8uNXnZ",
+      "ses_30d2c4b0affehGOHaLSJbj2yI5"
+    ]
+  }
+}

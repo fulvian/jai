@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/llm/ollama.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 0.9, 1.05, 30.0, 120.0, 500, '/', 'Content-Type', 'POST', '[DONE]', 'application/json', 'assistant', 'chat/completions', 'choices', 'completion_tokens', 'content', 'data: ', 'delta', 'finish_reason', 'frequency_penalty', 'id', 'index', 'max_tokens', 'message', 'messages', 'mlx-id', 'model', 'ollama_error', 'ollama_http_error', 'ollama_request_sent', 'ollama_stream_error', 'presence_penalty', 'prompt_tokens', 'repetition_penalty', 'response_format', 'role', 'stop', 'stream', 'temperature', 'tool_calls', 'tool_choice', 'tools', 'top_p', 'total_tokens', 'usage']

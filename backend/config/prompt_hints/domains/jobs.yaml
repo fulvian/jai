@@ -1,0 +1,71 @@
+version: "2.0"
+domain: "jobs"
+last_updated: "2026-02-23"
+author: "Antigravity"
+
+description: |
+  Ricerca di lavoro remota e nel territorio europeo. Utilizza RemoteOK per posizioni tech worldwide e Arbeitnow per posizioni focalizzate sull'Unione Europea.
+
+content: |
+  ## REGOLE CRITICHE LLM
+  - **Identificazione Intento**: Distingui tra lavori esclusivamente "remote" e lavori in una specifica "location" (EU).
+  - **Sequenziamento Tool**:
+    - Se l'utente chiede "remote jobs" o "lavori da casa", usa prioritariamente `remoteok_jobs`.
+    - Se l'utente specifica una città o paese europeo (es. "Berlin", "Germany") o cerca lavori generici in EU, usa `arbeitnow_jobs`.
+  - **Filtri**: Usa sempre il parametro `tag` (RemoteOK) o `query` (Arbeitnow) per restringere la ricerca a specifici linguaggi o ruoli.
+  - **Limiti**: Non richiedere mai più di 20 risultati (`limit: 20`) per garantire tempi di risposta rapidi.
+
+  ### Errori Comuni
+  - NON confondere i parametri: `tag` è specifico di RemoteOK, `query` e `location` sono per Arbeitnow.
+  - NON allucinare tool per LinkedIn o Indeed; usa solo quelli implementati.
+
+tools:
+  remoteok_jobs:
+    description: "Cerca lavori tech remoti su RemoteOK. Ideale per sviluppatori, designer e ruoli digitali worldwide."
+    constraints:
+      max_results: 20
+      input_schema:
+        type: object
+        properties:
+          tag:
+            {
+              type: "string",
+              description: "Skill o categoria (es. 'python', 'react', 'devops')",
+            }
+          limit: { type: "integer", default: 20, maximum: 50 }
+    hard_rules:
+      - "RULE 1: Se l'utente non specifica una categoria, non usare il parametro tag."
+      - "RULE 2: Massimo 50 risultati consentiti per chiamata."
+    few_shot_examples:
+      - description: "Ricerca generica lavori remote python"
+        content: |
+          INPUT: "Cerco lavoro come dev python da remoto"
+          THOUGHT: L'utente cerca lavoro remoto tech. Uso remoteok_jobs filtrando per tag 'python'.
+          CALL: {"tag": "python", "limit": 10}
+          RESULT: {"jobs": [{"position": "Python Developer", "company": "TechInc", "url": "..."}], "count": 1}
+
+  arbeitnow_jobs:
+    description: "Cerca lavori in Europa su Arbeitnow. Supporta filtri per keyword e località specifica."
+    constraints:
+      max_results: 20
+      input_schema:
+        type: object
+        properties:
+          query:
+            { type: "string", description: "Titolo o parola chiave del lavoro" }
+          location:
+            {
+              type: "string",
+              description: "Città o paese (es. 'Berlin', 'Germany')",
+            }
+          limit: { type: "integer", default: 20, maximum: 50 }
+    hard_rules:
+      - "RULE 1: Priorità a lavori in Europa continentale."
+      - "RULE 2: Includi sempre la location se specificata dall'utente."
+    few_shot_examples:
+      - description: "Ricerca lavoro a Berlino"
+        content: |
+          INPUT: "Trova posizioni aperte a Berlino per software engineer"
+          THOUGHT: L'utente specifica una location EU (Berlino). Uso arbeitnow_jobs con query 'software engineer' e location 'Berlin'.
+          CALL: {"query": "software engineer", "location": "Berlin"}
+          RESULT: {"jobs": [{"title": "Software Engineer", "location": "Berlin", "company": "StartupX"}], "count": 1}

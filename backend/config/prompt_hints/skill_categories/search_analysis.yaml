@@ -1,0 +1,47 @@
+# Search & Analysis Skills
+# stock-analysis, log-analyzer, pdf-extract, image-ocr, csv-pipeline, chromadb-memory
+
+category: search_analysis
+description: "Data analysis, document extraction, OCR"
+
+patterns:
+  - "*-analysis"
+  - "*-analyzer"
+  - "pdf-*"
+  - "image-*"
+  - "csv-*"
+  - "chromadb-*"
+
+hints: |
+  PDF EXTRACTION:
+  - file_path: path assoluto al PDF
+  - pages: range pagine (es. "1-5" o "all")
+  - output_format: text, markdown, json
+  - extract_images: true per estrarre immagini
+
+  IMAGE OCR:
+  - image_path: path assoluto all'immagine
+  - language: codice lingua (eng, ita, deu)
+  - output: text, json con bounding boxes
+
+  CSV PIPELINE:
+  - input_file: path al CSV
+  - operations: filter, sort, aggregate, join
+  - columns: lista colonne da processare
+  - output_file: path output (opzionale)
+
+  LOG ANALYZER:
+  - log_path: path al file o directory log
+  - pattern: regex per filtrare
+  - level: error, warn, info, debug
+  - time_range: periodo da analizzare
+
+  STOCK ANALYSIS:
+  - symbol: ticker (AAPL, GOOGL, TSLA)
+  - period: 1d, 5d, 1mo, 3mo, 1y, 5y
+  - indicators: sma, ema, rsi, macd
+
+  CHROMADB:
+  - collection: nome collezione
+  - query: testo per ricerca semantica
+  - n_results: numero risultati

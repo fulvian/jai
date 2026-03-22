@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/Me4BrAIn/src/me4brain/llm/models.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.7, 2.0, 8192, 'assistant', 'auto', 'function', 'high', 'low', 'medium', 'minimal', 'none', 'system', 'tool', 'user']

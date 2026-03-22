@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+# .env
+
+# AI Models
+models/
+
+# Large data files
+data/kuzu_db
+data/kuzu_db.wal
+data/openapi-examples/
+token.json
+data/google_token.json

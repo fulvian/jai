@@ -1,0 +1,35 @@
+# E-commerce Search Skills
+# ebay-search, vinted-search, wallapop-search, subito-search, buy-anything,
+# camelcamelcamel-alerts, marketplace-aggregator, shopping-expert
+
+category: ecommerce
+description: "E-commerce and marketplace search skills"
+
+patterns:
+  - "*-search"
+  - "buy-*"
+  - "marketplace-*"
+  - "shopping-*"
+  - "camelcamelcamel-*"
+
+hints: |
+  RICERCA PRODOTTI:
+  - query: descrizione prodotto specifica
+  - Includi marca, modello, colore se rilevanti
+  - category: categoria merceologica
+
+  FILTRI PREZZO:
+  - price_min, price_max: range budget
+  - currency: EUR (default), USD
+  - condition: new, used, refurbished
+
+  LOCATION (per marketplace locali):
+  - location: città o CAP
+  - radius: distanza in km
+  - shipping: true/false per spedizione disponibile
+
+  MARKETPLACE SPECIFICI:
+  - eBay: usa item_id per prodotti specifici
+  - Vinted/Wallapop: includi size per abbigliamento
+  - Subito: specifica regione italiana
+  - CamelCamelCamel: ASIN Amazon per tracking prezzi
