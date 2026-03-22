@@ -1,3 +1,72 @@
+## [v0.20.4] - 2026-03-23
+
+### Fixed - Ollama Migration & qwen3.5 Thinking Model Support
+
+**Problem**: System was routing local LLM calls to LM Studio (localhost:1234) which wasn't running, causing all local LLM calls to fail silently.
+
+**Root Cause**: Model naming convention `qwen3.5-4b-mlx` triggered LM Studio routing in `NanoGPTClient._get_base_url_for_model()`. LM Studio wasn't running.
+
+**Solution**: Migrated to Ollama as primary local LLM provider:
+- Changed model defaults from `-mlx` suffix to Ollama format with `:` (e.g., `qwen3.5:4b`, `qwen3.5:9b`)
+- Ollama v0.18.2 running on `localhost:11434` with working `qwen3.5:4b` and `qwen3.5:9b`
+
+**Files Modified**:
+- `src/me4brain/llm/config.py`: Model defaults updated to Ollama naming
+- `src/me4brain/llm/nanogpt.py`: Enhanced empty content fallback for thinking models
+- `src/me4brain/retrieval/lightrag.py`: Increased `max_tokens=8000` for entity extraction
+- `backend/.env`: Updated model names, added Neo4j credentials
+
+### Fixed - qwen3.5 Thinking Models Slow Response
+
+**Discovery**: qwen3.5 thinking models produce extensive internal reasoning traces (~8000-10000 tokens) before actual content. Entity extraction takes ~150 seconds.
+
+**Behavior**:
+- `reasoning` field contains "Thinking Process:" traces
+- `content` field may be empty string `""` 
+- `think: false` parameter does NOT disable thinking
+
+**Fix**: Enhanced fallback logic in `nanogpt.py`:
+```python
+if (content is None or content == "") and reasoning:
+    content = reasoning  # Use reasoning as content fallback
+```
+
+### Increased Timeouts for Slow LLM Responses
+
+**Problem**: Default timeouts (300s-600s) were too short for qwen3.5 thinking models (~150s extraction time).
+
+**Timeout Increases**:
+
+| File | Setting | Before | After |
+|------|---------|--------|-------|
+| `nanogpt.py` | HTTP read timeout | 600s | **1800s** (30 min) |
+| `nanogpt.py` | HTTP connect timeout | 10s | **30s** |
+| `config.py` | `default_timeout` | 300s | **1800s** (30 min) |
+| `config.py` | `intent_analysis_timeout` | 5s | **60s** |
+| `ollama.py` | `OllamaClient` default | 120s | **300s** (5 min) |
+| `queue_manager.py` | `DEFAULT_TIMEOUT` | 300s | **1800s** (30 min) |
+
+### Fixed - Neo4j Authentication
+
+**Issue**: Neo4j brew service had authentication failures. Password changed from `neo4j/neo4j` to `neo4j/password`.
+
+**Verification**:
+```bash
+/opt/homebrew/Cellar/neo4j/*/bin/neo4j start  # Start Neo4j
+```
+
+### Test Results
+
+- **Unit tests**: 1151 passed, 214 warnings ✅
+- **Integration tests**: 22 passed, 1 xfailed, 2 warnings ✅
+- **Frontend typecheck**: 5/5 pass ✅
+- **Frontend build**: Pass ✅
+
+### Known Limitations
+
+- qwen3.5 thinking models are inherently slow (~150s extraction)
+- Consider using non-thinking models for production if speed is critical
+
 # Changelog - Me4BrAIn Core
 
 Tutti i cambiamenti significativi a questo progetto saranno documentati in questo file.

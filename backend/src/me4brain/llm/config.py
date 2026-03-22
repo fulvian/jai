@@ -34,36 +34,36 @@ class LLMConfig(BaseSettings):
         alias="LLM_AGENTIC_MODEL",
     )
     model_agentic_fast: str = Field(
-        default="qwen3.5-4b-mlx",
+        default="qwen3.5:4b",
         alias="LLM_AGENTIC_FAST_MODEL",
     )
 
     # Intent Routing
     model_routing: str = Field(
-        default="qwen3.5-9b-mlx",
+        default="qwen3.5:9b",
         alias="LLM_ROUTING_MODEL",
     )
 
     # Vision
     model_vision: str = Field(
-        default="mlx-qwen3.5-9b-claude-4.6-opus-reasoning-distilled",
+        default="qwen3.5:9b",
         alias="LLM_VISION_MODEL",
     )
 
     # Extraction
     model_extraction: str = Field(
-        default="qwen3.5-4b-mlx",
+        default="qwen3.5:4b",
         alias="LLM_EXTRACTION_MODEL",
     )
 
     # Synthesis
     model_synthesis: str = Field(
-        default="qwen3.5-9b-mlx",
+        default="qwen3.5:9b",
         alias="LLM_SYNTHESIS_MODEL",
     )
 
     model_fallback: str = Field(
-        default="qwen3.5-9b-mlx",
+        default="qwen3.5:9b",
         alias="LLM_FALLBACK_MODEL",
     )
 
@@ -77,7 +77,7 @@ class LLMConfig(BaseSettings):
         alias="LMSTUDIO_BASE_URL",
     )
     ollama_model: str = Field(
-        default="qwen3.5-4b-mlx",
+        default="qwen3.5:4b",
         alias="OLLAMA_MODEL",
     )
     use_local_tool_calling: bool = Field(
@@ -125,7 +125,7 @@ class LLMConfig(BaseSettings):
 
     # Intent Analysis Configuration
     intent_analysis_timeout: float = Field(
-        default=5.0,
+        default=60.0,
         alias="INTENT_ANALYSIS_TIMEOUT",
     )
     intent_cache_ttl: float = Field(
@@ -153,8 +153,8 @@ class LLMConfig(BaseSettings):
         alias="USE_QUERY_DECOMPOSITION",
     )
 
-    # Defaults
-    default_timeout: float = 300.0  # 5 min per query complesse multi-tool
+    # Defaults - increased for qwen3.5 thinking models (150s+ per request)
+    default_timeout: float = 1800.0  # 30 min per query complesse multi-tool (was 300s = 5min)
     max_retries: int = 3
 
     model_config = SettingsConfigDict(

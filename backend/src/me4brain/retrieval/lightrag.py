@@ -7,15 +7,15 @@ Coordina il recupero dual-level (Local & Global) integrando:
 """
 
 import json
-from datetime import datetime, UTC
-from typing import Any, List, Dict
-from pydantic import BaseModel
+from typing import Any
 
 import structlog
-from me4brain.memory.episodic import get_episodic_memory, Episode
-from me4brain.memory.semantic import get_semantic_memory, Entity, Relation
+from pydantic import BaseModel
+
 from me4brain.embeddings.bge_m3 import get_embedding_service
-from me4brain.llm import get_llm_client, get_llm_config, LLMRequest, Message
+from me4brain.llm import LLMRequest, Message, get_llm_client, get_llm_config
+from me4brain.memory.episodic import Episode, get_episodic_memory
+from me4brain.memory.semantic import Entity, Relation, get_semantic_memory
 from me4brain.retrieval.prompts import ENTITY_EXTRACTION_PROMPT
 
 logger = structlog.get_logger(__name__)
@@ -27,7 +27,7 @@ class LightRAGResult(BaseModel):
     content: str
     source: str  # 'local', 'global', 'hybrid'
     score: float
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, Any] = {}
 
 
 class LightRAG:
@@ -96,25 +96,37 @@ class LightRAG:
             relations=len(extraction.get("relations", [])),
         )
 
-    async def _extract_entities_and_relations(self, text: str) -> Dict[str, Any]:
+    async def _extract_entities_and_relations(self, text: str) -> dict[str, Any]:
         """Chiamata a NanoGPT per estrazione strutturata."""
         prompt = ENTITY_EXTRACTION_PROMPT.format(text=text)
+        # qwen3.5 thinking models produce extensive thinking traces (8000+ tokens)
+        # plus actual content (~500-1000 tokens). We need high max_tokens to allow
+        # both thinking AND actual JSON content to be generated.
         request = LLMRequest(
-            model=self.config.model_extraction,  # Usiamo Mistral Large 3 per massima fedeltà
+            model=self.config.model_extraction,
             messages=[Message(role="user", content=prompt)],
             temperature=0.1,
+            max_tokens=8000,  # Must be high enough for thinking + content
         )
 
         response = await self.llm.generate_response(request)
-        content = response.choices[0].message.content
+        content = response.choices[0].message.content or ""
 
         # Pulizia dell'output se il modello è verboso o include markdown
         json_str = self._clean_json_content(content)
 
         try:
-            return json.loads(json_str)
+            result = json.loads(json_str)
+            # Validate structure
+            if not isinstance(result, dict):
+                logger.warning("extraction_invalid_structure", type=type(result).__name__)
+                return {"entities": [], "relations": []}
+            return result
         except json.JSONDecodeError:
-            logger.error("Failed to decode LLM extraction JSON", content=content[:500])
+            logger.error(
+                "Failed to decode LLM extraction JSON",
+                content=content[:500] if content else "EMPTY",
+            )
             return {"entities": [], "relations": []}
 
     def _clean_json_content(self, content: str) -> str:
@@ -144,7 +156,7 @@ class LightRAG:
 
     async def dual_retrieval(
         self, query: str, tenant_id: str, top_k: int = 10
-    ) -> List[LightRAGResult]:
+    ) -> list[LightRAGResult]:
         """Esegue il recupero combinato Local + Global con RRF Fusion."""
         logger.debug("Executing Dual-Level Retrieval", query=query)
 
@@ -177,7 +189,7 @@ class LightRAG:
 
     def _rrf_fusion(
         self, local_results: list, graph_results: list, top_k: int, k: int = 60
-    ) -> List[LightRAGResult]:
+    ) -> list[LightRAGResult]:
         """Algoritmo Reciprocal Rank Fusion."""
         scores = {}  # key: content/id, value: score
         metadata_map = {}

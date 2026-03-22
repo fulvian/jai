@@ -15,14 +15,13 @@ import json
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
 from me4brain.queue.tasks import (
     TASK_CLASSIFY_DOMAIN,
     TASK_SUMMARIZE_CONVERSATION,
-    TASK_WARM_CACHE,
     TaskDefinition,
     TaskPriority,
     TaskResult,
@@ -40,7 +39,7 @@ QUEUE_DEAD_LETTER = "me4brain:tasks:dead_letter"
 QUEUE_RESULTS = "me4brain:tasks:results"
 
 # Default settings
-DEFAULT_TIMEOUT = 300  # 5 minutes
+DEFAULT_TIMEOUT = 1800  # 30 minutes - increased for slow LLM responses
 DEFAULT_MAX_RETRIES = 3
 
 
@@ -57,10 +56,10 @@ class QueuedTask:
     retry_count: int
     max_retries: int
     enqueued_at: float
-    started_at: Optional[float]
-    completed_at: Optional[float]
+    started_at: float | None
+    completed_at: float | None
     result: Any
-    error: Optional[str]
+    error: str | None
 
     def to_json(self) -> str:
         """Serialize to JSON."""
@@ -85,7 +84,7 @@ class QueuedTask:
         )
 
     @classmethod
-    def from_json(cls, data: str) -> "QueuedTask":
+    def from_json(cls, data: str) -> QueuedTask:
         """Deserialize from JSON."""
         obj = json.loads(data)
         return cls(
@@ -105,7 +104,7 @@ class QueuedTask:
         )
 
     @classmethod
-    def from_task_definition(cls, task_def: TaskDefinition) -> "QueuedTask":
+    def from_task_definition(cls, task_def: TaskDefinition) -> QueuedTask:
         """Create from a TaskDefinition."""
         return cls(
             task_id=task_def.task_id,
@@ -215,7 +214,7 @@ class QueueManager:
     async def enqueue_classify(
         self,
         query: str,
-        conversation_id: Optional[str] = None,
+        conversation_id: str | None = None,
         priority: TaskPriority = TaskPriority.HIGH,
     ) -> str:
         """Convenience method to enqueue a classification task.
@@ -255,7 +254,7 @@ class QueueManager:
             priority=priority,
         )
 
-    async def get_task_status(self, task_id: str) -> Optional[TaskResult]:
+    async def get_task_status(self, task_id: str) -> TaskResult | None:
         """Get the status and result of a task.
 
         Args:
@@ -327,7 +326,7 @@ class QueueManager:
                 execution_time_ms=execution_time,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             queued_task.status = TaskStatus.FAILED
             queued_task.error = "Task timed out"
             queued_task.completed_at = time.time()
@@ -466,7 +465,7 @@ class QueueManager:
 
 
 # Singleton instance
-_queue_manager: Optional[QueueManager] = None
+_queue_manager: QueueManager | None = None
 
 
 def get_queue_manager() -> QueueManager:

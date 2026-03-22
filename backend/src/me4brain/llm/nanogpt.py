@@ -1,10 +1,11 @@
 """NanoGPT LLM Client Implementation."""
 
-import json
 import asyncio
+import json
+from collections.abc import AsyncGenerator
 from datetime import datetime
+from typing import Any
 from uuid import uuid4
-from typing import Any, AsyncGenerator
 
 import httpx
 import structlog
@@ -198,8 +199,19 @@ def get_lmstudio_auto_loader() -> LMStudioAutoLoader:
 
 
 def get_llm_client() -> "NanoGPTClient":
-    """Factory per ottenere l'istanza del client."""
+    """Factory per ottenere l'istanza del client.
+
+    Quando llm_local_only=True, ritorna Ollama client (via NanoGPTClient
+    con routing to Ollama) per us locale.
+    """
     config = get_llm_config()
+    if config.llm_local_only:
+        # Usa Ollama come backend locale - NanoGPTClient fa il routing
+        # automatico per modelli con ":" nella URL di Ollama
+        return NanoGPTClient(
+            api_key=config.nanogpt_api_key or "dummy",
+            base_url=config.ollama_base_url,  # Ollama base URL
+        )
     return NanoGPTClient(
         api_key=config.nanogpt_api_key,
         base_url=config.nanogpt_base_url,
@@ -213,12 +225,14 @@ class NanoGPTClient(LLMProvider):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self._config_cache: LLMConfig | None = None
+        # qwen3.5 thinking models can take 150+ seconds per request
+        # Increased timeouts to accommodate slow local LLM responses
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(
-                connect=10.0,
-                read=600.0,
-                write=60.0,
-                pool=10.0,
+                connect=30.0,  # Connection timeout (was 10s)
+                read=1800.0,  # Read timeout 30min (was 600s) - accommodates thinking models
+                write=120.0,  # Write timeout 2min (was 60s)
+                pool=30.0,  # Pool timeout (was 10s)
             ),
             headers={
                 "Authorization": f"Bearer {self.api_key}",
@@ -233,15 +247,20 @@ class NanoGPTClient(LLMProvider):
 
     def _get_base_url_for_model(self, model: str) -> str:
         model_lower = model.lower()
+        cfg = get_llm_config()
+        is_default_cloud_client = self.base_url.rstrip("/") == cfg.nanogpt_base_url.rstrip("/")
         if (
-            model_lower.startswith("mlx-")
-            or "lmstudio" in model_lower
+            "lmstudio" in model_lower
             or model_lower.startswith("mlx/")
-            or model_lower.endswith("-mlx")
+            or (
+                (model_lower.startswith("mlx-") or model_lower.endswith("-mlx"))
+                and cfg.use_local_tool_calling
+                and is_default_cloud_client
+            )
         ):
-            return get_llm_config().lmstudio_base_url.rstrip("/")
+            return cfg.lmstudio_base_url.rstrip("/")
         if ":" in model:
-            return get_llm_config().ollama_base_url.rstrip("/")
+            return cfg.ollama_base_url.rstrip("/")
         return self.base_url
 
     def _prepare_payload(self, request: LLMRequest) -> dict[str, Any]:
@@ -322,9 +341,9 @@ class NanoGPTClient(LLMProvider):
             model_loaded = await auto_loader.ensure_model_loaded(request.model)
             if not model_loaded:
                 logger.error("lmstudio_auto_load_failed", model=request.model)
-                raise RuntimeError(
-                    f"Failed to auto-load model '{request.model}' in LM Studio. "
-                    "Please ensure the model is available in LM Studio."
+                logger.warning(
+                    "lmstudio_auto_load_continue_without_block",
+                    model=request.model,
                 )
 
         try:
@@ -381,10 +400,16 @@ class NanoGPTClient(LLMProvider):
                 # Può essere in: message.reasoning, message.reasoning_content
                 reasoning = msg_data.get("reasoning") or msg_data.get("reasoning_content")
 
-                # Per modelli :thinking (es. Kimi K2.5), content può essere null
-                # e la risposta è in reasoning - usiamo reasoning come fallback
+                # Per modelli :thinking (es. qwen3.5), content può essere empty string ""
+                # o null - in tal caso usiamo reasoning come fallback per ottenere
+                # il contenuto effettivo
                 content = msg_data.get("content")
-                if content is None and reasoning:
+                if (content is None or content == "") and reasoning:
+                    logger.debug(
+                        "nanogpt_using_reasoning_as_content",
+                        content_len=len(content) if content else 0,
+                        reasoning_len=len(reasoning),
+                    )
                     content = reasoning
                     reasoning = None  # Evita duplicazione
 
@@ -428,14 +453,16 @@ class NanoGPTClient(LLMProvider):
 
     async def generate_embeddings(
         self,
-        text: str,
+        text: str | list[str],
         model: str = "local/bge-m3",
-    ) -> list[float]:
+    ) -> list[list[float]]:
         """Genera embeddings tramite BGE-M3 locale (bypass NanoGPT)."""
         from me4brain.embeddings.bge_m3 import get_embedding_service
 
         embedding_service = get_embedding_service()
-        return await embedding_service.embed_document_async(text)
+        if isinstance(text, list):
+            return await embedding_service.embed_documents_async(text)
+        return [await embedding_service.embed_document_async(text)]
 
     async def stream_response(self, request: LLMRequest) -> AsyncGenerator[LLMChunk, None]:
         """Esegue una chiamata POST streaming SSE."""
@@ -452,9 +479,9 @@ class NanoGPTClient(LLMProvider):
             model_loaded = await auto_loader.ensure_model_loaded(request.model)
             if not model_loaded:
                 logger.error("lmstudio_auto_load_failed_stream", model=request.model)
-                raise RuntimeError(
-                    f"Failed to auto-load model '{request.model}' in LM Studio. "
-                    "Please ensure the model is available in LM Studio."
+                logger.warning(
+                    "lmstudio_auto_load_continue_without_block_stream",
+                    model=request.model,
                 )
 
         async with self.client.stream(

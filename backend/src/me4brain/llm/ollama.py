@@ -11,22 +11,22 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 import structlog
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from me4brain.llm.base import LLMProvider
 from me4brain.llm.models import (
+    Choice,
+    ChoiceDelta,
+    ChoiceMessage,
+    DeltaContent,
     LLMChunk,
     LLMRequest,
     LLMResponse,
-    Message,
     Usage,
-    Choice,
-    ChoiceMessage,
-    ChoiceDelta,
-    DeltaContent,
 )
 
 logger = structlog.get_logger(__name__)
@@ -47,7 +47,7 @@ class OllamaClient(LLMProvider):
         self,
         base_url: str = "http://localhost:1234/v1",
         model: str | None = None,
-        timeout: float = 120.0,
+        timeout: float = 300.0,  # 5 min - increased from 120s for qwen3.5 thinking models
     ) -> None:
         """Inizializza il client.
 
@@ -93,9 +93,10 @@ class OllamaClient(LLMProvider):
 
         # Parametri ottimali per Qwen 3.5-4B-MLX (mlx_lm.server SOTA 2026)
         payload["top_p"] = request.top_p if request.top_p is not None else 0.9
-        payload["repetition_penalty"] = 1.05
+        payload["repetition_penalty"] = 1.1
         payload["frequency_penalty"] = 0.0
         payload["presence_penalty"] = 0.0
+        payload["top_k"] = 100
 
         if request.stop:
             payload["stop"] = request.stop
@@ -110,6 +111,11 @@ class OllamaClient(LLMProvider):
 
         return payload
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+    )
     async def generate_response(self, request: LLMRequest) -> LLMResponse:
         """Invia una richiesta NON-streaming a mlx_lm.server."""
         request.stream = False  # Forza non-streaming per questa method
@@ -261,10 +267,15 @@ class OllamaClient(LLMProvider):
                         continue
 
         except httpx.HTTPStatusError as e:
+            response_text = ""
+            try:
+                response_text = (await e.response.aread()).decode(errors="ignore")
+            except Exception:
+                response_text = "<response body unavailable>"
             logger.error(
                 "ollama_stream_http_error",
                 status=e.response.status_code,
-                text=e.response.text[:500],
+                text=response_text[:500],
                 url=str(e.request.url),
             )
             raise
@@ -285,8 +296,8 @@ class OllamaClient(LLMProvider):
 # Singleton — si invalida automaticamente quando la config cambia
 # =============================================================================
 
-_ollama_client: Optional[OllamaClient] = None
-_ollama_client_config_hash: Optional[str] = None
+_ollama_client: OllamaClient | None = None
+_ollama_client_config_hash: str | None = None
 
 
 def get_ollama_client() -> OllamaClient:
