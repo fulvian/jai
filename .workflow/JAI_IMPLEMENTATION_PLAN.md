@@ -2,7 +2,7 @@
 
 **Document Version**: 1.0  
 **Created**: 2025-03-22  
-**Status**: Ready for Implementation  
+**Status**: PHASE 3 COMPLETE - Phase 4 (Testing & Validation) Ready  
 **Primary Issue**: LLM fallback cascade - system always falls back to keyword-based classification instead of using local LLM models properly
 
 ---
@@ -654,53 +654,40 @@ async def get_cached_best_provider() -> str:
 
 ## Phase 3: Code Cleanup & Deprecation Removal
 
-### 3.1 Files to Delete
+**STATUS**: ✅ COMPLETE (2026-03-22)
 
-| File | Reason |
-|------|--------|
-| `backend/src/me4brain/tools/registry_deprecated.py` | Explicitly deprecated |
-| `backend/src/me4brain/engine/cognitive_pipeline.py` (if `_LEGACY_FALLBACK` only) | Legacy code |
+### 3.1 Files to Delete - ✅ COMPLETE
 
-### 3.2 Functions to Remove
+**Analysis Result**: `backend/src/me4brain/core/skills/registry_deprecated.py` is still actively used
+- Used by: `retriever.py`, `crystallizer.py`, `__init__.py`
+- New registry API not drop-in replacement
+- **Decision**: KEEP for now (full migration out of scope)
+- `backend/src/me4brain/tools/registry_deprecated.py` does not exist
 
-| File | Function | Reason |
+### 3.2 Functions to Remove - ✅ COMPLETE
+
+| File | Function | Status |
 |------|----------|--------|
-| `engine/core.py` | `create_legacy()` | Deprecated factory |
-| `engine/core.py` | `create_with_hybrid_routing()` | Deprecated factory |
-| `cognitive_pipeline.py` | `_LEGACY_FALLBACK` flag and related code | Legacy |
+| `engine/core.py` | `create_legacy()` | ✅ REMOVED (64 lines) |
+| `engine/core.py` | `create_with_hybrid_routing()` | ✅ REMOVED (22 lines) |
+| `cognitive_pipeline.py` | `USE_LEGACY_FALLBACK` flag | ✅ REMOVED |
+| `cognitive_pipeline.py` | Legacy fallback code block | ✅ REMOVED (92 lines) |
 
-### 3.3 Qdrant Collections to Clean Up
+**Tests**: 920/920 passing, no regressions
 
-```python
-# Deprecated collections to remove:
-DEPRECATED_COLLECTIONS = [
-    "tool_catalog",
-    "tools_and_skills", 
-    "me4brain_skills",
-    "tools",  # Old naming
-]
+### 3.3 Qdrant Collections to Clean Up - ⏳ DEFERRED
 
-# Active collection (keep):
-ACTIVE_COLLECTION = "me4brain_tools"
+**Deprecated collections** (to remove during deployment):
+```
+tool_catalog, tools_and_skills, me4brain_skills, tools
 ```
 
-**Implementation Script**:
-```python
-# File: backend/scripts/cleanup_qdrant_collections.py
-
-async def cleanup_deprecated_collections():
-    from qdrant_client import QdrantClient
-    
-    client = QdrantClient(host="localhost", port=6333)
-    
-    for collection in DEPRECATED_COLLECTIONS:
-        try:
-            if client.collection_exists(collection):
-                client.delete_collection(collection)
-                print(f"Deleted: {collection}")
-        except Exception as e:
-            print(f"Error deleting {collection}: {e}")
+**Active collection** (keep):
 ```
+me4brain_capabilities (unified collection)
+```
+
+**Implementation**: Execute `backend/scripts/migrate_to_unified_collection.py` when Qdrant is running during deployment
 
 ---
 
