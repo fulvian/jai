@@ -2,6 +2,53 @@
 
 Tutti i cambiamenti significativi a questo progetto saranno documentati in questo file.
 
+## [v0.20.3] - 2026-03-22
+
+### Changed - Phase 3: Code Cleanup & Deprecation Removal ✅ COMPLETE
+
+**Scope**: Remove deprecated code paths that are no longer used after Phase 2 optimization.
+
+**Removed**:
+1. **`create_legacy()` from `engine/core.py`** (lines 218-281, 64 lines)
+   - Sent ALL 129+ tools to LLM (high payload risk)
+   - Never called by active tests or modern code
+   - Replaced by `_create_with_hybrid_routing()` which implements intelligent tool selection
+
+2. **`create_with_hybrid_routing()` from `engine/core.py`** (lines 282-303, 22 lines)
+   - Deprecated wrapper alias for `create()`
+   - Removed completely (no longer needed)
+
+3. **Legacy fallback code from `cognitive_pipeline.py`** (92 lines)
+   - `USE_LEGACY_FALLBACK` environment variable flag (line 50)
+   - Legacy semantic search handlers (lines 869-961)
+   - Multi-tool parallel execution legacy path
+   - NBA chained analysis legacy implementation
+
+4. **Kept for Reference**:
+   - `_create_with_hybrid_routing()` - Still used by `create()`, implements current hybrid routing
+   - `_detect_multi_tool_services()` - Marked deprecated, no longer called but kept (optimized patterns)
+
+**Test Results**:
+- Before Phase 3.2: 920/920 unit tests passing
+- After Phase 3.2: 920/920 unit tests passing ✅
+- No test regressions, no failures introduced
+
+**Total Lines Removed**: 178 lines of deprecated code
+
+**Deferred to Deployment**:
+- Qdrant collection cleanup (tool_catalog, tools_and_skills, me4brain_skills, tools)
+- Requires running Qdrant instance
+- Script available: `backend/scripts/migrate_to_unified_collection.py`
+
+**Next Phase**: Phase 4 - Testing & Validation (Integration tests, E2E tests, Qdrant cleanup)
+
+**Commits**:
+- `4c06f2d` - Phase 3.2: Remove deprecated factory methods and legacy fallback code
+- `a470494` - Phase 3 Complete: Code cleanup and deprecation removal finalized
+- `7b73eba` - Update implementation plan: Phase 3 complete, Phase 4 ready
+
+---
+
 ## [v0.20.2] - 2026-03-21
 
 ### Fixed - Critical Model Configuration Discrepancy

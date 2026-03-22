@@ -272,8 +272,9 @@ response = await engine.run("Che tempo fa a Roma?")
 
 - [Blueprint v2.0](docs/architecture/blueprint_me4brain_v2.md) - Architettura completa
 - [Implementation Plan](docs/architecture/implementation_plan_v1.md) - Piano di sviluppo
+- [Implementation Status](../.workflow/JAI_IMPLEMENTATION_PLAN.md) - Status fasi di sviluppo (Phase 3 ✅ COMPLETE)
 - [Changelog](CHANGELOG.md) - Cronologia versioni
-- [Recent Changes](RECENT_CHANGES.md) - Ultime modifiche (2026-03-12)
+- [Recent Changes](RECENT_CHANGES.md) - Ultime modifiche (2026-03-22: Phase 3 cleanup complete)
 - [Project Memory](PROJECT_MEMORY.md) - Conoscenza core e decisioni
 - [Integrations Guide](docs/INTEGRATIONS.md) - MCP (LM Studio), Google Workspace, Finance
 

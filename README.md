@@ -118,6 +118,8 @@ This runs backend + frontend + all dependencies in containers.
 - **Quick Copy Guide**: [COPY_LARGE_FILES.md](./COPY_LARGE_FILES.md) - Copy models and data (15-30x faster than re-download)
 - **Development Setup**: Read [HYBRID_DEVELOPMENT.md](./HYBRID_DEVELOPMENT.md) ⭐ for hybrid dev guide
 - **Full Architecture**: [JAI_SETUP_GUIDE.md](./JAI_SETUP_GUIDE.md)
+- **Implementation Status**: [.workflow/JAI_IMPLEMENTATION_PLAN.md](./.workflow/JAI_IMPLEMENTATION_PLAN.md) - Phase 3 ✅ COMPLETE, Phase 4 IN PROGRESS
+- **Phase 3 Completion**: [.workflow/PHASE_3_STATE.md](./.workflow/PHASE_3_STATE.md) - Code cleanup & deprecation removal (920/920 tests passing)
 - **GitHub Deployment**: [GITHUB_PUSH_GUIDE.md](./GITHUB_PUSH_GUIDE.md)
 - **ML Models**: [MODELS.md](./MODELS.md)
 - **Backend Details**: `backend/README.md`
@@ -213,4 +215,10 @@ kill -9 <PID>
 ---
 
 **Repository**: https://github.com/fulvian/jai  
-**Last Updated**: 2026-03-22
+**Last Updated**: 2026-03-22  
+**Current Phase**: Phase 4 - Testing & Validation (In Progress)  
+**Latest Release**: Phase 3 - Code Cleanup & Deprecation Removal ✅ COMPLETE
+- Removed deprecated factory methods (create_legacy, create_with_hybrid_routing)
+- Removed legacy fallback code (92 lines)
+- All 920 unit tests passing, no regressions
+- Registry cleanup deferred to deployment phase
