@@ -11,6 +11,7 @@ import json
 import re
 import time
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 import structlog
@@ -34,6 +35,22 @@ logger = structlog.get_logger(__name__)
 # Domain classification timeout (30 seconds for local models)
 DOMAIN_CLASSIFICATION_TIMEOUT = 30  # Reduced from 600 for better debugging
 MAX_CLASSIFICATION_RETRIES = 3  # Retry before fallback
+
+
+class DegradationLevel(Enum):
+    """Graceful degradation levels for domain classification.
+
+    Allows graduated failure handling instead of binary success/fallback:
+    - FULL_LLM: Complete LLM-based classification (normal operation)
+    - SIMPLIFIED_LLM: Simplified LLM prompt (complex prompt failed)
+    - HYBRID: LLM confidence + keyword backup (LLM uncertain)
+    - KEYWORD_ONLY: Pure keyword-based fallback (last resort)
+    """
+
+    FULL_LLM = 0
+    SIMPLIFIED_LLM = 1
+    HYBRID = 2
+    KEYWORD_ONLY = 3
 
 
 class DomainClassifier:
@@ -122,11 +139,45 @@ DISAMBIGUATION:
 
 Current time: {current_datetime}"""
 
+    def _build_simplified_router_prompt(self, current_datetime: str) -> str:
+        """Build a simplified system prompt for domain classification.
+
+        Used during degradation when the full prompt failed.
+        Removes complex examples and focuses on core task.
+        """
+        domain_list = ", ".join([f'"{d}"' for d in self._domains])
+
+        return f"""You are a DOMAIN CLASSIFIER. Analyze the user query and identify relevant domains.
+
+## TASK
+Determine which domains (tool categories) are relevant for the query.
+
+## DOMAINS
+{domain_list}
+
+## COMPLEXITY
+- "low": 1-3 tools
+- "medium": 4-8 tools  
+- "high": 8+ tools or complex
+
+## OUTPUT
+Return JSON with: domains (list of {{name, complexity}}), confidence (0-1), query_summary (brief string)
+
+## KEY RULES
+- "sports_nba" for basketball, NBA, betting, odds, predictions
+- "finance_crypto" for stocks, crypto, trading
+- "geo_weather" for weather, temperature, climate
+- "google_workspace" for Gmail, Calendar, Drive, Docs, Sheets
+- "web_search" for information, news, research
+
+Current time: {current_datetime}"""
+
     async def classify(
         self,
         query: str,
         conversation_context: list[dict[str, Any]] | None = None,
         intent_analysis: dict[str, Any] | None = None,
+        simplified: bool = False,
     ) -> DomainClassification:
         """Classify a query into relevant domains.
 
@@ -134,6 +185,7 @@ Current time: {current_datetime}"""
             query: User query to classify
             conversation_context: Recent conversation history for context
             intent_analysis: Optional pre-analysis from IntentAnalyzer
+            simplified: If True, use simplified prompt without complex examples
 
         Returns:
             DomainClassification with domains, complexity, and confidence
@@ -141,7 +193,12 @@ Current time: {current_datetime}"""
         from me4brain.llm.models import LLMRequest, Message, MessageRole
 
         current_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        system_prompt = self._build_router_prompt(current_dt)
+
+        # Use simplified prompt if degradation is in progress
+        if simplified:
+            system_prompt = self._build_simplified_router_prompt(current_dt)
+        else:
+            system_prompt = self._build_router_prompt(current_dt)
 
         # Build user content with context
         user_content = f"USER QUERY: {query}"
@@ -753,6 +810,128 @@ Current time: {current_datetime}"""
             return new_classification, True
 
         return classification, False
+
+    async def classify_with_degradation(
+        self,
+        query: str,
+        context: list[dict[str, Any]] | None = None,
+        max_degradation: DegradationLevel = DegradationLevel.KEYWORD_ONLY,
+    ) -> DomainClassification:
+        """Classify with graduated degradation levels.
+
+        Attempts classification at progressively degraded levels:
+        1. FULL_LLM: Complete prompt with context and examples
+        2. SIMPLIFIED_LLM: Simpler prompt without complex examples
+        3. HYBRID: LLM confidence score + keyword backup
+        4. KEYWORD_ONLY: Pure keyword-based fallback
+
+        Args:
+            query: The user query to classify
+            context: Optional conversation context
+            max_degradation: Maximum degradation level to attempt
+
+        Returns:
+            DomainClassification from the first successful level
+        """
+        logger.info(
+            "classify_with_degradation_start",
+            query_preview=query[:50],
+            max_degradation=max_degradation.name,
+        )
+
+        for level in DegradationLevel:
+            # Skip levels beyond max_degradation
+            if level.value > max_degradation.value:
+                break
+
+            try:
+                logger.debug(
+                    "degradation_level_attempt",
+                    level=level.name,
+                    attempt_number=level.value + 1,
+                )
+
+                result = await self._classify_at_level(query, context, level)
+
+                if result and result.confidence > 0.5:
+                    logger.info(
+                        "classification_succeeded_at_level",
+                        level=level.name,
+                        confidence=result.confidence,
+                        domains=result.domain_names,
+                    )
+                    return result
+
+            except Exception as e:
+                logger.warning(
+                    "classification_level_failed",
+                    level=level.name,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                # Continue to next degradation level
+                continue
+
+        # If all levels fail or return low confidence, use keyword fallback
+        logger.warning(
+            "classification_all_levels_failed_using_keyword_fallback",
+            query_preview=query[:50],
+        )
+        return self._fallback_classification(query)
+
+    async def _classify_at_level(
+        self,
+        query: str,
+        context: list[dict[str, Any]] | None = None,
+        level: DegradationLevel = DegradationLevel.FULL_LLM,
+    ) -> DomainClassification | None:
+        """Classify at a specific degradation level.
+
+        Args:
+            query: The user query
+            context: Optional conversation context
+            level: The degradation level to attempt
+
+        Returns:
+            DomainClassification if successful, None if it fails
+        """
+        if level == DegradationLevel.FULL_LLM:
+            # Normal classification with full context
+            return await self.classify(query, context, None)
+
+        elif level == DegradationLevel.SIMPLIFIED_LLM:
+            # Simplified classification with shorter prompt
+            return await self.classify(query, context, None, simplified=True)
+
+        elif level == DegradationLevel.HYBRID:
+            # LLM tries but keywords provide backup
+            llm_result = await self.classify(query, context, None, simplified=True)
+
+            # If LLM confidence is low, enhance with keyword detection
+            if llm_result and llm_result.confidence < 0.7:
+                keyword_result = self._fallback_classification(query)
+
+                # Combine results: prefer LLM domains but add keyword domains if missing
+                combined_domains = list(llm_result.domains)
+                existing_names = set(llm_result.domain_names)
+
+                for kw_domain in keyword_result.domains:
+                    if kw_domain.name not in existing_names:
+                        combined_domains.append(kw_domain)
+
+                return DomainClassification(
+                    domains=combined_domains,
+                    confidence=min(llm_result.confidence, 0.75),  # Cap at 0.75 for hybrid
+                    query_summary=llm_result.query_summary,
+                )
+
+            return llm_result
+
+        elif level == DegradationLevel.KEYWORD_ONLY:
+            # Pure keyword fallback
+            return self._fallback_classification(query)
+
+        return None
 
     def _summarize_context(self, conversation_context: list[dict[str, Any]]) -> str:
         """Summarize conversation context for the prompt.
