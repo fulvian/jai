@@ -44,10 +44,7 @@ logger = structlog.get_logger(__name__)
 USE_MODULAR_ARCHITECTURE = os.getenv("ME4BRAIN_USE_MODULAR", "true").lower() == "true"
 
 # DEPRECATED: Flag per legacy fallback (default False - architettura modulare esclusiva)
-# Se True, quando nessun domain handler gestisce la query, usa il vecchio path
-# via Qdrant semantic search + tool_executor inline handlers.
-# Mantenuto per backward compatibility e debugging.
-USE_LEGACY_FALLBACK = os.getenv("ME4BRAIN_LEGACY_FALLBACK", "false").lower() == "true"
+# Legacy fallback path has been removed (Phase 3 cleanup).
 
 # Costanti
 MAX_TOOL_ITERATIONS = 10
@@ -517,11 +514,7 @@ async def extract_arguments_with_llm(
     from me4brain.llm.provider_factory import get_tool_calling_client
 
     tc_client = get_tool_calling_client()
-    model = (
-        config.ollama_model
-        if config.use_local_tool_calling
-        else config.model_agentic
-    )
+    model = config.ollama_model if config.use_local_tool_calling else config.model_agentic
 
     request = LLMRequest(
         model=model,  # Usa modello locale per estrazione argomenti se abilitato
@@ -850,122 +843,20 @@ async def execute_semantic_tool_loop(
     # - Riferimento ai pattern ottimizzati (Google Workspace, NBA chained)
     # - Debugging in caso di problemi con architettura modulare
     # ==========================================================================
-
-    if not USE_LEGACY_FALLBACK:
-        # Architettura modulare esclusiva: nessun handler ha gestito la query
-        logger.warning(
-            "no_domain_handler_found",
-            query_preview=user_query[:50],
-            hint="Enable ME4BRAIN_LEGACY_FALLBACK=true for legacy path",
-        )
-        return [
-            {
-                "success": False,
-                "error": "No domain handler found for this query",
-                "query": user_query[:100],
-            }
-        ]
-
-    # --- LEGACY CODE START (deprecated) ---
-    logger.info("legacy_fallback_enabled", query_preview=user_query[:50])
-    collected_data = []
-    procedural = get_procedural_memory()
-
-    # Step 1: Check for NBA chained analysis (prossima partita NBA)
-    nba_chain_triggers = [
-        "prossima partita nba",
-        "prossimo match nba",
-        "analisi prossima partita",
-        "pronostico prossima partita",
-        "next nba game",
+    # Legacy fallback path has been removed (Phase 3 cleanup)
+    # No domain handler matched this query
+    # ==========================================================================
+    logger.warning(
+        "no_domain_handler_found",
+        query_preview=user_query[:50],
+    )
+    return [
+        {
+            "success": False,
+            "error": "No domain handler found for this query",
+            "query": user_query[:100],
+        }
     ]
-    query_lower = user_query.lower()
-
-    if any(trigger in query_lower for trigger in nba_chain_triggers):
-        logger.info("nba_chained_analysis_triggered", query=user_query[:50])
-        return await _execute_nba_chained_analysis(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            user_query=user_query,
-            executor=executor,
-            embedding_service=embedding_service,
-            llm_client=llm_client,
-            config=config,
-            procedural=procedural,
-        )
-
-    # Step 2: Rileva se la query richiede multi-tool
-    multi_tool_keywords = _detect_multi_tool_services(user_query)
-
-    if multi_tool_keywords:
-        logger.info(
-            "multi_tool_detected",
-            services=multi_tool_keywords,
-            count=len(multi_tool_keywords),
-        )
-        # Esegui ricerca separata per ogni servizio richiesto
-        return await _execute_multi_tool_parallel(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            user_query=user_query,
-            service_keywords=multi_tool_keywords,
-            executor=executor,
-            embedding_service=embedding_service,
-            llm_client=llm_client,
-            config=config,
-            procedural=procedural,
-            max_tools=max_tools,
-        )
-
-    # Step 2: Query singolo tool - ricerca semantica diretta
-    query_embedding = embedding_service.embed_query(user_query)
-
-    try:
-        results = await procedural.search_tools_in_qdrant(
-            tenant_id=tenant_id,
-            query_embedding=query_embedding,
-            limit=3,
-            min_score=MIN_TOOL_SCORE,
-        )
-    except Exception as e:
-        logger.error("semantic_tool_search_failed", error=str(e))
-        return [{"success": False, "error": f"Tool search failed: {e}"}]
-
-    if not results:
-        logger.warning("no_tools_found_semantic", query=user_query[:50])
-        return [{"success": False, "error": "No suitable tools found"}]
-
-    # Step 3: Selezione singolo tool (best match)
-    best_tool_id, best_payload, best_score = results[0]
-    best_tool_name = best_payload.get("name", "unknown")
-
-    logger.info(
-        "semantic_tool_candidates",
-        top_tool=best_tool_name,
-        top_score=round(best_score, 3),
-        candidates_count=len(results),
-    )
-
-    # Step 4: Estrai termine di ricerca per fallback (anche per singolo tool)
-    single_tool_search_term = _extract_search_term_from_query(user_query)
-
-    # Estrai argomenti ed esegui
-    result = await _execute_single_tool(
-        tenant_id=tenant_id,
-        user_id=user_id,
-        user_query=user_query,
-        tool_id=best_tool_id,
-        tool_payload=best_payload,
-        tool_score=best_score,
-        executor=executor,
-        llm_client=llm_client,
-        config=config,
-        fallback_query_arg=single_tool_search_term,  # Fallback anche per singolo tool
-    )
-
-    collected_data.append(result)
-    return collected_data
-    # --- LEGACY CODE END ---
 
 
 # =============================================================================

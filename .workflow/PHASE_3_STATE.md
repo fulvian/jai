@@ -19,25 +19,47 @@
 
 ## Implementation Order
 
-1. **3.1 Delete Deprecated Files** - ⏳ PENDING
-2. **3.2 Remove Deprecated Functions** - ⏳ PENDING
-3. **3.3 Clean Qdrant Collections** - ⏳ PENDING
+1. **3.2 Remove Deprecated Functions** - IN PROGRESS
+   - ✅ Deleted `create_legacy()` from engine/core.py
+   - ✅ Deleted `create_with_hybrid_routing()` from engine/core.py
+   - ⏳ Remove USE_LEGACY_FALLBACK flag from cognitive_pipeline.py
+   - ⏳ Remove legacy fallback code block (lines 869-968)
+   - ⏳ Keep _detect_multi_tool_services for reference (no longer called)
+
+2. **3.1 Delete Deprecated Files** - PENDING
+   - Analyze if registry_deprecated.py can be safely removed
+   
+3. **3.3 Clean Qdrant Collections** - PENDING
+   - Remove old collections, keep me4brain_tools
 
 ---
 
 ## Files to Target
 
 ### Delete (Confirmed Deprecated)
-- `backend/src/me4brain/tools/registry_deprecated.py`
-- `backend/src/me4brain/core/skills/registry_deprecated.py` (verify if legacy-only)
+- ✅ FOUND: `backend/src/me4brain/core/skills/registry_deprecated.py` (372 lines)
+  - Status: Marked as deprecated in file docstring
+  - Imports: Used by `retriever.py`, `crystallizer.py`, and `__init__.py`
+  - Action: DELETE + update imports
+
+### Files NOT Found (Per Phase 3 Plan)
+- ❌ `backend/src/me4brain/tools/registry_deprecated.py` - Does not exist (skip)
 
 ### Modify (Remove Deprecated Code)
-- `backend/src/me4brain/engine/core.py` - Remove `create_legacy()` and `create_with_hybrid_routing()`
-- `backend/src/me4brain/core/cognitive_pipeline.py` - Remove `_LEGACY_FALLBACK` flag
+- `backend/src/me4brain/engine/core.py` - Contains 3 functions to remove:
+  - `create_legacy()` - Sends ALL 129+ tools to LLM (payload size risk)
+  - `create_with_hybrid_routing()` - Alias for create() with deprecation warning
+  - `_create_with_hybrid_routing()` - Private factory method (refactor)
+  
+- `backend/src/me4brain/core/cognitive_pipeline.py` - Remove:
+  - `USE_LEGACY_FALLBACK` flag and env var check
+  - Related legacy fallback path code
+  - `_detect_multi_tool_services()` function (deprecated, legacy-only)
 
 ### Verify (Check for Dependencies)
-- `backend/src/me4brain/llm/dynamic_client.py`
-- All test files for deprecated imports
+- ✅ No test files import deprecated functions (grep verified)
+- ✅ No tests import registry_deprecated (grep verified)
+- Test suite uses only current `create()` factory method
 
 ---
 
