@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: me4brain
+  labels:
+    app: me4brain
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: me4brain
+  template:
+    metadata:
+      labels:
+        app: me4brain
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8089"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Graceful shutdown configuration
+      terminationGracePeriodSeconds: 60
+      
+      # Init container to verify dependencies
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Redis..."
+              until nc -z redis 6379; do
+                echo "Redis not ready, waiting..."
+                sleep 2
+              done
+              echo "Redis is ready!"
+              
+              echo "Waiting for PostgreSQL..."
+              until nc -z postgres 5432; do
+                echo "PostgreSQL not ready, waiting..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready!"
+              
+              echo "Waiting for Qdrant..."
+              until nc -z qdrant 6333; do
+                echo "Qdrant not ready, waiting..."
+                sleep 2
+              done
+              echo "Qdrant is ready!"
+              
+              echo "All dependencies ready!"
+          resources:
+            limits:
+              memory: "64Mi"
+            requests:
+              memory: "32Mi"
+      
+      containers:
+        - name: me4brain
+          image: me4brain:latest
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 8089
+              protocol: TCP
+          
+          # Environment variables from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: me4brain-config
+            - secretRef:
+                name: me4brain-secrets
+          
+          # Resource limits for production
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          
+          # Lifecycle hooks for graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo "Received SIGTERM, starting graceful shutdown..."
+                    # Wait for in-flight requests to complete
+                    sleep 30
+                    echo "Graceful shutdown complete"
+          
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: "me4brain"
+            - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+              value: "jaeger"
+            - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+              value: "6831"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: me4brain
+  labels:
+    app: me4brain
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8089
+      targetPort: http
+      protocol: TCP
+  
+  # Session affinity for WebSocket connections (if needed)
+  # sessionAffinity: ClientIP
+  
+  selector:
+    app: me4brain
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: me4brain-headless
+  labels:
+    app: me4brain
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless for stateful-like discovery
+  ports:
+    - name: http
+      port: 8089
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: me4brain
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: me4brain-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: me4brain
+  minReplicas: 2
+  maxReplicas: 10
+  
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  
+  # Scaling behavior
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: me4brain-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: me4brain

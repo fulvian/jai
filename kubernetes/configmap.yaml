@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: me4brain-config
+data:
+  # Application settings
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  
+  # Service discovery
+  SERVICE_NAME: "me4brain"
+  SERVICE_PORT: "8089"
+  
+  # Redis configuration
+  REDIS_URL: "redis://redis:6379/0"
+  
+  # PostgreSQL configuration
+  DATABASE_URL: "postgresql+asyncpg://postgres:5432/me4brain"
+  
+  # Qdrant configuration
+  QDRANT_HOST: "qdrant"
+  QDRANT_HTTP_PORT: "6333"
+  
+  # Ollama configuration
+  OLLAMA_BASE_URL: "http://ollama:11434"
+  OLLAMA_MODEL: "qwen3:14b"
+  
+  # LM Studio configuration
+  LMSTUDIO_BASE_URL: "http://lmstudio:1234/v1"
+  
+  # NanoGPT configuration (cloud fallback)
+  NANOGPT_BASE_URL: "https://nano-gpt.com/api"
+  
+  # BGE-M3 Embeddings
+  BGE_MODEL_PATH: "/models/bge-m3"
+  
+  # OpenTelemetry
+  OTEL_SERVICE_NAME: "me4brain"
+  OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+  OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+  
+  # Cache settings
+  CACHE_TTL_SECONDS: "3600"
+  SEMANTIC_CACHE_THRESHOLD: "0.85"
+  
+  # Rate limiting
+  RATE_LIMIT_PER_MINUTE: "60"
+  
+  # Monitoring
+  METRICS_PORT: "9090"
+  METRICS_PATH: "/metrics"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: me4brain-secrets
+type: Opaque
+stringData:
+  # API Keys (if using cloud providers)
+  # NANOGPT_API_KEY: "your-api-key-here"
+  
+  # Database password (if using managed PostgreSQL)
+  # DATABASE_PASSWORD: "your-db-password"
+  
+  # Any other sensitive configuration
+  # API_SECRET_KEY: "your-secret-key"

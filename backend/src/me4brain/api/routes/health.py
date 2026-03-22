@@ -1,9 +1,10 @@
 """Health Check Routes.
 
 Endpoints per verificare lo stato di salute del sistema e dei suoi componenti.
-Include checks per Redis, Qdrant, Neo4j.
+Include checks per Redis, Qdrant, Neo4j, database, queue, e LLM providers.
 """
 
+import asyncio
 import time
 from typing import Any
 
@@ -189,7 +190,7 @@ async def check_tool_index() -> ServiceHealth:
                 latency_ms=(time.time() - start) * 1000,
                 error="Nessuna collection di tool trovata in Qdrant",
             )
-        
+
         await client.close()
 
         latency = (time.time() - start) * 1000
@@ -260,6 +261,159 @@ async def check_bge_m3() -> ServiceHealth:
         )
 
 
+async def check_database() -> ServiceHealth:
+    """Check PostgreSQL/SQLite database connectivity."""
+    start = time.time()
+    try:
+        from me4brain.database.connection import get_session_context
+
+        async with get_session_context() as session:
+            # Simple query to verify connectivity
+            from sqlalchemy import text
+
+            result = await session.execute(text("SELECT 1"))
+            row = result.scalar()
+
+        latency = (time.time() - start) * 1000
+        return ServiceHealth(
+            name="database",
+            status="ok",
+            latency_ms=latency,
+        )
+    except Exception as e:
+        return ServiceHealth(
+            name="database",
+            status="error",
+            latency_ms=(time.time() - start) * 1000,
+            error=str(e)[:200],
+        )
+
+
+async def check_queue() -> ServiceHealth:
+    """Check Redis queue service status."""
+    start = time.time()
+    try:
+        from me4brain.queue import get_queue_manager
+
+        queue = get_queue_manager()
+        stats = await queue.get_queue_stats()
+
+        latency = (time.time() - start) * 1000
+        return ServiceHealth(
+            name="queue",
+            status="ok",
+            latency_ms=latency,
+            details={
+                "pending_tasks": stats.get("total_pending", 0),
+                "running": stats.get("running", False),
+            },
+        )
+    except Exception as e:
+        return ServiceHealth(
+            name="queue",
+            status="error",
+            latency_ms=(time.time() - start) * 1000,
+            error=str(e)[:200],
+        )
+
+
+async def check_tracing() -> ServiceHealth:
+    """Check Jaeger tracing connectivity."""
+    start = time.time()
+    try:
+        from me4brain.observability.tracing import is_trace_initialized
+
+        initialized = is_trace_initialized()
+        latency = (time.time() - start) * 1000
+
+        if initialized:
+            return ServiceHealth(
+                name="tracing",
+                status="ok",
+                latency_ms=latency,
+                details={"jaeger_configured": True},
+            )
+        else:
+            return ServiceHealth(
+                name="tracing",
+                status="degraded",
+                latency_ms=latency,
+                details={"jaeger_configured": False},
+            )
+    except Exception as e:
+        return ServiceHealth(
+            name="tracing",
+            status="error",
+            latency_ms=(time.time() - start) * 1000,
+            error=str(e)[:200],
+        )
+
+
+async def check_llm_providers() -> ServiceHealth:
+    """Check LLM providers (Ollama, LM Studio) availability."""
+    start = time.time()
+    try:
+        from me4brain.llm.health import get_llm_health_checker
+
+        checker = get_llm_health_checker()
+
+        # Check providers in parallel
+        ollama_result, lmstudio_result = await asyncio.gather(
+            checker.check_ollama(),
+            checker.check_lmstudio(),
+            return_exceptions=True,
+        )
+
+        # Handle exceptions
+        if isinstance(ollama_result, Exception):
+            ollama_healthy = False
+            ollama_error = str(ollama_result)[:100]
+        else:
+            ollama_healthy = ollama_result.healthy
+            ollama_error = None
+
+        if isinstance(lmstudio_result, Exception):
+            lmstudio_healthy = False
+            lmstudio_error = str(lmstudio_result)[:100]
+        else:
+            lmstudio_healthy = lmstudio_result.healthy
+            lmstudio_error = None
+
+        # Overall status
+        any_healthy = ollama_healthy or lmstudio_healthy
+        overall_status = "ok" if any_healthy else "error"
+
+        latency = (time.time() - start) * 1000
+        details = {}
+        if isinstance(ollama_result, Exception):
+            details["ollama_error"] = str(ollama_result)[:100]
+        else:
+            details["ollama_healthy"] = ollama_result.healthy
+            if ollama_result.model_loaded:
+                details["ollama_model"] = ollama_result.model_loaded
+
+        if isinstance(lmstudio_result, Exception):
+            details["lmstudio_error"] = str(lmstudio_result)[:100]
+        else:
+            details["lmstudio_healthy"] = lmstudio_result.healthy
+            if lmstudio_result.model_loaded:
+                details["lmstudio_model"] = lmstudio_result.model_loaded
+
+        return ServiceHealth(
+            name="llm_providers",
+            status=overall_status,
+            latency_ms=latency,
+            details=details,
+        )
+    except Exception as e:
+        return ServiceHealth(
+            name="llm_providers",
+            status="error",
+            latency_ms=(time.time() - start) * 1000,
+            error=str(e)[:200],
+        )
+
+
 # =============================================================================
 # Endpoints
 # =============================================================================
@@ -288,6 +442,10 @@ async def health_check() -> HealthStatus:
         check_neo4j(),
         check_tool_index(),
         check_bge_m3(),
+        check_database(),
+        check_queue(),
+        check_tracing(),
+        check_llm_providers(),
         return_exceptions=True,
     )
 
@@ -330,13 +488,14 @@ async def readiness_check() -> ReadinessResponse:
     """
     import asyncio
 
-    # Critical services that must be up
-    critical_services = {"redis", "qdrant"}
+    # Critical services that must be up for the system to operate
+    critical_services = {"redis", "qdrant", "database", "llm_providers"}
 
     checks = await asyncio.gather(
         check_redis(),
         check_qdrant(),
-        check_neo4j(),
+        check_database(),
+        check_llm_providers(),
     )
 
     critical_failures = []

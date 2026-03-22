@@ -1,0 +1,221 @@
+# Prometheus Alert Rules for JAI - Horizontal Scaling
+# These rules monitor multi-instance JAI deployment
+
+groups:
+  - name: JAI_Scaling_Alerts
+    interval: 30s
+    rules:
+      # High Error Rate - Multiple instances failing
+      - alert: JAIHighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+            and
+            sum by (instance) (http_requests_total{status=~"5.."})
+          )
+        for: 5m
+        labels:
+          severity: critical
+          service: me4brain
+        annotations:
+          summary: "High error rate across JAI instances"
+          description: "Error rate {{ $value | humanizePercentage }} exceeds 5% for 5 minutes"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/high-error-rate"
+
+      # High Latency - P99 > 1.5s
+      - alert: JAIHighLatency
+        expr: |
+          histogram_quantile(0.99, sum by (le, instance) (
+            rate(http_request_duration_seconds_bucket[5m])
+          )) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "High P99 latency detected"
+          description: "P99 latency {{ $value | humanizeDuration }} exceeds 1.5s threshold"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/high-latency"
+
+      # Queue Backlog - Too many pending tasks
+      - alert: JAIQueueBacklog
+        expr: queue_pending_tasks > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "Task queue backlog growing"
+          description: "{{ $value }} tasks pending in queue for 10+ minutes"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/queue-backlog"
+
+      # Cache Hit Ratio Low - Cache not effective
+      - alert: JAICacheHitRatioLow
+        expr: cache_hit_ratio < 0.2
+        for: 15m
+        labels:
+          severity: info
+          service: me4brain
+        annotations:
+          summary: "Cache hit ratio below target"
+          description: "Cache hit ratio {{ $value | humanizePercentage }} below 20% for 15 minutes"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/low-cache-ratio"
+
+      # Instance Down - Replica unavailable
+      - alert: JAIInstanceDown
+        expr: up{job="me4brain"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: me4brain
+        annotations:
+          summary: "JAI instance down"
+          description: "Instance {{ $labels.instance }} has been down for 1+ minute"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/instance-down"
+
+      # Database Connection Pool Exhausted
+      - alert: JAIDatabasePoolExhausted
+        expr: |
+          (
+            sqlalchemy_pool_checkouts_failed_total > 0
+            or
+            (sqlalchemy_pool_size - sqlalchemy_pool_idle) / sqlalchemy_pool_size > 0.9
+          )
+        for: 5m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "Database connection pool under pressure"
+          description: "Database pool usage exceeds 90% or checkouts failing"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/db-pool-exhausted"
+
+      # Redis Connection Issues
+      - alert: JAIRedisConnectionError
+        expr: |
+          (
+            redis_connection_errors_total > 0
+            or
+            rate(redis_commands_failed_total[5m]) > 0.01
+          )
+        for: 5m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "Redis connection problems detected"
+          description: "Redis error rate elevated or connections failing"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/redis-errors"
+
+      # LLM Provider Down - Fallback mode
+      - alert: JAILLMProviderDown
+        expr: |
+          (
+            ollama_requests_total{status="error"} / ollama_requests_total > 0.5
+            and
+            ollama_requests_total > 10
+          )
+        for: 3m
+        labels:
+          severity: critical
+          service: me4brain
+        annotations:
+          summary: "All LLM providers failing"
+          description: "LLM error rate exceeds 50% for 3+ minutes - system may be degraded"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/llm-provider-down"
+
+      # Memory Usage High - Risk of OOM
+      - alert: JAIMemoryUsageHigh
+        expr: |
+          (
+            container_memory_working_set_bytes / container_spec_memory_limit_bytes > 0.85
+          )
+        for: 10m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "Memory usage high on JAI instance"
+          description: "Instance {{ $labels.instance }} memory at {{ $value | humanizePercentage }} of limit"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/memory-high"
+
+      # CPU Throttling
+      - alert: JAICPUThrottling
+        expr: |
+          (
+            rate(container_cpu_cfs_throttled_periods_total[5m]) 
+            / 
+            rate(container_cpu_cfs_periods_total[5m]) > 0.5
+          )
+        for: 5m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "CPU throttling detected"
+          description: "Container throttled >50% of periods - may need more CPU resources"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/cpu-throttling"
+
+  - name: JAI_Scaling_Alerts_AutoRemediation
+    interval: 60s
+    rules:
+      # Scale Up - High traffic
+      - alert: JAIScaleUpRecommended
+        expr: |
+          (
+            sum by (service) (rate(http_requests_total[5m])) > 100
+            and
+            (
+              sum by (service) (rate(http_requests_total[5m])) 
+              / 
+              sum by (service) (rate(http_requests_total[5m] offset 10m)) > 1.5
+            )
+          )
+        for: 5m
+        labels:
+          severity: info
+          service: me4brain
+          action: scale
+        annotations:
+          summary: "Traffic increasing - consider scaling up"
+          description: "Request rate grew 50%+ in 10 minutes (currently {{ $value | humanize }} rps)"
+          runbook_url: "https://docs.me4brain.run/operations/scaling"
+
+      # Scale Down - Low traffic (only if healthy)
+      - alert: JAIScaleDownRecommended
+        expr: |
+          (
+            sum by (service) (rate(http_requests_total[5m])) < 20
+            and
+            (
+              sum by (service) (rate(http_requests_total[5m])) 
+              / 
+              sum by (service) (rate(http_requests_total[5m] offset 30m)) < 0.7
+            )
+            and
+            up{job="me4brain"} == 1
+          )
+        for: 30m
+        labels:
+          severity: info
+          service: me4brain
+          action: scale
+        annotations:
+          summary: "Low traffic - consider scaling down"
+          description: "Request rate dropped 30%+ in 30 minutes (currently {{ $value | humanize }} rps)"
+          runbook_url: "https://docs.me4brain.run/operations/scaling"
+
+      # Dead Letter Queue Growing
+      - alert: JAIDeadLetterQueueGrowing
+        expr: |
+          (
+            increase(queue_dead_letter_total[1h]) > 10
+          )
+        for: 5m
+        labels:
+          severity: warning
+          service: me4brain
+        annotations:
+          summary: "Dead letter queue has failed tasks"
+          description: "{{ $value }} tasks moved to dead letter queue in last hour"
+          runbook_url: "https://docs.me4brain.run/troubleshooting/dead-letter-queue"
