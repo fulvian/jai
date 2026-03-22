@@ -811,3 +811,17 @@ If the query has multiple intents, call one or more tools for EACH intent."""
                 "confidence_threshold": self._config.confidence_threshold,
             },
         }
+
+
+# Singleton instance for HybridToolRouter
+_router_instance: HybridToolRouter | None = None
+
+
+def _reset_router_singleton() -> None:
+    """Reset router singleton to pick up new configuration.
+
+    Called when LLM config is updated via API to ensure router uses new settings.
+    """
+    global _router_instance
+    _router_instance = None
+    logger.info("hybrid_router_singleton_reset", reason="config_changed")

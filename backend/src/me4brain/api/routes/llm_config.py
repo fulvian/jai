@@ -366,6 +366,14 @@ async def update_llm_config(update: LLMConfigUpdate) -> dict[str, Any]:
     verified_config = {}
     if should_clear_cache:
         get_llm_config.cache_clear()
+        # Also reset hybrid router singleton to pick up new config
+        try:
+            from me4brain.engine.hybrid_router.router import _reset_router_singleton
+
+            _reset_router_singleton()
+        except Exception as e:
+            logger.warning("hybrid_router_reset_failed", error=str(e))
+
         new_config = get_llm_config()
         verified_config = {
             "context_overflow_strategy": new_config.context_overflow_strategy,

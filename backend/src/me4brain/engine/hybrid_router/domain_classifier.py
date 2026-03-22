@@ -31,6 +31,10 @@ from me4brain.utils.json_utils import robust_json_parse
 
 logger = structlog.get_logger(__name__)
 
+# Domain classification timeout (30 seconds for local models)
+DOMAIN_CLASSIFICATION_TIMEOUT = 30  # Reduced from 600 for better debugging
+MAX_CLASSIFICATION_RETRIES = 3  # Retry before fallback
+
 
 class DomainClassifier:
     """Classifies queries into relevant domains.
@@ -155,101 +159,153 @@ Current time: {current_datetime}"""
 
         user_content += "\n\nRespond with JSON:"
 
-        try:
-            # Build LLMRequest for NanoGPTClient.generate_response()
-            request = LLMRequest(
-                messages=[
-                    Message(role=MessageRole.SYSTEM, content=system_prompt),
-                    Message(role=MessageRole.USER, content=user_content),
-                ],
-                model=self._config.router_model,
-                temperature=0.1,  # Low temperature for consistent classification
-                max_tokens=200,  # Classification is short
-            )
+        # Build LLMRequest for NanoGPTClient.generate_response()
+        request = LLMRequest(
+            messages=[
+                Message(role=MessageRole.SYSTEM, content=system_prompt),
+                Message(role=MessageRole.USER, content=user_content),
+            ],
+            model=self._config.router_model,
+            temperature=0.1,  # Low temperature for consistent classification
+            max_tokens=200,  # Classification is short
+        )
 
-            # Wrap LLM call with timeout protection (600 seconds for classification - generous development phase)
+        # Retry loop with exponential backoff before falling back
+        last_error = None
+        for attempt in range(1, MAX_CLASSIFICATION_RETRIES + 1):
             try:
-                response = await asyncio.wait_for(
-                    self._llm.generate_response(request),
-                    timeout=600.0,  # 600 second timeout for domain classification (development)
+                # Wrap LLM call with timeout protection (30 seconds for local models)
+                try:
+                    response = await asyncio.wait_for(
+                        self._llm.generate_response(request),
+                        timeout=DOMAIN_CLASSIFICATION_TIMEOUT,
+                    )
+                except asyncio.TimeoutError as e:
+                    last_error = e
+                    logger.warning(
+                        "domain_classification_timeout",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        timeout_seconds=DOMAIN_CLASSIFICATION_TIMEOUT,
+                        query_preview=query[:50],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        # Exponential backoff: 0.5s, 1.0s, 1.5s
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+                    raise
+
+                content = response.choices[0].message.content or ""
+                content = content.strip()
+
+                logger.debug(
+                    "domain_classification_raw_output",
+                    attempt=attempt,
+                    content=content,
                 )
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "domain_classification_timeout",
-                    timeout_seconds=600,
-                    fallback="keyword_based",
-                    query_preview=query[:50],
-                )
-                return self._fallback_classification(query)
 
-            content = response.choices[0].message.content or ""
-            content = content.strip()
+                # Add JSON recovery for partial/multi-line responses
+                # This helps if the LLM response is incomplete or has whitespace issues
+                if not content:
+                    last_error = ValueError("Empty response from LLM")
+                    logger.warning(
+                        "domain_classification_empty_response",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        query_preview=query[:50],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+                    raise last_error
 
-            logger.debug("domain_classification_raw_output", content=content)
+                data = robust_json_parse(content, expect_object=True)
 
-            # Add JSON recovery for partial/multi-line responses
-            # This helps if the LLM response is incomplete or has whitespace issues
-            if not content:
-                logger.warning(
-                    "domain_classification_empty_response",
-                    query_preview=query[:50],
-                )
-                return self._fallback_classification(query)
+                if not data or not isinstance(data, dict):
+                    last_error = ValueError("Failed to parse JSON from LLM response")
+                    logger.warning(
+                        "domain_classification_json_error",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        query_preview=query[:50],
+                        content_preview=content[:100],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+                    raise last_error
 
-            data = robust_json_parse(content, expect_object=True)
-
-            if not data:
-                logger.warning(
-                    "domain_classification_json_error",
-                    query_preview=query[:50],
-                    content_preview=content[:100],
-                )
-                return self._fallback_classification(query)
-
-            try:
-                domains = []
-                for d in data.get("domains", []):
-                    if isinstance(d, dict):
-                        domains.append(
-                            DomainComplexity(
-                                name=d.get("name", "unknown"),
-                                complexity=d.get("complexity", "medium"),
+                try:
+                    # Type is now guaranteed to be dict[str, Any]
+                    data_dict: dict[str, Any] = data  # type: ignore[assignment]
+                    domains = []
+                    for d in data_dict.get("domains", []):
+                        if isinstance(d, dict):
+                            domains.append(
+                                DomainComplexity(
+                                    name=d.get("name", "unknown"),
+                                    complexity=d.get("complexity", "medium"),
+                                )
                             )
-                        )
-                    elif isinstance(d, str):
-                        domains.append(DomainComplexity(name=d, complexity="medium"))
+                        elif isinstance(d, str):
+                            domains.append(DomainComplexity(name=d, complexity="medium"))
 
-                classification = DomainClassification(
-                    domains=domains,
-                    confidence=data.get("confidence", 0.8),
-                    query_summary=data.get("query_summary", ""),
-                )
+                    classification = DomainClassification(
+                        domains=domains,
+                        confidence=data_dict.get("confidence", 0.8),
+                        query_summary=data_dict.get("query_summary", ""),
+                    )
 
-                logger.info(
-                    "domain_classification_complete",
-                    query_preview=query[:50],
-                    domains=[d.name for d in domains],
-                    confidence=classification.confidence,
-                    is_multi_domain=classification.is_multi_domain,
-                )
+                    logger.info(
+                        "domain_classification_llm_success",
+                        attempt=attempt,
+                        query_preview=query[:50],
+                        domains=[d.name for d in domains],
+                        confidence=classification.confidence,
+                        is_multi_domain=classification.is_multi_domain,
+                    )
 
-                return classification
+                    return classification
+
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        "domain_classification_parse_error",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        error=str(e),
+                        query_preview=query[:50],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+                    raise
 
             except Exception as e:
-                logger.warning(
-                    "domain_classification_parse_error",
-                    error=str(e),
-                    query_preview=query[:50],
-                )
-                return self._fallback_classification(query)
+                last_error = e
+                if attempt == MAX_CLASSIFICATION_RETRIES:
+                    # All retries exhausted - fall back
+                    logger.warning(
+                        "domain_classification_fallback",
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        last_error=str(e),
+                        query_preview=query[:50],
+                    )
+                    return self._fallback_classification(query)
+                # Continue to next retry
+                continue
 
-        except Exception as e:
-            logger.error(
-                "domain_classification_failed",
-                error=str(e),
-                query_preview=query[:50],
-            )
-            return self._fallback_classification(query)
+        # Should not reach here, but ensure fallback
+        logger.error(
+            "domain_classification_failed",
+            error=str(last_error),
+            query_preview=query[:50],
+        )
+        return self._fallback_classification(query)
 
     async def classify_with_trace(
         self,
@@ -279,62 +335,72 @@ Current time: {current_datetime}"""
             input_query=query,
         )
 
-        try:
-            current_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            system_prompt = self._build_router_prompt(current_dt)
+        current_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        system_prompt = self._build_router_prompt(current_dt)
 
-            # Build user content with context
-            user_content = f"USER QUERY: {query}"
+        # Build user content with context
+        user_content = f"USER QUERY: {query}"
 
-            # Add conversation context if available
-            if conversation_context and len(conversation_context) > 0:
-                context_summary = self._summarize_context(conversation_context)
-                user_content = f"CONVERSATION CONTEXT:\n{context_summary}\n\n{user_content}"
+        # Add conversation context if available
+        if conversation_context and len(conversation_context) > 0:
+            context_summary = self._summarize_context(conversation_context)
+            user_content = f"CONVERSATION CONTEXT:\n{context_summary}\n\n{user_content}"
 
-            # Add intent hints if available
-            if intent_analysis:
-                suggested = intent_analysis.get("suggested_domains", [])
-                if suggested:
-                    user_content += f"\n\nHINT: Intent analysis suggests these domains: {suggested}"
+        # Add intent hints if available
+        if intent_analysis:
+            suggested = intent_analysis.get("suggested_domains", [])
+            if suggested:
+                user_content += f"\n\nHINT: Intent analysis suggests these domains: {suggested}"
 
-            user_content += "\n\nRespond with JSON:"
+        user_content += "\n\nRespond with JSON:"
 
+        # Build LLMRequest for NanoGPTClient.generate_response()
+        request = LLMRequest(
+            messages=[
+                Message(role=MessageRole.SYSTEM, content=system_prompt),
+                Message(role=MessageRole.USER, content=user_content),
+            ],
+            model=self._config.router_model,
+            temperature=0.1,  # Low temperature for consistent classification
+            max_tokens=200,  # Classification is short
+        )
+
+        # Retry loop with exponential backoff before falling back
+        last_error: Exception | None = None
+        for attempt in range(1, MAX_CLASSIFICATION_RETRIES + 1):
             try:
-                # Build LLMRequest for NanoGPTClient.generate_response()
-                request = LLMRequest(
-                    messages=[
-                        Message(role=MessageRole.SYSTEM, content=system_prompt),
-                        Message(role=MessageRole.USER, content=user_content),
-                    ],
-                    model=self._config.router_model,
-                    temperature=0.1,  # Low temperature for consistent classification
-                    max_tokens=200,  # Classification is short
-                )
-
                 # Wrap LLM call with timeout protection
                 try:
                     response = await asyncio.wait_for(
                         self._llm.generate_response(request),
-                        timeout=600.0,
+                        timeout=DOMAIN_CLASSIFICATION_TIMEOUT,
                     )
                     trace.provider_resolved = getattr(self._llm, "provider", "unknown")
                     trace.model_effective = self._config.router_model
 
-                except asyncio.TimeoutError:
-                    trace.fallback_applied = True
-                    trace.fallback_type = FallbackType.LLM_TIMEOUT
-                    trace.fallback_reason = "Domain classification LLM timeout (600s)"
-                    trace.success = False
-                    trace.error_code = "TIMEOUT"
-                    trace.error_message = "LLM timeout after 600 seconds"
-                    trace.duration_ms = (time.time() - start_time) * 1000
-
+                except asyncio.TimeoutError as e:
+                    last_error = e
                     logger.warning(
                         "domain_classification_timeout",
-                        timeout_seconds=600,
-                        fallback="keyword_based",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        timeout_seconds=DOMAIN_CLASSIFICATION_TIMEOUT,
                         query_preview=query[:50],
                     )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+
+                    # All retries exhausted
+                    trace.fallback_applied = True
+                    trace.fallback_type = FallbackType.LLM_TIMEOUT
+                    trace.fallback_reason = f"Domain classification LLM timeout after {MAX_CLASSIFICATION_RETRIES} attempts"
+                    trace.success = False
+                    trace.error_code = "TIMEOUT"
+                    trace.error_message = f"LLM timeout after {DOMAIN_CLASSIFICATION_TIMEOUT}s"
+                    trace.duration_ms = (time.time() - start_time) * 1000
+
                     classification = self._fallback_classification(query)
                     trace.output_domains = classification.domain_names
                     trace.output_count = len(classification.domain_names)
@@ -345,22 +411,35 @@ Current time: {current_datetime}"""
                 content = response.choices[0].message.content or ""
                 content = content.strip()
 
-                logger.debug("domain_classification_raw_output", content=content)
+                logger.debug(
+                    "domain_classification_raw_output",
+                    attempt=attempt,
+                    content=content,
+                )
 
                 # Handle empty response
                 if not content:
+                    last_error = ValueError("Empty response from LLM")
+                    logger.warning(
+                        "domain_classification_empty_response",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        query_preview=query[:50],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+
+                    # All retries exhausted
                     trace.fallback_applied = True
                     trace.fallback_type = FallbackType.LLM_PARSE_ERROR
-                    trace.fallback_reason = "Empty LLM response"
+                    trace.fallback_reason = "Empty LLM response after all retries"
                     trace.success = False
                     trace.error_code = "EMPTY_RESPONSE"
                     trace.error_message = "LLM returned empty content"
                     trace.duration_ms = (time.time() - start_time) * 1000
 
-                    logger.warning(
-                        "domain_classification_empty_response",
-                        query_preview=query[:50],
-                    )
                     classification = self._fallback_classification(query)
                     trace.output_domains = classification.domain_names
                     trace.output_count = len(classification.domain_names)
@@ -371,20 +450,29 @@ Current time: {current_datetime}"""
                 # Parse JSON
                 data = robust_json_parse(content, expect_object=True)
 
-                if not data:
+                if not data or not isinstance(data, dict):
+                    last_error = ValueError("Failed to parse JSON from LLM response")
+                    logger.warning(
+                        "domain_classification_json_error",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        query_preview=query[:50],
+                        content_preview=content[:100],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+
+                    # All retries exhausted
                     trace.fallback_applied = True
                     trace.fallback_type = FallbackType.LLM_PARSE_ERROR
-                    trace.fallback_reason = "JSON parse failed"
+                    trace.fallback_reason = "JSON parse failed after all retries"
                     trace.success = False
                     trace.error_code = "JSON_PARSE_ERROR"
                     trace.error_message = f"Failed to parse JSON from: {content[:100]}"
                     trace.duration_ms = (time.time() - start_time) * 1000
 
-                    logger.warning(
-                        "domain_classification_json_error",
-                        query_preview=query[:50],
-                        content_preview=content[:100],
-                    )
                     classification = self._fallback_classification(query)
                     trace.output_domains = classification.domain_names
                     trace.output_count = len(classification.domain_names)
@@ -393,8 +481,10 @@ Current time: {current_datetime}"""
                     return classification, trace
 
                 try:
+                    # Type is now guaranteed to be dict[str, Any]
+                    data_dict: dict[str, Any] = data  # type: ignore[assignment]
                     domains = []
-                    for d in data.get("domains", []):
+                    for d in data_dict.get("domains", []):
                         if isinstance(d, dict):
                             domains.append(
                                 DomainComplexity(
@@ -407,8 +497,8 @@ Current time: {current_datetime}"""
 
                     classification = DomainClassification(
                         domains=domains,
-                        confidence=data.get("confidence", 0.8),
-                        query_summary=data.get("query_summary", ""),
+                        confidence=data_dict.get("confidence", 0.8),
+                        query_summary=data_dict.get("query_summary", ""),
                     )
 
                     # Trace success
@@ -420,7 +510,8 @@ Current time: {current_datetime}"""
                     trace.confidence_score = classification.confidence
 
                     logger.info(
-                        "domain_classification_complete",
+                        "domain_classification_llm_success",
+                        attempt=attempt,
                         query_preview=query[:50],
                         domains=[d.name for d in domains],
                         confidence=classification.confidence,
@@ -431,16 +522,51 @@ Current time: {current_datetime}"""
                     return classification, trace
 
                 except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        "domain_classification_parse_error",
+                        attempt=attempt,
+                        max_attempts=MAX_CLASSIFICATION_RETRIES,
+                        error=str(e),
+                        query_preview=query[:50],
+                    )
+                    if attempt < MAX_CLASSIFICATION_RETRIES:
+                        backoff_delay = 0.5 * attempt
+                        await asyncio.sleep(backoff_delay)
+                        continue
+
+                    # All retries exhausted
                     trace.fallback_applied = True
                     trace.fallback_type = FallbackType.LLM_PARSE_ERROR
-                    trace.fallback_reason = f"Classification parse error: {str(e)}"
+                    trace.fallback_reason = (
+                        f"Classification parse error after all retries: {str(e)}"
+                    )
                     trace.success = False
                     trace.error_code = "PARSE_ERROR"
                     trace.error_message = str(e)
                     trace.duration_ms = (time.time() - start_time) * 1000
 
-                    logger.warning(
-                        "domain_classification_parse_error",
+                    classification = self._fallback_classification(query)
+                    trace.output_domains = classification.domain_names
+                    trace.output_count = len(classification.domain_names)
+                    trace.confidence_score = classification.confidence
+                    trace.used_fallback_keywords = True
+                    return classification, trace
+
+            except Exception as e:
+                last_error = e
+                if attempt == MAX_CLASSIFICATION_RETRIES:
+                    # All retries exhausted
+                    trace.fallback_applied = True
+                    trace.fallback_type = FallbackType.LLM_EXCEPTION
+                    trace.fallback_reason = f"Unhandled exception: {str(e)}"
+                    trace.success = False
+                    trace.error_code = "EXCEPTION"
+                    trace.error_message = str(e)
+                    trace.duration_ms = (time.time() - start_time) * 1000
+
+                    logger.error(
+                        "domain_classification_failed",
                         error=str(e),
                         query_preview=query[:50],
                     )
@@ -450,44 +576,28 @@ Current time: {current_datetime}"""
                     trace.confidence_score = classification.confidence
                     trace.used_fallback_keywords = True
                     return classification, trace
+                continue
 
-            except asyncio.TimeoutError:
-                # Timeout during generation_response
-                trace.fallback_applied = True
-                trace.fallback_type = FallbackType.LLM_TIMEOUT
-                trace.fallback_reason = "LLM generation timeout"
-                trace.success = False
-                trace.error_code = "TIMEOUT"
-                trace.error_message = "generate_response timed out"
-                trace.duration_ms = (time.time() - start_time) * 1000
+        # Should not reach here, but ensure fallback
+        logger.error(
+            "domain_classification_failed",
+            error=str(last_error),
+            query_preview=query[:50],
+        )
+        trace.fallback_applied = True
+        trace.fallback_type = FallbackType.LLM_EXCEPTION
+        trace.fallback_reason = "Exhausted all retries"
+        trace.success = False
+        trace.error_code = "EXCEPTION"
+        trace.error_message = "All retries exhausted"
+        trace.duration_ms = (time.time() - start_time) * 1000
 
-                classification = self._fallback_classification(query)
-                trace.output_domains = classification.domain_names
-                trace.output_count = len(classification.domain_names)
-                trace.confidence_score = classification.confidence
-                trace.used_fallback_keywords = True
-                return classification, trace
-
-        except Exception as e:
-            trace.fallback_applied = True
-            trace.fallback_type = FallbackType.LLM_EXCEPTION
-            trace.fallback_reason = f"Unhandled exception: {str(e)}"
-            trace.success = False
-            trace.error_code = "EXCEPTION"
-            trace.error_message = str(e)
-            trace.duration_ms = (time.time() - start_time) * 1000
-
-            logger.error(
-                "domain_classification_failed",
-                error=str(e),
-                query_preview=query[:50],
-            )
-            classification = self._fallback_classification(query)
-            trace.output_domains = classification.domain_names
-            trace.output_count = len(classification.domain_names)
-            trace.confidence_score = classification.confidence
-            trace.used_fallback_keywords = True
-            return classification, trace
+        classification = self._fallback_classification(query)
+        trace.output_domains = classification.domain_names
+        trace.output_count = len(classification.domain_names)
+        trace.confidence_score = classification.confidence
+        trace.used_fallback_keywords = True
+        return classification, trace
 
     def _fallback_classification(self, query: str) -> DomainClassification:
         """Generate fallback classification when LLM fails.

@@ -36,11 +36,14 @@ class LLMHealthChecker:
         self._cache: dict[str, HealthCheckResult] = {}
         self._cache_ttl = 30  # 30 secondi
 
-    async def check_ollama(self, base_url: str = "http://localhost:11434") -> HealthCheckResult:
-        """Controlla se Ollama è disponibile e risponde.
+    async def check_ollama(
+        self, base_url: str = "http://localhost:11434", required_model: str | None = None
+    ) -> HealthCheckResult:
+        """Controlla se Ollama è disponibile e ha il modello richiesto caricato.
 
         Args:
             base_url: URL base di Ollama (default: localhost:11434)
+            required_model: Modello specifico da verificare (es. 'qwen3:14b')
 
         Returns:
             HealthCheckResult con status e latenza
@@ -56,11 +59,38 @@ class LLMHealthChecker:
                     models = data.get("models", [])
                     model_names = [m.get("name") for m in models]
 
+                    # Verifica il modello richiesto se specificato
+                    if required_model:
+                        # Check exact match or match with tag variations
+                        base_model = (
+                            required_model.split(":")[0]
+                            if ":" in required_model
+                            else required_model
+                        )
+                        has_required_model = required_model in model_names or any(
+                            base_model in m for m in model_names
+                        )
+
+                        if not has_required_model:
+                            logger.warning(
+                                "ollama_required_model_not_loaded",
+                                required_model=required_model,
+                                available_models=model_names[:5],
+                                latency_ms=latency_ms,
+                            )
+                            return HealthCheckResult(
+                                provider="ollama",
+                                healthy=False,
+                                latency_ms=latency_ms,
+                                error=f"Required model '{required_model}' not loaded. Available: {', '.join(model_names[:3])}",
+                            )
+
                     logger.info(
                         "ollama_health_ok",
                         latency_ms=latency_ms,
                         models_count=len(models),
                         models=model_names[:3],  # First 3
+                        required_model=required_model,
                     )
 
                     return HealthCheckResult(
@@ -234,11 +264,14 @@ class LLMHealthChecker:
                 error=str(e),
             )
 
-    async def get_best_provider(self) -> str:
+    async def get_best_provider(self, required_model: str | None = None) -> str:
         """Determina il miglior provider disponibile nel seguente ordine:
         1. Ollama (local, fast, no API keys required)
         2. LM Studio (local, reliable, UI-based)
         3. NanoGPT (cloud, slow, requires API key but always available)
+
+        Args:
+            required_model: Modello specifico da verificare (es. 'qwen3:14b')
 
         Returns:
             Nome del provider migliore disponibile
@@ -247,9 +280,13 @@ class LLMHealthChecker:
 
         config = get_llm_config()
 
+        # Use routing model if no specific model required
+        if required_model is None:
+            required_model = config.model_routing
+
         # Health check in parallelo
         results = await asyncio.gather(
-            self.check_ollama(config.ollama_base_url),
+            self.check_ollama(config.ollama_base_url, required_model=required_model),
             self.check_lmstudio(config.lmstudio_base_url),
             self.check_nanogpt(config.nanogpt_base_url),
         )
@@ -259,17 +296,18 @@ class LLMHealthChecker:
             ollama=results[0].healthy,
             lmstudio=results[1].healthy,
             nanogpt=results[2].healthy,
+            required_model=required_model,
         )
 
         # Priorità: Ollama > LM Studio > NanoGPT
         if results[0].healthy:
-            logger.info("best_provider_selected", provider="ollama")
+            logger.info("best_provider_selected", provider="ollama", model=required_model)
             return "ollama"
         elif results[1].healthy:
             logger.warning(
                 "best_provider_selected_degraded",
                 provider="lmstudio",
-                reason="Ollama offline",
+                reason="Ollama offline or model not loaded",
             )
             return "lmstudio"
         else:

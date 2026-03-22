@@ -55,6 +55,47 @@ from me4brain.utils.logging import configure_logging
 logger = structlog.get_logger(__name__)
 
 
+async def _verify_llm_connectivity() -> None:
+    """Verify LLM provider is reachable and required model is loaded.
+
+    This check runs at startup to detect configuration issues early.
+    """
+    try:
+        from me4brain.llm.health import get_llm_health_checker
+        from me4brain.llm.config import get_llm_config
+
+        config = get_llm_config()
+        checker = get_llm_health_checker()
+
+        # Check Ollama with required model
+        ollama_result = await checker.check_ollama(
+            config.ollama_base_url, required_model=config.model_routing
+        )
+
+        if not ollama_result.healthy:
+            logger.warning(
+                "startup_llm_check_failed",
+                provider="ollama",
+                error=ollama_result.error,
+                required_model=config.model_routing,
+                hint=f"Run: ollama pull {config.model_routing}",
+            )
+            # Don't fail startup, but log prominently for debugging
+        else:
+            logger.info(
+                "startup_llm_check_passed",
+                provider="ollama",
+                model=config.model_routing,
+                latency_ms=ollama_result.latency_ms,
+            )
+    except Exception as e:
+        logger.warning(
+            "startup_llm_check_error",
+            error=str(e),
+            note="LLM connectivity check skipped - will retry on first query",
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Lifecycle manager per l'applicazione.
@@ -104,6 +145,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from me4brain.api.routes.health import set_startup_time
 
     set_startup_time()
+
+    # Verify LLM connectivity at startup
+    await _verify_llm_connectivity()
 
     # Inizializza Browser Manager per browser automation
     browser_manager = None
