@@ -12,9 +12,12 @@ import re
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import structlog
+
+if TYPE_CHECKING:
+    from me4brain.cache.cache_manager import CacheManager
 
 from me4brain.engine.hybrid_router.metrics import (
     CLASSIFICATION_TOTAL,
@@ -25,6 +28,9 @@ from me4brain.engine.hybrid_router.metrics import (
     CLASSIFICATION_CONFIDENCE,
     CLASSIFICATION_RETRIES,
     QUERY_WITH_CONTEXT,
+    CACHE_HITS,
+    CACHE_MISSES,
+    CACHE_HIT_RATIO,
 )
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
@@ -68,6 +74,8 @@ class DomainClassifier:
 
     Stage 1 of the hybrid router - determines which domains are relevant
     for a query before selecting specific tools.
+
+    Features optional caching via Redis with semantic similarity matching.
     """
 
     def __init__(
@@ -75,10 +83,139 @@ class DomainClassifier:
         llm_client: NanoGPTClient,
         available_domains: list[str],
         config: HybridRouterConfig | None = None,
+        cache_manager: CacheManager | None = None,
     ) -> None:
         self._llm = llm_client
         self._domains = available_domains
         self._config = config or HybridRouterConfig()
+        self._cache_manager = cache_manager
+
+    @property
+    def cache_manager(self) -> CacheManager | None:
+        """Get the cache manager (lazy initialization)."""
+        return self._cache_manager
+
+    def set_cache_manager(self, cache_manager: CacheManager) -> None:
+        """Set the cache manager.
+
+        Args:
+            cache_manager: CacheManager instance for caching classification results
+        """
+        self._cache_manager = cache_manager
+
+    async def _check_cache(
+        self,
+        query: str,
+        user_content: str,
+    ) -> DomainClassification | None:
+        """Check if query result is cached.
+
+        Args:
+            query: Original user query
+            user_content: Built user content (for cache key generation)
+
+        Returns:
+            Cached DomainClassification if found, None otherwise
+        """
+        if self._cache_manager is None:
+            return None
+
+        try:
+            from me4brain.cache.cache_manager import CachedResponse
+            from me4brain.cache.query_normalizer import generate_cache_key
+
+            # Generate cache key
+            model = self._config.router_model
+            provider = getattr(self._llm, "provider", "unknown")
+            cache_key = generate_cache_key(query, model, provider)
+
+            # Try to get from cache
+            cached_response = await self._cache_manager.get(cache_key)
+            if cached_response is None:
+                # Cache miss
+                model_label = model or "unknown"
+                provider_label = provider or "unknown"
+                CACHE_MISSES.labels(model=model_label, provider=provider_label).inc()
+                return None
+
+            # Convert to DomainClassification
+            classification = cached_response.to_domain_classification()
+
+            # Record cache hit
+            model_label = model or "unknown"
+            provider_label = provider or "unknown"
+            CACHE_HITS.labels(model=model_label, provider=provider_label).inc()
+
+            # Update hit ratio (simplified - actual ratio would need proper tracking)
+            logger.debug(
+                "cache_hit_recorded",
+                key=cache_key,
+                domains=classification.domain_names,
+            )
+
+            return classification
+
+        except Exception as e:
+            logger.warning("cache_check_failed", error=str(e))
+            return None
+
+    async def _cache_result(
+        self,
+        query: str,
+        classification: DomainClassification,
+        method: str,
+    ) -> None:
+        """Cache a classification result.
+
+        Args:
+            query: Original user query
+            classification: DomainClassification to cache
+            method: Classification method ('llm', 'fallback_keyword', etc.)
+        """
+        if self._cache_manager is None:
+            return
+
+        try:
+            from me4brain.cache.cache_manager import CachedResponse
+            from me4brain.cache.query_normalizer import generate_cache_key
+
+            # Generate cache key
+            model = self._config.router_model
+            provider = getattr(self._llm, "provider", "unknown")
+            cache_key = generate_cache_key(query, model, provider)
+
+            # Serialize domains
+            domains_data = [
+                {"name": d.name, "complexity": d.complexity} for d in classification.domains
+            ]
+
+            # Create cached response
+            # Use first domain as primary for backwards compatibility
+            primary_domain = classification.domains[0].name if classification.domains else "unknown"
+            cached_response = CachedResponse(
+                domain=primary_domain,
+                domains=domains_data,
+                confidence=classification.confidence,
+                query_summary=classification.query_summary,
+                method=method,
+                cached_at=time.time(),
+            )
+
+            # Cache with default TTL (1 hour)
+            from me4brain.config.cache_config import get_cache_settings
+
+            settings = get_cache_settings()
+            await self._cache_manager.set(cache_key, cached_response, ttl=settings.default_ttl)
+
+            logger.debug(
+                "classification_cached",
+                key=cache_key,
+                domains=classification.domain_names,
+                ttl=settings.default_ttl,
+            )
+
+        except Exception as e:
+            logger.warning("cache_write_failed", error=str(e))
 
     def _build_router_prompt(self, current_datetime: str) -> str:
         """Build the system prompt for domain classification."""
@@ -241,6 +378,21 @@ Current time: {current_datetime}"""
             max_tokens=200,  # Classification is short
         )
 
+        # Check cache before LLM call (only for non-simplified queries)
+        if self._cache_manager is not None and not simplified:
+            cached = await self._check_cache(query, user_content)
+            if cached is not None:
+                elapsed = time.time() - start_time
+                CLASSIFICATION_LATENCY.labels(method="cache").observe(elapsed)
+                logger.info(
+                    "domain_classification_cache_hit",
+                    query_preview=query[:50],
+                    domains=cached.domain_names,
+                    confidence=cached.confidence,
+                    latency_seconds=elapsed,
+                )
+                return cached
+
         # Retry loop with exponential backoff before falling back
         last_error = None
         for attempt in range(1, MAX_CLASSIFICATION_RETRIES + 1):
@@ -349,6 +501,10 @@ Current time: {current_datetime}"""
                         is_multi_domain=classification.is_multi_domain,
                         latency_seconds=elapsed,
                     )
+
+                    # Cache the result (only on successful LLM classification)
+                    if self._cache_manager is not None:
+                        await self._cache_result(query, classification, "llm")
 
                     return classification
 

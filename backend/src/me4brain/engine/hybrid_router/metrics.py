@@ -64,3 +64,42 @@ QUERY_WITH_CONTEXT = Counter(
     "Queries classified with conversation context",
     ["has_context"],
 )
+
+# =============================================================================
+# Cache Metrics (Phase 6)
+# =============================================================================
+
+# Cache hit/miss tracking
+CACHE_HITS = Counter(
+    "cache_hits_total",
+    "Total cache hits",
+    ["model", "provider"],
+)
+
+CACHE_MISSES = Counter(
+    "cache_misses_total",
+    "Total cache misses",
+    ["model", "provider"],
+)
+
+# Cache hit ratio gauge
+CACHE_HIT_RATIO = Gauge(
+    "cache_hit_ratio",
+    "Cache hit ratio",
+    ["model", "provider"],
+)
+
+# Semantic similarity score
+SEMANTIC_SIMILARITY_SCORE = Histogram(
+    "semantic_similarity_score",
+    "Semantic similarity score for cache matches",
+    buckets=(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0),
+)
+
+# Cache operation latency
+CACHE_OPERATION_LATENCY = Histogram(
+    "cache_operation_latency_seconds",
+    "Cache operation latency",
+    ["operation"],  # get, set, invalidate
+    buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0),
+)
