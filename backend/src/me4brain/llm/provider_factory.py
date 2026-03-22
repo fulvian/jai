@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import structlog
 import re
+import time
+from dataclasses import dataclass
 from me4brain.llm.base import LLMProvider
 from me4brain.llm.config import get_llm_config
 from me4brain.llm.health import get_llm_health_checker
@@ -21,6 +23,63 @@ from me4brain.llm.ollama import get_ollama_client
 from me4brain.llm.fallback import FallbackProvider
 
 logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class CachedProviderStatus:
+    """Cache entry for provider health status with TTL validation."""
+
+    provider: str
+    healthy: bool
+    checked_at: float
+    ttl: float = 30.0  # 30 second cache TTL
+
+    @property
+    def is_valid(self) -> bool:
+        """Check if cached status is still valid (within TTL)."""
+        return (time.time() - self.checked_at) < self.ttl
+
+
+_provider_cache: CachedProviderStatus | None = None
+
+
+async def get_cached_best_provider() -> str:
+    """Get best provider with caching to avoid repeated health checks.
+
+    Uses cached result if available and fresh (< 30s old), otherwise performs
+    new health check and caches the result.
+
+    Returns:
+        Provider name: "ollama", "lmstudio", or "nanogpt"
+    """
+    global _provider_cache
+
+    # Use cache if valid
+    if _provider_cache and _provider_cache.is_valid:
+        logger.debug(
+            "get_cached_best_provider_cache_hit",
+            provider=_provider_cache.provider,
+            age_seconds=time.time() - _provider_cache.checked_at,
+        )
+        return _provider_cache.provider
+
+    # Cache miss or expired - perform health check
+    health_checker = get_llm_health_checker()
+    best = await health_checker.get_best_provider()
+
+    # Update cache
+    _provider_cache = CachedProviderStatus(
+        provider=best,
+        healthy=True,
+        checked_at=time.time(),
+    )
+
+    logger.debug(
+        "get_cached_best_provider_cache_updated",
+        provider=best,
+    )
+
+    return best
 
 
 UUID_PATTERN = re.compile(
