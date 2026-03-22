@@ -1,0 +1,79 @@
+version: '3.8'
+
+# ============================================================================
+# HYBRID DEVELOPMENT MODE (Dependencies Only)
+# 
+# Usage: docker-compose -f docker-compose.dev.yml up
+# 
+# This configuration runs ONLY the external dependencies:
+# - PostgreSQL (database)
+# - Redis (cache)
+# - Qdrant (vector search)
+#
+# Backend and Frontend run NATIVELY on your Mac for:
+# - Faster hot reload (<100ms vs 2-3s in Docker)
+# - Lower CPU/RAM usage (no Docker overhead)
+# - Better debugging (breakpoints, console output)
+# ============================================================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: jai-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-jai_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jai_password}
+      POSTGRES_DB: ${DB_NAME:-me4brain}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - jai-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-jai_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: jai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - jai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: jai-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - jai-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+
+networks:
+  jai-network:
+    driver: bridge
