@@ -1,9 +1,8 @@
-from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Literal
 
 # Calcola il path assoluto alla root del progetto
 # This file: src/me4brain/llm/config.py → root = ../../..
@@ -15,7 +14,7 @@ class LLMConfig(BaseSettings):
     """Configurazione per il sottosistema LLM."""
 
     # NanoGPT Credentials
-    nanogpt_api_key: str = Field(..., alias="NANOGPT_API_KEY")
+    nanogpt_api_key: str = Field(default="", alias="NANOGPT_API_KEY")
     nanogpt_base_url: str = Field(default="https://nano-gpt.com/api/v1", alias="NANOGPT_BASE_URL")
 
     # Selection - Qwen 3.5-4B-MLX for local inference
