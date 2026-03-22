@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/llm/provider_factory.py
+# hypothesis_version: 6.151.9
+
+[30.0, '-mlx', '/', ':', 'Ollama offline', 'llama', 'lmstudio', 'mistral', 'mlx-', 'nanogpt', 'ollama', 'ollama_first', 'ollama_only', 'qwen', 'tool_calling']

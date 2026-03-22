@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/browser/types.py
+# hypothesis_version: 6.151.9
+
+[1.0, 512, 720, 1280, 3000, 30000, 'SessionResponse', 'active', 'busy', 'chromium', 'click', 'closed', 'creating', 'custom', 'domcontentloaded', 'error', 'extract', 'firefox', 'gpt-4o', 'load', 'navigate', 'networkidle', 'paused', 'ready', 'recording', 'screenshot', 'scroll', 'stopped', 'type', 'wait', 'webkit']

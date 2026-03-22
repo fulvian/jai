@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/secrets/manager.py
+# hypothesis_version: 6.151.9
+
+['--config', '--plain', '--project', '--version', 'DOPPLER_PROJECT', 'Darwin', 'available_backends', 'cached_secrets', 'configured_backends', 'dev', 'doppler', 'doppler_get_failed', 'doppler_project', 'env', 'get', 'keychain', 'keychain_get_failed', 'keychain_service', 'keychain_set_failed', 'me4brain', 'secret_cache_hit', 'secret_found', 'secret_not_found', 'secrets']

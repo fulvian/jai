@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/tenant/store.py
+# hypothesis_version: 6.151.9
+
+['Default Tenant', 'default', 'tenant', 'tenant_created', 'tenant_hard_deleted', 'tenant_parse_error', 'tenant_updated', 'tenants:index']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/mcp.py
+# hypothesis_version: 6.151.9
+
+[55.0, 'Me4BrAIn', 'analyze_all_today', 'analyze_market', 'away_team', 'days_ahead', 'espn_scoreboard', 'gmail_search', 'home_team', 'max_results', 'mcp_hero_tools_ready', 'nba_betting_analyzer', 'query', 'smart_search', 'stock_key_metrics', 'success', 'symbol']

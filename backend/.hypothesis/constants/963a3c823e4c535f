@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/ingestion.py
+# hypothesis_version: 6.151.9
+
+[400, 500, 1024, '.bmp', '.jpeg', '.jpg', '.pdf', '.png', '/health', '/upload', '/v1/ingestion', 'Ingestion', 'No filename provided', 'Original filename', 'content', 'degraded', 'error', 'file_processed', 'ingestion', 'method', 'model', 'ocr_available', 'ok', 'pages', 'reasoning', 'service', 'status', 'unknown', 'vision_model']

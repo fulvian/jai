@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/types.py
+# hypothesis_version: 6.151.9
+
+[0.0, 'Session identifier', 'UI icon suggestion', 'array', 'description', 'enum', 'function', 'items', 'name', 'object', 'parameters', 'properties', 'required', 'string', 'type']

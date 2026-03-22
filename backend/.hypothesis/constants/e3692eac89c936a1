@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/webhooks/dispatcher.py
+# hypothesis_version: 6.151.9
+
+[400, 500, 1000, 'Content-Type', 'Me4BrAIn-Webhook/1.0', 'Timeout', 'User-Agent', 'X-Webhook-Delivery', 'X-Webhook-Event', 'X-Webhook-Signature', 'application/json', 'config_id', 'delivery', 'event', 'event_id', 'event_type', 'failed', 'payload', 'pending', 'queued_at', 'retrying', 'source', 'success', 'timestamp', 'webhook_client_error', 'webhook_delivered', 'webhook_http_error', 'webhook_retry_error', 'webhook_timeout', 'webhooks_retried']

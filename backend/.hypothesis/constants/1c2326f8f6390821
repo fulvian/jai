@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/skills/__init__.py
+# hypothesis_version: 6.151.9
+
+['CLIRequirement', 'EnvRequirement', 'IntegrationStats', 'Requirement', 'SkillDefinition', 'SkillExecutionResult', 'SkillExecutor', 'SkillIntegrator', 'SkillLoader', 'SkillMetadata', 'SkillParseError', 'SkillParser', 'SkillRegistry', 'SkillSource', 'SkillStatus']

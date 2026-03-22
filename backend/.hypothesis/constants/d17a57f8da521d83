@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/tenant/quota.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1000, 86400, 2678400, 'all_quotas_reset', 'api_calls_day', 'api_calls_minute', 'browser_sessions', 'entities', 'episodes', 'llm_tokens_month', 'quota', 'quota_exceeded', 'quota_reset', 'sessions', 'storage_mb']

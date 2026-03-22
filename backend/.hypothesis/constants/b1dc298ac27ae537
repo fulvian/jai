@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/skills.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 0.8, 400, 404, 500, '.md', '/approval-stats', '/install', '/pending', '/ping', '/skills', '/stats', '/{skill_id:path}', 'Skill non trovata', 'SkillResponse', 'approved', 'bundled', 'by_source', 'clawhub', 'crystallized', 'enabled_only', 'explicit', 'local', 'message', 'pending', 'ping', 'pong', 'rejected', 'skill_install_error', 'skills']

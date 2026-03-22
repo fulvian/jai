@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/conversational_detector.py
+# hypothesis_version: 6.151.9
+
+[0.1, 100, 'LLMProvider', 'farewell', 'greeting', 'is_conversational', 'joke_request', 'llm_classification', 'llm_empty_response', 'meta_about_bot', 'opinion_ask', 'reason', 'small_talk']

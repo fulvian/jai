@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/api_key.py
+# hypothesis_version: 6.151.9
+
+['API Key required', 'ApiKey', 'Invalid API Key', 'WWW-Authenticate', 'X-API-Key', 'api_key_bypass', 'api_key_invalid', 'api_key_missing', 'bypass', 'not_configured']

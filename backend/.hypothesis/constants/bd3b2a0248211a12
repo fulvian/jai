@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/monitoring/resource_monitor.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.1, 2.0, 4.0, 5.0, 8.0, 75.0, 90.0, 100, 500, 1024, '-c', '-d', '-r', '1', 'Darwin', 'IOAccelerator', 'MemSize', 'VRAM', 'apple_silicon', 'avg_ram_usage_pct', 'avg_swap_gb', 'cmdline', 'cpu_percent', 'critical', 'current_level', 'error', 'ioreg', 'lmstudio', 'max_ram_usage_pct', 'max_swap_gb', 'memory_info', 'mlx_lm', 'monitoring_error', 'name', 'normal', 'ollama', 'pid', 'platform', 'python', 'raw_output_preview', 'resource_critical', 'resource_warning', 'samples', 'unknown', 'vram_hint', 'warning']

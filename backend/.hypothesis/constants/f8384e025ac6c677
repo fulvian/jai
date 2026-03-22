@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/science_research/tools/__init__.py
+# hypothesis_version: 6.151.9
+
+['AVAILABLE_TOOLS', 'arxiv_search', 'crossref_doi', 'crossref_search', 'europepmc_search', 'execute_tool', 'get_executors', 'get_tool_definitions', 'openalex_search', 'pubmed_search']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/llm/model_discovery.py
+# hypothesis_version: 6.151.9
+
+[5.0, 200, 1024, 4096, 8192, 32768, 64000, '*', '-', '-4b', '-8b', '.', '.cache', '.ollama', '/', '4bit', '8bit', 'Q4', 'Q5', 'Q6', 'Q8', '_', '_4bit', '_8bit', 'bf16', 'cloud_nanogpt', 'context_window', 'data', 'deepseek', 'fp16', 'gemma', 'id', 'is_local', 'lfm', 'llama', 'lm-studio', 'lm_studio_scan_error', 'local_lmstudio', 'local_mlx', 'local_ollama', 'manifests', 'max_output_tokens', 'mistral', 'model_dir', 'models', 'name', 'ollama_dir_not_found', 'ollama_scan_complete', 'ollama_scan_error', 'org', 'path', 'phi', 'provider', 'q4', 'q5', 'q6', 'q8', 'quantization', 'qwen', 'raw_id', 'registry', 'supports_tools', 'supports_vision', 'tag', 'unknown', 'vram_required_gb']

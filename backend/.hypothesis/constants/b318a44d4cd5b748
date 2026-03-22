@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/messenger.py
+# hypothesis_version: 6.151.9
+
+['+', ',', '-', '0', '>', 'BUSYGROUP', 'agent_consumers', 'content', 'context', 'flags', 'from_agent', 'id', 'message_acked', 'message_sent', 'parse_message_error', 'pending', 'receive_error', 'reply_to', 'stream_create_error', 'timestamp', 'to_agent', '{}']

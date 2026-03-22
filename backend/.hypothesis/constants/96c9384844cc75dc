@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/session_graph.py
+# hypothesis_version: 6.151.9
+
+[200, '/clusters', '/detect-communities', '/ingest', '/prompts/library', '/reindex', '/search', '/sessions/graph', '/topics', 'Categoria', 'Contenuto del prompt', 'Filtro per categoria', 'Nome del prompt', 'Nuova Chat', 'Prompt Library', 'Query di ricerca', 'Session Graph', 'Topic associati', 'Variabili nel prompt', 'category', 'clusters_created', 'content', 'error_details', 'errors', 'general', 'get_clusters_failed', 'get_related_failed', 'get_topics_failed', 'id', 'ingested', 'label', 'last_used_at', 'name', 'reindex_failed', 'save_prompt_failed', 'saved', 'session_count', 'status', 'success', 'topics', 'total', 'usage_count', 'variables']

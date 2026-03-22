@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/procedural.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 100, 255, 404, 500, 2000, '/intent-map', '/muscle-memory', '/procedural', '/skills', '/skills/{skill_id}', 'ACTIVE', 'POST', 'Procedural Memory', 'avg_latency_ms', 'cleared', 'deleted', 'description', 'endpoint', 'error', 'executed_at', 'filter', 'id', 'intent', 'intent_map_error', 'key', 'match', 'must', 'name', 'score', 'skill_delete_error', 'skill_deleted', 'skill_get_error', 'skill_id', 'skill_registered', 'skills_list_fallback', 'status', 'success_count', 'success_rate', 'tenant_id', 'tool_name', 'total_calls', 'value']

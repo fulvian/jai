@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/llm/health.py
+# hypothesis_version: 6.151.9
+
+[5.0, 10.0, 200, 404, 1000, ':', 'Timeout (5s)', 'data', 'id', 'lmstudio', 'lmstudio_health_ok', 'models', 'name', 'nanogpt', 'nanogpt_health_error', 'nanogpt_health_ok', 'ollama', 'ollama_health_error', 'ollama_health_ok']

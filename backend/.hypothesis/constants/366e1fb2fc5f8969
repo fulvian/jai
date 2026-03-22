@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/scheduler/types.py
+# hypothesis_version: 6.151.9
+
+[1.0, 'Europe/Rome', 'JobResponse', 'at', 'cron', 'every', 'failed', 'log', 'pending', 'retrying', 'running', 'success', 'webhook']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/guardrails.py
+# hypothesis_version: 6.151.9
+
+[200, 300, 400, 150000, ',', '/', '/domains', '/domains/query', ':', 'POST', '[', ']', '_json', 'admin', 'application/json', 'body', 'compressed_size', 'compression_applied', 'content-type', 'data', 'default', 'domain', 'domains/query', 'engine', 'memory', 'metrics_update_error', 'metrics_updated', 'monitoring', 'pagination_applied', 'procedural', 'semantic', 'session_graph', 'skills', 'sports_nba', 'tools', 'truncation_applied', 'unknown', 'utf-8', 'working', '{', '}']

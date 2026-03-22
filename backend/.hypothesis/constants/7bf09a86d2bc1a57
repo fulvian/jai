@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/webhooks/__init__.py
+# hypothesis_version: 6.151.9
+
+['CreateWebhookRequest', 'RetryPolicy', 'WebhookConfig', 'WebhookDelivery', 'WebhookEvent', 'WebhookEventType', 'WebhookResponse']

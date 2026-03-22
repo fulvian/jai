@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/main.py
+# hypothesis_version: 6.151.9
+
+['*', ',', '/docs', '/mcp', '/openapi.json', '/redoc', '/sse', '/v1', 'Admin', 'Backup & DR', 'Cognitive', 'Engine', 'Health', 'MIT', 'Me4BrAIn Core', 'Me4BrAIn Team', 'Memory', 'N/A', 'Procedural Memory', 'Semantic Memory', 'Tools', 'Working Memory', '__file__', '__main__', 'asyncio', 'default', 'description', 'domains', 'mcp_server_mounted', 'me4brain_starting', 'name', 'nest_asyncio_guard', 'ollama', 'sse', 'url']

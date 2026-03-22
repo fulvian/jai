@@ -151,6 +151,12 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --tb=short --cov=src --cov-report=term-missing"
+markers = [
+    "unit: unit tests",
+    "integration: integration tests",
+    "e2e: end-to-end tests",
+    "asyncio: async tests",
+]
 
 [tool.coverage.run]
 source = ["src/me4brain"]

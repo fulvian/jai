@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/domains.py
+# hypothesis_version: 6.151.9
+
+[404, 500, 1000, '/domains', '/route', '/{domain_name}', '/{domain_name}/query', 'Argomenti tool', 'Contesto aggiuntivo', 'Tenant ID', 'capabilities', 'data', 'default', 'description', 'domain_get_error', 'domain_query_error', 'domains', 'domains_list_error', 'domains_listed', 'entities', 'error', 'keywords', 'name', 'query', 'reason', 'route_query_error', 'routed_to', 'score', 'success', 'tool', 'tool_execute_error', 'tool_executed']

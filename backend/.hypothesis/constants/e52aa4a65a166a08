@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/rate_limit.py
+# hypothesis_version: 6.151.9
+
+[429, '...', '10/minute', '100/minute', '20/minute', '30/minute', '50/minute', '60/minute', 'X-Tenant-ID', 'admin', 'cognitive', 'detail', 'domain', 'error', 'fixed-window', 'memory://', 'rate_limit_exceeded', 'redis_url', 'retry_after', 'search', 'tool', 'working']

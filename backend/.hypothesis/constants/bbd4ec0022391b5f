@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/skills/executor.py
+# hypothesis_version: 6.151.9
+
+[0.0, 100, 1000, 10000, '$QUERY', '${query}', '%Y%m%d_%H%M%S', '(curl\\s+[^\\n]+)', '-e', '-x', 'Desktop', '_meta', 'action', 'clipboard', 'copied', 'copy', 'curl', 'curl_skill_executing', 'error', 'find', 'get', 'input', 'instructions', 'instructions_only', 'keyword', 'keywords', 'list', 'message', 'notes', 'options', 'osascript', 'path', 'pbcopy', 'pbpaste', 'product', 'q', 'query', 'raw_output', 'reminders', 'results', 'screencapture', 'search', 'search_query', 'set', 'skill', 'skill_executed', 'skill_id', 'success', 'term', 'text', 'type', 'warning', '{query}', '{raw_query}']

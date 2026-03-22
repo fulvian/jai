@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/finance_crypto/analytics/financial_analytics.py
+# hypothesis_version: 6.151.9
+
+[0.0, 2.0, 100, 252, 'N/A', 'above', 'alpha', 'alpha_beta', 'below', 'beta', 'bollinger_bands', 'drawdown', 'exponential', 'histogram', 'lower', 'ma50', 'macd', 'max_drawdown_pct', 'middle', 'peak_date', 'peak_price', 'price_vs_ma50', 'r_squared', 'rsi', 'sharpe_ratio', 'signal', 'simple', 'sortino_ratio', 'trough_date', 'trough_price', 'upper', 'volatility', 'ytd_performance']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/monitoring/types.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.15, 0.25, 0.6, 1.0, 1.25, 2.0, 2.5, 3.0, 6.0, 10.0, 15.0, 1000000, 'HealthReport', 'LLMUsage', 'claude-3-5-sonnet', 'claude-3-haiku', 'completion_tokens', 'counter', 'critical', 'degraded', 'eq', 'firing', 'gauge', 'gpt-4o', 'gpt-4o-mini', 'graph', 'gt', 'gte', 'healthy', 'histogram', 'info', 'lt', 'lte', 'mistral-large', 'prompt_tokens', 'resolved', 'stat', 'summary', 'table', 'unhealthy', 'unknown', 'warning']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/tenant/context.py
+# hypothesis_version: 6.151.9
+
+['TenantConfig', 'tenant_config', 'tenant_context_set', 'tenant_id', 'tenant_mismatch', 'user_id']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/backup.py
+# hypothesis_version: 6.151.9
+
+[100, './backups', './data/neo4j', '/admin/backup', '/restore', '/snapshot', '/snapshots', 'Backup & DR', 'backup_dir', 'collection', 'completed', 'create_snapshot', 'creation_time', 'delete_snapshot', 'error', 'failed', 'message', 'name', 'neo4j', 'neo4j_', 'neo4j_path', 'not_implemented', 'path', 'qdrant', 'qdrant_url', 'restore', 'restore_completed', 'restore_failed', 'restored_from', 'size', 'size_bytes', 'skipped', 'snapshot', 'snapshot_created', 'snapshot_deleted', 'snapshot_failed', 'snapshots', 'status']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/logging.py
+# hypothesis_version: 6.151.9
+
+['DEBUG', 'ERROR', 'INFO', 'WARNING', 'httpcore', 'httpx', 'iso', 'uvicorn.access']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/clawhub_skills.py
+# hypothesis_version: 6.151.9
+
+[200, 404, 500, '/clawhub-skills', '/reload', '/search/semantic', '/stats', '/{skill_id:path}', 'N/A', 'Search query', 'bundled', 'clawhub-skills', 'clawhub_reload_error', 'clawhub_stats_error', 'description', 'domain', 'local', 'message', 'name', 'skill', 'skill_id', 'tool_name', 'tools_and_skills', 'type', 'unknown', 'utility']

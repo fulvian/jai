@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/webhooks/types.py
+# hypothesis_version: 6.151.9
+
+[1.0, 'WebhookResponse', 'agent.error', 'agent.handoff', 'agent.message', 'external.trigger', 'failed', 'job.completed', 'job.created', 'job.failed', 'pending', 'retrying', 'success', 'system.alert', 'system.health']

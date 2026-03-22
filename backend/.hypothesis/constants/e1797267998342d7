@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/finance_crypto/__init__.py
+# hypothesis_version: 6.151.9
+
+['FinanceCryptoHandler', 'get_handler']

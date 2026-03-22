@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/cognitive.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 0.5, 1000, 2000, 10000, '/cognitive', '/cognitive/plan', '/cognitive/reason', '/plan', '/reason', 'Cognitive', 'NANOGPT_API_KEY', 'NANOGPT_BASE_URL', 'POST', '[]', '\\[[\\s\\S]*\\]', 'action', 'analyze', 'cognitive', 'confidence', 'content', 'default', 'dependencies', 'description', 'duration_ms', 'execute', 'final_response', 'reasoning', 'reasoning_trace', 'sources_used', 'step', 'step_number', 'thought', 'verify']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/monitoring/alerts.py
+# hypothesis_version: 6.151.9
+
+[0.1, 10.0, 100, 1024, 'Error rate > 10%', 'LLM latency > 10s', 'Memory usage > 1GB', 'alert_id', 'alert_notification', 'alert_resolved', 'alert_rule_added', 'alert_triggered', 'description', 'eq', 'gt', 'gte', 'high_error_rate', 'high_llm_latency', 'labels', 'low_memory', 'lt', 'lte', 'message', 'notifier_error', 'resolved', 'rule', 'severity', 'started_at', 'threshold', 'value']

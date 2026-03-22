@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/sleep_mode.py
+# hypothesis_version: 6.151.9
+
+[0.3, 0.5, 0.6, 100, 200, 500, 3600, '+00:00', 'ConsolidatedEpisode', 'Z', 'content', 'content_preview', 'created_at', 'decayed_count', 'default', 'deleted_count', 'entities_created', 'episodes_processed', 'episodes_pruned', 'importance', 'me4brain_episodes', 'neo4j_not_available', 'pruning_batch_error', 'qdrant_not_available', 'relations_created', 'scheduler_error', 'skip_consolidation', 'skip_pruning', 'source_episode', 'tenant_id', 'value']

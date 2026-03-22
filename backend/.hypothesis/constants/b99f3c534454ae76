@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/context.py
+# hypothesis_version: 6.151.9
+
+[3600, 'context_propagated', 'context_set', 'me4brain:context']

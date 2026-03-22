@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/tools.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 0.5, 1.0, 100, 200, 500, 1000, '/', '/categories', '/execute', '/list', '/register', '/search', '/tools', '/{tool_id}', '1.0', 'ACTIVE', 'DELETE', 'Execute Tool', 'Filtra per status', 'GET', 'Get Tool', 'List Categories', 'List Tools', 'PATCH', 'POST', 'PUT', 'Search Tools', 'Tools', '_', 'api_user', 'auth_config', 'avg_latency_ms', 'description', 'domain', 'endpoint', 'general', 'method', 'name', 'operationId', 'parameters', 'paths', 'requestBody', 'responses', 'schema_json', 'servers', 'status', 'success_rate', 'summary', 'tool_execute_failed', 'tool_get_failed', 'tool_name', 'tools_list_failed', 'tools_search_failed', 'total_calls', 'url', 'version', '{', '}']

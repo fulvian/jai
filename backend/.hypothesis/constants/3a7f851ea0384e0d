@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/utility/tools/browser.py
+# hypothesis_version: 6.151.9
+
+['URL to navigate to', 'URL to open', 'boolean', 'browser', 'browser_act', 'browser_close', 'browser_extract', 'browser_navigate', 'browser_open', 'browser_screenshot', 'closed', 'data', 'description', 'error', 'extracted', 'headless', 'instruction', 'name', 'object', 'parameters', 'properties', 'required', 'schema', 'screenshot_path', 'session_id', 'status', 'string', 'success', 'title', 'type', 'url', 'web_data', 'what']

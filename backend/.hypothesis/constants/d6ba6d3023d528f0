@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/browser/extractor.py
+# hypothesis_version: 6.151.9
+
+[', ', 'Empty skill', 'Target URL', '\\b[a-f0-9]{8,}\\b', '\\b\\d{6,}\\b', 'action_index', 'action_types', 'default', 'description', 'input_value', 'name', 'pattern', 'potential_parameters', 'recording_id', 'redundant_actions', 'required', 'screenshot', 'skill_extracted', 'string', 'total_actions', 'type', 'url', 'url_variable', 'value', 'wait', 'www.', '{dynamic_id}']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/audit.py
+# hypothesis_version: 6.151.9
+
+[200, 400, 500, 1000, ',', '/health', '/health/live', '/health/ready', '/metrics', '[REDACTED]', 'api_key', 'api_request', 'api_response', 'audit', 'authorization', 'client_ip', 'critical', 'data_access', 'data_modification', 'default', 'duration_ms', 'error', 'error_type', 'event_type', 'gdpr', 'gdpr_request', 'headers', 'info', 'method', 'password', 'path', 'query_params', 'request_complete', 'request_id', 'request_start', 'secret', 'security', 'security_event', 'status_code', 'success', 'tenant_id', 'token', 'unknown', 'user-agent', 'user_action', 'user_agent', 'warning', 'x-forwarded-for', 'x-request-id', 'x-tenant-id']

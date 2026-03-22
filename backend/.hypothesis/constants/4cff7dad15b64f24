@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/context_rewriter.py
+# hypothesis_version: 6.151.9
+
+[0.0, 500, '"', '...', 'Assistente', 'NanoGPTClient', 'NanoGPTClient | None', 'Utente', '\\b(quest[oaie])\\b', '^anche\\s', '^e\\s', '^ma\\s', '^solo\\s', 'content', 'context_integrated', 'e ', 'human', 'ma ', 'no_history', 'o ', 'oppure ', 'original', 'original_query', 'però ', 'query_rewrite_failed', 'query_rewritten', 'rewrite_too_short', 'role', 'self_contained', 'unknown', '→']

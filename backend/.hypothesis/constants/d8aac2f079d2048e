@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/prompts/registry.py
+# hypothesis_version: 6.151.9
+
+['*', '*.yaml', 'PromptHintsRegistry', '_default', '_generic', 'config', 'domain_hints_loaded', 'domains', 'domains_count', 'hints', 'patterns', 'patterns_count', 'prompt_hints', 'r', 'skill_categories', 'utf-8']

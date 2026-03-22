@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/commands.py
+# hypothesis_version: 6.151.9
+
+['## 📊 Session Status', '---', '/', '^/(\\w+)(?:\\s+(.*))?$', 'cmd_forget', 'cmd_help', 'cmd_status', 'delete_by_topic', 'forget', 'forget_topic', 'forget_working_error', 'gdpr_forget_executed', 'help', 'messages', 'slash_command_error', 'status']

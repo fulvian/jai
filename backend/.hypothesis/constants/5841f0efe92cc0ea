@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/cost_tracker.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.0001, 0.00015, 0.00025, 0.0004, 0.0005, 0.0006, 0.001, 0.00125, 0.0015, 0.002, 0.0025, 0.003, 0.005, 0.01, 0.015, 0.03, 0.075, 1000, '%Y-%m-%d', 'CostTracker', 'CostTracker | None', 'by_model', 'by_tenant', 'call_count', 'calls', 'claude-3-5-sonnet', 'claude-3-haiku', 'claude-3-opus', 'completion_tokens', 'cost_usd', 'date', 'default', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gpt-3.5-turbo', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'input', 'latency_ms', 'llm_usage_recorded', 'model', 'operation', 'output', 'prompt_tokens', 'query', 'tenant_id', 'timestamp', 'tokens', 'total_calls', 'total_cost_usd', 'total_tokens', 'unknown', 'user_id']

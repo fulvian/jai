@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/admin.py
+# hypothesis_version: 6.151.9
+
+['/admin', '/stats', '/tools/ingest', 'Admin', 'admin', 'collection', 'completed', 'database_type', 'episodic', 'has_task', 'http://', 'https://', 'interval_hours', 'memory', 'neo4j', 'running', 'semantic', 'start', 'started', 'status', 'stop', 'stopped', 'tenant_id', 'timestamp', 'unknown_action']

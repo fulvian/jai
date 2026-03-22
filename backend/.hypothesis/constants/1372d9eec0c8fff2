@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/supervisor.py
+# hypothesis_version: 6.151.9
+
+[100, 'accepted', 'agent_routed', 'analyze', 'answer', 'assistant', 'auto', 'code', 'coding', 'completed', 'completed_at', 'created_at', 'current_task', 'data', 'database', 'debug', 'explain', 'extract', 'find', 'fix', 'handoff_completed', 'handoff_id', 'handoff_sent', 'help', 'id', 'implement', 'last_active', 'look up', 'name', 'no_agent_available', 'priority', 'query', 'refactor', 'rejected', 'research', 'result', 'search', 'status', 'success_rate', 'summarize', 'supervisor', 'task', 'to_agent', 'type']

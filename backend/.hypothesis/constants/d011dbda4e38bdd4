@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/working.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.9, 100, 255, 404, 500, 10000, 50000, '/sessions', '/working', 'Filtra per tipo', 'Message not found', 'RELATED_TO', 'Session initialized', 'Session not found', 'Working Memory', 'added', 'comment', 'content', 'count', 'created_at', 'deleted', 'entity_id', 'feedback', 'free', 'id', 'label', 'message_count', 'message_id', 'metadata', 'prompts', 'relation_type', 'role', 'schedule', 'score', 'session_id', 'session_type', 'source_id', 'system', 'tags', 'target_id', 'tenant_id', 'timestamp', 'title', 'topic', 'type', 'unknown', 'updated', 'updated_at', 'user_id']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/browser/recorder.py
+# hypothesis_version: 6.151.9
+
+[1000, 'Recording not active', 'action_recorded', 'active', 'example', 'name', 'navigate_target', 'paused', 'recording_paused', 'recording_resumed', 'recording_started', 'recording_stopped', 'source', 'stopped', 'string', 'type', 'type_value', 'url']

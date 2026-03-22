@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/providers.py
+# hypothesis_version: 6.151.9
+
+[100, 400, 404, 4096, 32768, '/subscription/models', '/v1/providers', '/{provider_id}', '/{provider_id}/test', 'Authorization', 'No fields to update', 'Provider not found', 'Providers', '^https?://.+', 'api_paid', 'context_window', 'deleted', 'display_name', 'enabled', 'id', 'message', 'model_id', 'openai_compatible', 'provider_created', 'provider_deleted', 'provider_id', 'provider_name', 'provider_updated', 'remaining', 'reset', 'reset_day', 'status', 'subscription', 'supports_tools', 'supports_vision', 'weekly_token_limit']

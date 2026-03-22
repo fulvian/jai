@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/intent_analyzer.py
+# hypothesis_version: 6.151.9
+
+[0.1, 0.4, 0.5, 200, 500, '%Y-%m-%d %H:%M:%S', 'Assistente', 'NanoGPTClient', 'NanoGPTClient | None', 'Utente', 'action', 'adesso', 'ciao', 'clarification', 'clarification_needed', 'come stai', 'confidence', 'content', 'conversation', 'data_requirements', 'data_retrieval', 'details', 'detected_entities', 'external_api', 'general_info', 'grazie', 'hello', 'hi ', 'historical', 'human', 'intent_type', 'meteo', 'multi_intent', 'needs_external_api', 'needs_real_time_data', 'none', 'now', 'oggi', 'ora', 'prezzo', 'price', 'primary_requirement', 'real_time', 'reasoning', 'role', 'suggested_domains', 'tempo', 'thanks', 'today', 'unknown', 'user', 'weather']

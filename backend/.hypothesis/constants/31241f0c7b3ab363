@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/hybrid_router/trace_contract.py
+# hypothesis_version: 6.151.9
+
+[0.0, 100, 1000, 'api_error', 'conjunction_split', 'correlation_id', 'end_time', 'fallback_type', 'final_error', 'llm_exception', 'llm_parse_error', 'llm_timeout', 'model_not_found', 'no_tools_selected', 'none', 'query_preview', 'quota_exceeded', 'stage', 'stages', 'start_time', 'success', 'synthesis', 'timestamp', 'tools_executed', 'total_duration_ms']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/engine/guardrail.py
+# hypothesis_version: 6.151.9
+
+[100, '/dev/tcp/', ';\\s*--', '<\\|im_start\\|>', '<\\|system\\|>', 'DAN\\s+mode', 'TRUNCATE\\s+TABLE', '\\[SYSTEM\\]', 'api_key_exposure', 'bash_network', 'chatml_injection', 'chmod\\s+777', 'chmod\\s+\\+s', 'code_injection', 'dangerous', 'dangerous:', 'data_exfiltration', 'dd\\s+if=.+of=/dev/', 'destructive_rm', 'developer\\s+mode', 'disk_format', 'disk_overwrite', 'eval\\s*\\(', 'fake_system_prompt', 'format\\s+[a-zA-Z]:', 'insecure_permissions', 'instruction_override', 'jailbreak', 'markdown_injection', 'mkfs\\s+', 'nc\\s+-l', 'netcat\\s+-l', 'password_exposure', 'private_key_exposure', 'privilege_escalation', 'remote_code_exec', 'reverse_shell', 'rm\\s+-rf\\s+[/~]', 'role_hijacking', 'safe', 'secret_exposure', 'setuid_change', 'sql_injection', 'su\\s+-', 'sudo\\s+', 'suspicious', 'system:\\s*']

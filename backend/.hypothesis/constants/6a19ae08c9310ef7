@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/utility/tools/__init__.py
+# hypothesis_version: 6.151.9
+
+['AGENT_TOOLS', 'AVAILABLE_TOOLS', 'BROWSER_TOOLS', 'browser_act', 'browser_close', 'browser_extract', 'browser_navigate', 'browser_open', 'browser_screenshot', 'delete_agent', 'execute_tool', 'get_executors', 'get_headers', 'get_ip', 'get_tool_definitions', 'list_agents']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/health.py
+# hypothesis_version: 6.151.9
+
+[0.0, 200, 1000, 6333, '/health', '/health/live', '/health/models', '/health/ready', 'AI Models Status', 'Health', 'Health Check', 'Liveness Check', 'QDRANT_URL', 'Readiness Check', 'alive', 'bge_m3', 'cnt', 'collection', 'collections_count', 'degraded', 'dimension', 'error', 'healthy', 'initializing', 'loading', 'localhost', 'memories', 'model', 'model_loaded', 'neo4j', 'node_count', 'ok', 'qdrant', 'qdrant_host', 'qdrant_http_port', 'redis', 'redis_url', 'status', 'test', 'tool_index', 'tools', 'unhealthy', 'unknown', 'uptime_seconds']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/registry.py
+# hypothesis_version: 6.151.9
+
+['agent_registered', 'agent_status_updated', 'agent_unregistered']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/scheduler/cron.py
+# hypothesis_version: 6.151.9
+
+[3600, 86400, 604800, 'T', 'action', 'at_parse_error', 'at_parsed', 'cron_parse_error', 'cron_parsed', 'd', 'every_parsed', 'expression', 'h', 'm', 's', 'test', 'type', 'validation', 'w']

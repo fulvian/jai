@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/skills/registry.py
+# hypothesis_version: 6.151.9
+
+[1000, '; ', 'by_source', 'by_status', 'instructions', 'skill', 'skill_disabled', 'skill_enabled', 'skill_id', 'skill_loaded', 'total', 'type']

@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/json_utils.py
+# hypothesis_version: 6.151.9
+
+[200, '"', "'", ',\\s*$', ',\\s*([}\\]])', '//.*$', '/\\*.*?\\*/', '[', '\\1', '\\1"\\2":', '\\s*\\n\\s*', ']', '```', '```json', 'content_preview', 'error', 'json', 'json_repair_failed', 'missing', 'type', '{', '}']

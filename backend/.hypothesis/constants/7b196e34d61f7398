@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/auth.py
+# hypothesis_version: 6.151.9
+
+['(not set)', 'Bearer', 'Dev User', 'Invalid token', 'ME4BRAIN_DEV_MODE', 'Not authenticated', 'RS256', 'RSA', 'Token expired', 'WWW-Authenticate', 'X-Tenant-ID', 'X-User-ID', 'azp', 'default', 'dev@me4brain.local', 'dev_mode_auth_bypass', 'dev_user', 'developer', 'email', 'exp', 'false', 'jwt_invalid', 'keycloak_jwks_error', 'keycloak_public_key', 'keys', 'kty', 'name', 'preferred_username', 'realm_access', 'resource_access', 'roles', 'sig', 'sub', 'super_admin', 'tenant_id', 'use', 'user_authenticated', 'verify_exp']

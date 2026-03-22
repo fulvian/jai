@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/middleware/__init__.py
+# hypothesis_version: 6.151.9
+
+['AuthenticatedUser', 'TokenPayload', 'get_current_user', 'get_optional_user', 'require_role', 'require_tenant']

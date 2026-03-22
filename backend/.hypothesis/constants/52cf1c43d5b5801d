@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/metrics.py
+# hypothesis_version: 6.151.9
+
+['Latenza chiamate LLM', 'completion', 'default', 'endpoint', 'method', 'model', 'prompt', 'source', 'tenant_id', 'type']

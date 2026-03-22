@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/utility/handler.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.3, 0.8, 1000, 'HttpbinService', 'Info IP e network', 'Qual è il mio IP?', 'agent', 'agente', 'alert', 'automatico', 'autonomous', 'avvisami', 'check', 'controlla', 'generare', 'generate', 'get_ip', 'headers', 'http', 'indirizzo', 'ip', 'monitor', 'network_info', 'notifica', 'notify', 'ping', 'random', 'reminder', 'ricordami', 'test', 'utility', 'uuid']

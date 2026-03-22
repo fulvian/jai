@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/monitoring/metrics.py
+# hypothesis_version: 6.151.9
+
+[0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 30.0, 60.0, 1000, '200', '500', 'LLM request latency', 'Total HTTP requests', 'Total agent handoffs', 'Total agent tasks', 'Total tokens used', 'action_type', 'agent_type', 'completion', 'endpoint', 'error', 'from_agent', 'layer', 'me4brain', 'method', 'model', 'operation', 'prompt', 'status', 'status_code', 'success', 'to_agent', 'token_type']

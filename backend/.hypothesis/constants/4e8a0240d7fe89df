@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/monitoring.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1024, '/health', '/health/components', '/health/ready', '/metrics', '/v1/monitoring/stats', '15m', '1m', '5m', 'available_gb', 'cleared', 'cmdline', 'context', 'cpu', 'cpu_pct', 'embedding_gb', 'gpu', 'hardware', 'is_under_pressure', 'level', 'llm_processes', 'load_avg', 'mlx_gb', 'monitoring', 'name', 'not_ready', 'note', 'ok', 'pid', 'processes', 'ram', 'ram_usage_pct', 'ready', 'recommendations', 'rss_gb', 'status', 'swap', 'swap_gb', 'total_count', 'total_gb', 'total_memory_gb', 'under_pressure', 'uptime_seconds', 'usage', 'usage_pct', 'used_gb']

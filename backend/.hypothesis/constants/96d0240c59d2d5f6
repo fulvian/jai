@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/recovery.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 1.0, 1.5, 2.0, 30.0, 60.0, '429', '503', 'Retry failed', 'T', 'cache_failure', 'circuit_breaker_open', 'closed', 'connection', 'db_failure', 'exhausted', 'external_api_failure', 'fallback_triggered', 'half-open', 'limit', 'llm_failure', 'network', 'open', 'rate', 'rate_limit', 'recovery_hook_failed', 'resource', 'resource_exhausted', 'retry_attempt', 'service_unavailable', 'timeout', 'tool_failure', 'unavailable', 'unknown']

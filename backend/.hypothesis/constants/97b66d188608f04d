@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/ingestion/ocr.py
+# hypothesis_version: 6.151.9
+
+[2000, '.bmp', '.jpeg', '.jpg', '.pdf', '.png', 'JPEG', 'Processing file', 'Vision API failed', 'application/pdf', 'content', 'error', 'image/', 'image/bmp', 'image/jpeg', 'image/png', 'image_url', 'method', 'model', 'native_pdf', 'pages', 'pypdf', 'reasoning', 'text', 'url', 'user', 'utf-8', 'vision_llm']

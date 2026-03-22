@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/__init__.py
+# hypothesis_version: 6.151.9
+
+['AgentMessage', 'AgentProfile', 'AgentResponse', 'AgentStatus', 'AgentType', 'HandoffRequest', 'HandoffTaskRequest', 'MessageFlag', 'MessageResponse', 'RegisterAgentRequest', 'SendMessageRequest', 'TaskContext']

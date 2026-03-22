@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/core/agents/types.py
+# hypothesis_version: 6.151.9
+
+[1.0, 3600, 'ANNOUNCE_SKIP', 'AgentResponse', 'BROADCAST', 'PRIORITY_HIGH', 'REPLY_SKIP', 'accepted', 'busy', 'completed', 'idle', 'offline', 'pending', 'rejected', 'specialist', 'supervisor', 'worker']

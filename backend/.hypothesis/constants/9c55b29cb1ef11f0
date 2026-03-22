@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/llm/model_profiles.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.002, 0.5, 1.0, 2.0, 3.0, 3.5, 5.0, 6.0, 10.0, 1024, 4096, 8192, 16384, 32768, 64000, 131072, '4bit', '8bit', 'Qwen 2.5 7B MLX', 'Qwen 3.5 4B MLX', 'architecture', 'classification', 'cloud_anthropic', 'cloud_nanogpt', 'cloud_openai', 'complex_observation', 'deep_analysis', 'deep_reasoning', 'embeddings', 'extraction', 'function_calling', 'json_mode', 'lfm2-5-7b-mlx', 'local_lmstudio', 'local_mlx', 'local_ollama', 'mistral-large-3', 'model_path', 'qwen2', 'qwen2.5-7b-mlx', 'qwen3.5-4b-mlx', 'reasoning', 'routing', 'streaming', 'structured_output', 'synthesis', 'synthesis_complex', 'synthesis_simple', 'tool_calling', 'tool_selection', 'vision']

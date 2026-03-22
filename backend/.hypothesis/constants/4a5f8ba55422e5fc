@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/domains/adaptive_guardrails.py
+# hypothesis_version: 6.151.9
+
+[0.5, 0.7, 0.8, 1.0, 100, 500, 1000, 5000, 8192, 100000, 150000, ',', '.', '...', ': ', '[', ']', 'analysis', 'compress', 'game', 'has_next', 'has_prev', 'odds', 'page', 'page_size', 'paginate', 'pagination', 'pick', 'prediction', 'recommendation', 'response_paginated', 'result', 'sports_nba', 'total_items', 'total_pages', 'truncate', 'utf-8', 'value', '{', '}']

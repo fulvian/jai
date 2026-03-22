@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/api/routes/semantic.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.7, 0.85, 1.0, 100, 200, '/consolidate', '/merge', '/pagerank', '/search', '/semantic', '/traverse', 'Ricerca cross-layer', 'Semantic Memory', 'consolidation_failed', 'cross_layer', 'depth', 'entities', 'entities_merged', 'episodic', 'id', 'keep_all_properties', 'merge_failed', 'merged_id', 'name', 'pagerank_executed', 'pagerank_failed', 'procedural', 'properties', 'query', 'relation_from', 'relations', 'score', 'semantic', 'traversal_executed', 'traversal_failed', 'type']

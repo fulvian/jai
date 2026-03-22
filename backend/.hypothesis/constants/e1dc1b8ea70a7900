@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/skills/types.py
+# hypothesis_version: 6.151.9
+
+[500, '...', '1.0.0', 'author', 'bundled', 'clawhub', 'cli', 'description', 'disable_auto_invoke', 'disabled', 'discovered', 'discovered_at', 'env', 'error', 'error_message', 'generated', 'id', 'instructions', 'last_used_at', 'loading', 'local', 'metadata', 'min_version', 'name', 'path', 'ready', 'registered_tool_id', 'requires', 'secret', 'source', 'status', 'tags', 'version']

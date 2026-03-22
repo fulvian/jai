@@ -1,0 +1,4 @@
+# file: /Users/fulvio/coding/jai/backend/src/me4brain/utils/diagnostic.py
+# hypothesis_version: 6.151.9
+
+[1000.0, 100, 1000, 'T', 'alternatives', 'confidence', 'context', 'decision', 'decision_point', 'decision_trace', 'decisions_count', 'duration_ms', 'error_message', 'error_type', 'errors', 'errors_count', 'from_stage', 'function_timing', 'operation', 'operation_complete', 'operation_error', 'phase', 'phase_transition', 'phases_count', 'query_preview', 'query_trace_complete', 'reasoning', 'session_id', 'slow_function', 'slow_operation', 'success', 'timestamp', 'to_stage', 'tools_count', 'total_duration_ms', 'traceback']
