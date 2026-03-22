@@ -16,6 +16,16 @@ from typing import Any
 
 import structlog
 
+from me4brain.engine.hybrid_router.metrics import (
+    CLASSIFICATION_TOTAL,
+    CLASSIFICATION_LATENCY,
+    LLM_ERRORS,
+    DEGRADATION_LEVEL,
+    DEGRADATION_TRANSITIONS,
+    CLASSIFICATION_CONFIDENCE,
+    CLASSIFICATION_RETRIES,
+    QUERY_WITH_CONTEXT,
+)
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
     DomainComplexity,
@@ -192,6 +202,10 @@ Current time: {current_datetime}"""
         """
         from me4brain.llm.models import LLMRequest, Message, MessageRole
 
+        start_time = time.time()
+        has_context = conversation_context is not None and len(conversation_context) > 0
+        QUERY_WITH_CONTEXT.labels(has_context=str(has_context)).inc()
+
         current_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Use simplified prompt if degradation is in progress
@@ -239,6 +253,8 @@ Current time: {current_datetime}"""
                     )
                 except asyncio.TimeoutError as e:
                     last_error = e
+                    CLASSIFICATION_RETRIES.labels(reason="timeout").inc()
+                    LLM_ERRORS.labels(error_type="timeout").inc()
                     logger.warning(
                         "domain_classification_timeout",
                         attempt=attempt,
@@ -316,6 +332,14 @@ Current time: {current_datetime}"""
                         query_summary=data_dict.get("query_summary", ""),
                     )
 
+                    # Record metrics for successful LLM classification
+                    elapsed = time.time() - start_time
+                    CLASSIFICATION_LATENCY.labels(method="llm").observe(elapsed)
+                    CLASSIFICATION_TOTAL.labels(method="llm", success="true").inc()
+                    CLASSIFICATION_CONFIDENCE.labels(method="llm").observe(
+                        classification.confidence
+                    )
+
                     logger.info(
                         "domain_classification_llm_success",
                         attempt=attempt,
@@ -323,6 +347,7 @@ Current time: {current_datetime}"""
                         domains=[d.name for d in domains],
                         confidence=classification.confidence,
                         is_multi_domain=classification.is_multi_domain,
+                        latency_seconds=elapsed,
                     )
 
                     return classification
@@ -346,11 +371,17 @@ Current time: {current_datetime}"""
                 last_error = e
                 if attempt == MAX_CLASSIFICATION_RETRIES:
                     # All retries exhausted - fall back
+                    elapsed = time.time() - start_time
+                    CLASSIFICATION_TOTAL.labels(method="fallback_keyword", success="false").inc()
+                    CLASSIFICATION_LATENCY.labels(method="fallback_keyword").observe(elapsed)
+                    LLM_ERRORS.labels(error_type="parse").inc()
+
                     logger.warning(
                         "domain_classification_fallback",
                         max_attempts=MAX_CLASSIFICATION_RETRIES,
                         last_error=str(e),
                         query_preview=query[:50],
+                        latency_seconds=elapsed,
                     )
                     return self._fallback_classification(query)
                 # Continue to next retry

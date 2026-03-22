@@ -30,6 +30,7 @@ from me4brain.api.routes import (
     backup,
     clawhub_skills,
     cognitive,
+    diagnostics,
     domains,
     engine,
     health,
@@ -312,6 +313,7 @@ Usa header `X-Tenant-ID` e `X-User-ID` per multi-tenancy.
     app.include_router(session_graph.prompt_router, prefix="/v1")
     app.include_router(clawhub_skills.router, prefix="/v1")
     app.include_router(skills.router, prefix="/v1")
+    app.include_router(diagnostics.router)  # Phase 5: Diagnostics endpoint
     app.include_router(ingestion.router)
     app.include_router(llm_config.router)
     app.include_router(monitoring.router)
