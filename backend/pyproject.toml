@@ -69,7 +69,10 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.60b1",
     "pandas-ta>=0.4.71b0",
     "nest-asyncio>=1.6.0",
-    "yfinance>=1.1.0",
+    # Security
+    "cryptography>=41.0.0",
+    "bleach>=6.0.0",
+    # Analytics & Finance
     "yahooquery>=2.3.7",
     "psycopg-binary>=3.3.3",
     "mlx-lm>=0.31.0",
