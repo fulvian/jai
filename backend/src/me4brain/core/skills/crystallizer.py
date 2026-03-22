@@ -1,10 +1,11 @@
 """Crystallizer - Logica di cristallizzazione automatica delle skill."""
 
-import hashlib
+from __future__ import annotations
+
 import json
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Optional
 
 import structlog
 
@@ -26,8 +27,8 @@ class Crystallizer:
     def __init__(
         self,
         registry: SkillRegistry,
-        embed_func: Optional[callable] = None,
-        llm_func: Optional[callable] = None,
+        embed_func: Callable | None = None,
+        llm_func: Callable | None = None,
         min_tools: int = 2,
     ):
         """
@@ -47,7 +48,7 @@ class Crystallizer:
         # Contatori per trace simili (non ancora cristallizzate)
         self._pending_signatures: dict[str, int] = {}
 
-    async def process_trace(self, trace: ExecutionTrace) -> Optional[Skill]:
+    async def process_trace(self, trace: ExecutionTrace) -> Skill | None:
         """
         Processa una trace completata e decide se cristallizzare.
 
@@ -105,7 +106,7 @@ class Crystallizer:
 
         return True
 
-    async def _crystallize_new(self, trace: ExecutionTrace) -> Optional[Skill]:
+    async def _crystallize_new(self, trace: ExecutionTrace) -> Skill | None:
         """
         Crea una nuova skill da una trace.
 

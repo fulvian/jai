@@ -1,6 +1,8 @@
 """Skill Retriever - Recupero skill per task con ranking pesato."""
 
-from typing import Optional
+from __future__ import annotations
+
+from collections.abc import Callable
 
 import structlog
 
@@ -23,7 +25,7 @@ class SkillRetriever:
     def __init__(
         self,
         registry: SkillRegistry,
-        embed_func: Optional[callable] = None,
+        embed_func: Callable | None = None,
         min_similarity: float = 0.5,
     ):
         """
@@ -42,7 +44,7 @@ class SkillRetriever:
         self,
         task_description: str,
         top_k: int = 3,
-        skill_type: Optional[str] = None,
+        skill_type: str | None = None,
     ) -> list[ScoredSkill]:
         """
         Trova skill migliori per un task.
@@ -122,8 +124,8 @@ class SkillRetriever:
         return weighted
 
     async def retrieve_best(
-        self, task_description: str, skill_type: Optional[str] = None
-    ) -> Optional[Skill]:
+        self, task_description: str, skill_type: str | None = None
+    ) -> Skill | None:
         """
         Restituisce la skill migliore per un task.
 

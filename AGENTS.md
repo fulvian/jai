@@ -43,7 +43,7 @@ uv run pre-commit install             # Install hooks
 uv run pre-commit run --all-files     # Run all hooks
 
 # Run server
-uv run me4brain                       # Start API server (port 8089)
+uv run me4brain                       # Start API server (port 8000)
 ```
 
 ### Frontend (TypeScript)
@@ -71,7 +71,7 @@ npm run typecheck                     # Type check shared package
 
 # Development
 npm run dev                           # Start all in dev mode
-cd frontend/frontend && npm run dev   # Start Next.js dev server (port 3020)
+cd frontend/frontend && npm run dev   # Start Next.js dev server (port 3000)
 ```
 
 ---

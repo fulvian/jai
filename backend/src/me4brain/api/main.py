@@ -3,20 +3,6 @@
 Entry point principale per l'API Gateway.
 """
 
-# FIX Issue #3: nest_asyncio REMOVED in production.
-# It breaks event loop invariants under concurrent SSE streams.
-# LlamaIndex sync reranker calls now use run_in_executor() instead.
-# If you see "This event loop is already running" errors, the fix is to
-# wrap the offending sync call in asyncio.get_event_loop().run_in_executor(None, sync_fn)
-# instead of re-enabling nest_asyncio.
-import structlog as _structlog
-
-_nest_logger = _structlog.get_logger("nest_asyncio_guard")
-_nest_logger.info(
-    "nest_asyncio_disabled",
-    reason="Prevents deadlocks under concurrent SSE. Sync calls use run_in_executor.",
-)
-
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -35,22 +21,31 @@ from me4brain.api.routes import (
     engine,
     health,
     ingestion,
+    llm_config,
     memory,
+    monitoring,
+    procedural,
+    providers,
     semantic,
     session_graph,
     skills,
     tools,
     working,
-    procedural,
-    llm_config,
-    monitoring,
-    providers,
 )
-from me4brain.api.routes import providers
-
-
 from me4brain.config import get_settings
 from me4brain.utils.logging import configure_logging
+
+# FIX Issue #3: nest_asyncio REMOVED in production.
+# It breaks event loop invariants under concurrent SSE streams.
+# LlamaIndex sync reranker calls now use run_in_executor() instead.
+# If you see "This event loop is already running" errors, the fix is to
+# wrap the offending sync call in asyncio.get_event_loop().run_in_executor(None, sync_fn)
+# instead of re-enabling nest_asyncio.
+_nest_logger = structlog.get_logger("nest_asyncio_guard")
+_nest_logger.info(
+    "nest_asyncio_disabled",
+    reason="Prevents deadlocks under concurrent SSE. Sync calls use run_in_executor.",
+)
 
 # Configurazione logger
 logger = structlog.get_logger(__name__)
@@ -62,8 +57,8 @@ async def _verify_llm_connectivity() -> None:
     This check runs at startup to detect configuration issues early.
     """
     try:
-        from me4brain.llm.health import get_llm_health_checker
         from me4brain.llm.config import get_llm_config
+        from me4brain.llm.health import get_llm_health_checker
 
         config = get_llm_config()
         checker = get_llm_health_checker()
@@ -281,6 +276,7 @@ Usa header `X-Tenant-ID` e `X-User-ID` per multi-tenancy.
     # Rate Limiting
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
+
     from me4brain.api.middleware.rate_limit import limiter
 
     app.state.limiter = limiter

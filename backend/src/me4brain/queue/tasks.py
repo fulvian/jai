@@ -7,11 +7,12 @@ for processing by workers.
 
 from __future__ import annotations
 
-import asyncio
-import structlog
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
+
+import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -31,7 +32,7 @@ class TaskResult:
     task_id: str
     success: bool
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     execution_time_ms: float = 0.0
 
 
@@ -112,7 +113,7 @@ def register_task(name: str, func: callable) -> None:
     logger.debug("task_registered", task_name=name)
 
 
-def get_task(name: str) -> Optional[callable]:
+def get_task(name: str) -> Callable | None:
     """Get a registered task function.
 
     Args:
@@ -150,8 +151,8 @@ async def classify_domain_async(query: str, conversation_id: str = None) -> dict
     with TracingContext("task.classify_domain", query=query[:100]):
         # Import here to avoid circular dependencies
         try:
-            from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
             from me4brain.config.settings import get_settings
+            from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 
             settings = get_settings()
             classifier = DomainClassifier()

@@ -1,6 +1,8 @@
 """Skill Verifier - Post-execution verification (pattern Voyager)."""
 
-from typing import Optional
+from __future__ import annotations
+
+from collections.abc import Callable
 
 import structlog
 
@@ -20,7 +22,7 @@ class SkillVerifier:
 
     def __init__(
         self,
-        llm_func: Optional[callable] = None,
+        llm_func: Callable | None = None,
         max_retries: int = 3,
     ):
         """
@@ -38,7 +40,7 @@ class SkillVerifier:
         skill: Skill,
         input_query: str,
         actual_output: str,
-        expected_behavior: Optional[str] = None,
+        expected_behavior: str | None = None,
     ) -> VerificationResult:
         """
         Verifica che la skill abbia prodotto risultato atteso.
@@ -62,9 +64,7 @@ class SkillVerifier:
 
         # Verifica semantica con LLM (se disponibile)
         if self.llm_func:
-            return await self._semantic_verify(
-                skill, input_query, actual_output, expected_behavior
-            )
+            return await self._semantic_verify(skill, input_query, actual_output, expected_behavior)
 
         # Fallback: assume successo se output presente
         return VerificationResult(success=True)
@@ -74,7 +74,7 @@ class SkillVerifier:
         skill: Skill,
         input_query: str,
         actual_output: str,
-        expected_behavior: Optional[str],
+        expected_behavior: str | None,
     ) -> VerificationResult:
         """Verifica semantica usando LLM."""
         try:
@@ -98,9 +98,7 @@ Rispondi in JSON:
                 result = json.loads(response)
                 return VerificationResult(
                     success=result.get("success", False),
-                    error_message=result.get("reason")
-                    if not result.get("success")
-                    else None,
+                    error_message=result.get("reason") if not result.get("success") else None,
                     suggestions=result.get("suggestions", []),
                 )
             except json.JSONDecodeError:
@@ -116,7 +114,7 @@ Rispondi in JSON:
         skill: Skill,
         execute_func: callable,
         input_query: str,
-        expected_behavior: Optional[str] = None,
+        expected_behavior: str | None = None,
     ) -> tuple[bool, str, int]:
         """
         Verifica ed eventualmente riprova con correzioni.
@@ -141,9 +139,7 @@ Rispondi in JSON:
                 last_output = output
 
                 # Verifica
-                result = await self.verify(
-                    skill, input_query, output, expected_behavior
-                )
+                result = await self.verify(skill, input_query, output, expected_behavior)
 
                 if result.success:
                     logger.info(
@@ -184,9 +180,7 @@ Rispondi in JSON:
         )
         return False, last_output, retry_count
 
-    async def suggest_fix(
-        self, skill: Skill, error_message: str, context: dict
-    ) -> list[str]:
+    async def suggest_fix(self, skill: Skill, error_message: str, context: dict) -> list[str]:
         """
         Suggerisce correzioni per una skill fallita.
 

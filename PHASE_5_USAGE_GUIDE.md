@@ -14,7 +14,7 @@ Phase 5 adds comprehensive observability to the JAI Hybrid Routing system with:
 ### Get LLM Chain Status
 
 ```bash
-curl http://localhost:8089/v1/diagnostics/llm-chain
+curl http://localhost:8000/v1/diagnostics/llm-chain
 ```
 
 ### Response Format
@@ -64,7 +64,7 @@ curl http://localhost:8089/v1/diagnostics/llm-chain
 Prometheus metrics are automatically exposed at the `/metrics` endpoint (FastAPI default):
 
 ```bash
-curl http://localhost:8089/metrics | grep domain_classification
+curl http://localhost:8000/metrics | grep domain_classification
 ```
 
 ### Available Metrics
@@ -336,7 +336,7 @@ uv run pytest tests/unit/test_model_resolution.py \
 
 1. Check Prometheus is scraping the endpoint:
    ```bash
-   curl http://localhost:8089/metrics | grep domain_classification
+curl http://localhost:8000/metrics | grep domain_classification
    ```
 
 2. Verify FastAPI app is running and `/metrics` is accessible
@@ -346,7 +346,7 @@ uv run pytest tests/unit/test_model_resolution.py \
    scrape_configs:
    - job_name: 'me4brain'
      static_configs:
-     - targets: ['localhost:8089']
+      - targets: ['localhost:8000']
    ```
 
 ### Diagnostics endpoint returns 500
@@ -358,7 +358,7 @@ uv run pytest tests/unit/test_model_resolution.py \
 
 2. Verify LLM config is properly initialized:
    ```bash
-   curl http://localhost:8089/v1/llm-config
+    curl http://localhost:8000/v1/llm-config
    ```
 
 3. Ensure health checker module is available:
@@ -390,7 +390,7 @@ uv run me4brain
 services:
   me4brain:
     ports:
-      - "8089:8089"
+      - "8000:8000"
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       LLM_MODEL_ROUTING: llama2

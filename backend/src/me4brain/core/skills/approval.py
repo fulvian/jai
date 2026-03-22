@@ -3,11 +3,13 @@
 Gestisce l'approvazione umana delle skill prima di salvarle su disco.
 """
 
-from dataclasses import dataclass, field
+from __future__ import annotations
+
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-import uuid
 
 import structlog
 
@@ -35,9 +37,9 @@ class PendingSkill:
     tool_chain: list[str]
     created_at: datetime
     status: ApprovalStatus = ApprovalStatus.PENDING
-    reviewed_at: Optional[datetime] = None
-    reviewer_note: Optional[str] = None
-    expires_at: Optional[datetime] = None
+    reviewed_at: datetime | None = None
+    reviewer_note: str | None = None
+    expires_at: datetime | None = None
 
     def to_dict(self) -> dict:
         """Converte a dict per API response."""
@@ -76,13 +78,13 @@ class SkillApprovalManager:
         self._auto_approve_safe = auto_approve_safe
 
         # Callbacks
-        self._on_approved: Optional[callable] = None
-        self._on_rejected: Optional[callable] = None
+        self._on_approved: Callable | None = None
+        self._on_rejected: Callable | None = None
 
     def set_callbacks(
         self,
-        on_approved: Optional[callable] = None,
-        on_rejected: Optional[callable] = None,
+        on_approved: Callable | None = None,
+        on_rejected: Callable | None = None,
     ) -> None:
         """Imposta callback per eventi approvazione."""
         self._on_approved = on_approved
@@ -148,15 +150,15 @@ class SkillApprovalManager:
         """Ritorna tutte le skill in attesa."""
         return list(self._pending.values())
 
-    def get_pending_by_id(self, skill_id: str) -> Optional[PendingSkill]:
+    def get_pending_by_id(self, skill_id: str) -> PendingSkill | None:
         """Ritorna skill pending per ID."""
         return self._pending.get(skill_id)
 
     async def approve(
         self,
         skill_id: str,
-        reviewer_note: Optional[str] = None,
-    ) -> Optional[PendingSkill]:
+        reviewer_note: str | None = None,
+    ) -> PendingSkill | None:
         """Approva una skill pending.
 
         Args:
@@ -191,7 +193,7 @@ class SkillApprovalManager:
         self,
         skill_id: str,
         reason: str = "Rejected by user",
-    ) -> Optional[PendingSkill]:
+    ) -> PendingSkill | None:
         """Rifiuta una skill pending.
 
         Args:
@@ -233,7 +235,7 @@ class SkillApprovalManager:
 
 
 # Singleton instance
-_approval_manager: Optional[SkillApprovalManager] = None
+_approval_manager: SkillApprovalManager | None = None
 
 
 def get_skill_approval_manager() -> SkillApprovalManager:
