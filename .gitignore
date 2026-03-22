@@ -92,6 +92,16 @@ dump.rdb
 .turbo/
 .cache/
 .ruff_cache/
+.hypothesis/
+
+# Planning files (generated)
+findings.md
+progress.md
+task_plan.md
+
+# Analysis reports
+ARCHITECTURE_ANALYSIS_REPORT.md
+OPTIMIZATION_AND_DEBUG_PLAN.md
 
 # Machine Learning Models (too large for git)
 # Download models on first run - see MODELS.md

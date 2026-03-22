@@ -10,6 +10,9 @@ wheels/
 .venv
 # .env
 
+# Hypothesis testing
+.hypothesis/
+
 # AI Models
 models/
 
