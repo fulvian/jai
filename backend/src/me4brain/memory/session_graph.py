@@ -34,17 +34,20 @@ import json
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+import redis.asyncio as redis
 import structlog
 
+from me4brain.config import get_settings
 from me4brain.memory.semantic import SemanticMemory, get_semantic_memory
 
 logger = structlog.get_logger(__name__)
 
+# Redis key prefix for community detection cooldown
+COMMUNITY_COOLDOWN_KEY_PREFIX = "me4brain:community_detection:last_run"
 # Cooldown per community detection automatica (5 minuti per tenant)
-_community_detection_cooldowns: dict[str, float] = {}
 COMMUNITY_DETECTION_COOLDOWN_SECONDS = 300  # 5 min
 
 # ============================================================================
@@ -188,13 +191,16 @@ class SessionKnowledgeGraph:
     def __init__(
         self,
         semantic: SemanticMemory | None = None,
+        redis_client: redis.Redis | None = None,
     ) -> None:
         """Inizializza il Session Knowledge Graph.
 
         Args:
             semantic: SemanticMemory instance (per DI/testing)
+            redis_client: Redis client opzionale (per cooldown distribuito)
         """
         self._semantic = semantic
+        self._redis = redis_client
         self._schema_initialized = False
 
     @property
@@ -215,6 +221,31 @@ class SessionKnowledgeGraph:
         from me4brain.llm import get_llm_client
 
         return get_llm_client()
+
+    async def _get_redis(self) -> redis.Redis | None:
+        """Lazy load Redis client for distributed cooldown.
+
+        Returns:
+            Redis client o None se Redis non è disponibile.
+        """
+        if self._redis is None:
+            try:
+                settings = get_settings()
+                self._redis = redis.from_url(
+                    settings.redis_url,
+                    decode_responses=True,
+                )
+                # Test connection
+                await self._redis.ping()
+                logger.info("session_graph_redis_connected")
+            except Exception as e:
+                logger.warning(
+                    "session_graph_redis_unavailable",
+                    error=str(e),
+                    hint="Cooldown will use in-memory fallback",
+                )
+                self._redis = None
+        return self._redis
 
     # ========================================================================
     # Schema Initialization
@@ -340,7 +371,7 @@ class SessionKnowledgeGraph:
             raise RuntimeError("Neo4j non disponibile per ingestione sessione")
 
         embedding_service = await self._get_embedding_service()
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Genera embedding della sessione (concatenando tutti i contenuti)
         session_text = f"{title}\n" + "\n".join(
@@ -467,14 +498,54 @@ class SessionKnowledgeGraph:
     async def _safe_detect_communities(self, tenant_id: str) -> None:
         """Community detection automatica con cooldown per tenant.
 
+        Usa Redis per cooldown distribuito tra multiple istanze.
+        Fallback a in-memory se Redis non è disponibile.
         Evita ricalcoli eccessivi: max una volta ogni 5 minuti per tenant.
         Non propaga eccezioni (fire-and-forget).
         """
-        now = time.monotonic()
-        last = _community_detection_cooldowns.get(tenant_id, 0)
-        if now - last < COMMUNITY_DETECTION_COOLDOWN_SECONDS:
-            return
-        _community_detection_cooldowns[tenant_id] = now
+        cooldown_key = f"{COMMUNITY_COOLDOWN_KEY_PREFIX}:{tenant_id}"
+
+        # Try distributed cooldown with Redis
+        redis_client = await self._get_redis()
+
+        if redis_client is not None:
+            try:
+                # Check cooldown in Redis using GET with NX (only set if not exists)
+                cooldown_value = await redis_client.get(cooldown_key)
+                if cooldown_value is not None:
+                    last_run = float(cooldown_value)
+                    if time.time() - last_run < COMMUNITY_DETECTION_COOLDOWN_SECONDS:
+                        logger.debug(
+                            "community_detection_cooldown_active",
+                            tenant_id=tenant_id,
+                            cooldown_remaining=COMMUNITY_DETECTION_COOLDOWN_SECONDS
+                            - (time.time() - last_run),
+                        )
+                        return
+
+                # Set cooldown with atomic operation
+                await redis_client.setex(
+                    cooldown_key,
+                    COMMUNITY_DETECTION_COOLDOWN_SECONDS,
+                    str(time.time()),
+                )
+            except Exception as e:
+                logger.warning(
+                    "community_detection_cooldown_redis_error",
+                    tenant_id=tenant_id,
+                    error=str(e),
+                    hint="Falling back to in-memory cooldown",
+                )
+                # Fall through to in-memory cooldown
+        else:
+            # Fallback to in-memory cooldown
+            now = time.monotonic()
+            last_run = getattr(self, "_last_community_detection", 0)
+            if now - last_run < COMMUNITY_DETECTION_COOLDOWN_SECONDS:
+                return
+            self._last_community_detection = now
+
+        # Run community detection
         try:
             clusters = await self.detect_communities(tenant_id)
             if clusters:
@@ -566,7 +637,7 @@ class SessionKnowledgeGraph:
             return []
 
         topics: list[TopicNode] = []
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         for name in topic_names[:5]:  # Max 5 topic
             if not isinstance(name, str) or not name.strip():
@@ -701,7 +772,7 @@ class SessionKnowledgeGraph:
                     "session_id": session_id,
                     "tenant_id": tenant_id,
                     "threshold": threshold,
-                    "now": datetime.now(timezone.utc).isoformat(),
+                    "now": datetime.now(UTC).isoformat(),
                 },
             )
 
@@ -837,7 +908,7 @@ class SessionKnowledgeGraph:
                         "description": cluster_desc,
                         "tenant_id": tenant_id,
                         "session_count": len(community_sessions),
-                        "now": datetime.now(timezone.utc).isoformat(),
+                        "now": datetime.now(UTC).isoformat(),
                     },
                 )
 
@@ -1430,7 +1501,7 @@ class SessionKnowledgeGraph:
                     "last_used_at": prompt.last_used_at,
                     "variables": prompt.variables,
                     "embedding": prompt_embedding,
-                    "now": datetime.now(timezone.utc).isoformat(),
+                    "now": datetime.now(UTC).isoformat(),
                 },
             )
 

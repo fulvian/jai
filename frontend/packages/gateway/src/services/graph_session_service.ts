@@ -140,7 +140,7 @@ class GraphSessionService {
                 jitter: true,
                 // Only retry on server errors (5xx) or network errors
                 nonRetryableCodes: ['E400', 'E401', 'E403', 'E404'],
-                onRetry: (attempt, error, delay) => {
+                onRetry: (attempt: number, error: Error, delay: number) => {
                     console.warn(
                         `[GraphSession] Ingest retry ${attempt} for session ${sessionId} after ${delay}ms: ${error.message}`,
                     );

@@ -426,7 +426,7 @@ export class ChatSessionStore {
                 {
                     maxAttempts: GRAPH_INGESTION_MAX_RETRIES - retryCount,
                     initialDelayMs: GRAPH_INGESTION_RETRY_DELAY_MS,
-                    onRetry: (attempt, error, delay) => {
+                    onRetry: (attempt: number, error: Error, delay: number) => {
                         console.warn(
                             `[ChatSessionStore] Graph ingestion retry ${attempt} for session ${sessionId} after ${delay}ms: ${error.message}`,
                         );
