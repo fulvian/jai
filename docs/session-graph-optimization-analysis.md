@@ -1721,12 +1721,74 @@ stats = cache.get_stats()  # {hits, misses, hit_rate, l1_hits, l2_hits, ...}
 
 | Priority | Task | Description |
 |----------|------|-------------|
-| P2 | OPT-007 | BM25 lexical search |
-| P2 | OPT-008 | RRF fusion |
+| P2 | OPT-007 | BM25 lexical search | ✅ Complete |
+| P2 | OPT-008 | RRF fusion | ✅ Complete |
 | P2 | OPT-009 | Enhanced DnD with optimistic updates |
 | P2 | OPT-010 | Incremental community detection |
 | P2 | OPT-011 | Adaptive similarity thresholds |
 | P2 | OPT-012 | Cross-list DnD support |
+
+### P2 Tasks - Hybrid Search Enhancement ✅ IN PROGRESS
+
+| Task | Description | Status | Files |
+|------|-------------|--------|-------|
+| **OPT-007** | BM25 Lexical Search | ✅ Complete | `lexical_search.py` |
+| **OPT-008** | RRF Fusion | ✅ Complete | `session_graph.py` |
+
+### OPT-007: BM25 Lexical Search Implementation
+
+**New File**: `backend/src/me4brain/memory/lexical_search.py`
+
+**Features**:
+- `BM25Indexer`: BM25 algorithm implementation with configurable k1 and b parameters
+- `LexicalSearchService`: Service for indexing and searching sessions/turns
+- Token normalization (lowercase, alphanumeric extraction)
+- BM25Okapi IDF formula with smoothing
+- Separate indexes for sessions and turns
+- Combined search across both indexes
+
+**API**:
+```python
+from me4brain.memory.lexical_search import BM25Indexer, LexicalSearchService
+
+# Direct usage
+indexer = BM25Indexer(k1=1.5, b=0.75)
+indexer.index([("doc1", "text content"), ...])
+results = indexer.search("query", top_k=50)
+
+# Via service
+service = get_lexical_search_service()
+service.index_sessions([("sess_1", "Session content"), ...])
+results = service.search_sessions("query")
+```
+
+**Dependency Added**: `rank-bm25>=0.12` to `pyproject.toml`
+
+### OPT-008: RRF (Reciprocal Rank Fusion) Implementation
+
+**File Modified**: `backend/src/me4brain/memory/session_graph.py`
+
+**Changes**:
+- Added `reciprocal_rank_fusion()` utility function with RRF_K=60 parameter
+- Enhanced `search_sessions_semantic()` to use 6-stage pipeline:
+  1. BGE-M3 Embedding
+  2. Neo4j Vector Search
+  3. **BM25 Lexical Search (NEW)**
+  4. **RRF Fusion (NEW)**
+  5. LLM Reranking
+  6. Final results
+- Added `use_bm25` parameter to control BM25 usage
+
+**RRF Formula**: `RRF(doc) = sum of 1/(k + rank(doc)) for each list`
+
+**Integration**:
+```python
+# RRF combines vector and BM25 results
+fused_results = reciprocal_rank_fusion(
+    [vector_results, bm25_results],
+    k=RRF_K,
+)
+```
 
 ---
 

@@ -11,8 +11,43 @@ import type {
     Turn,
 } from './types.js';
 
+export interface SessionInfo {
+    sessionId: string;
+    title: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+    messageCount: number;
+}
+
 export class MemoryNamespace {
     constructor(private client: Me4BrAInClient) { }
+
+    /**
+     * Get session metadata (including title).
+     * 
+     * @param sessionId - Session ID
+     * @param userId - User ID (default: 'default')
+     * @returns Session metadata with title
+     */
+    async getSessionInfo(sessionId: string, userId: string = 'default'): Promise<SessionInfo> {
+        const response = await this.client.request<{
+            session_id: string;
+            title: string | null;
+            created_at: string | null;
+            updated_at: string | null;
+            message_count: number;
+        }>('GET', `/working/sessions/${sessionId}`, {
+            params: { user_id: userId },
+        });
+
+        return {
+            sessionId: response.session_id,
+            title: response.title,
+            createdAt: response.created_at ? new Date(response.created_at) : null,
+            updatedAt: response.updated_at ? new Date(response.updated_at) : null,
+            messageCount: response.message_count,
+        };
+    }
 
     /**
      * Create a new working memory session.

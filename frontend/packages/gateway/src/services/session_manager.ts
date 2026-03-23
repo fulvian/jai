@@ -215,8 +215,18 @@ export class SessionManager {
                 }
             }
 
-            // Fetch from source of truth (Me4BrAIn API)
-            const sessionContext = await this.memory.getSession(sessionId);
+            // Fetch session info (with title) and context (with turns) from Me4BrAIn API
+            // Using Promise.all to fetch both in parallel for better performance
+            const [sessionInfo, sessionContext] = await Promise.all([
+                this.memory.getSessionInfo(sessionId).catch((err) => {
+                    logger.warn('Failed to fetch session info', { sessionId, error: err });
+                    return null;
+                }),
+                this.memory.getSession(sessionId).catch((err) => {
+                    logger.warn('Failed to fetch session context', { sessionId, error: err });
+                    return null;
+                }),
+            ]);
 
             // Helper to safely convert timestamp to ISO string
             const toISOString = (ts: string | Date | undefined): string => {
@@ -225,54 +235,48 @@ export class SessionManager {
                 return ts;
             };
 
-            const firstTurn = sessionContext.turns[0];
-            const lastTurn = sessionContext.turns[sessionContext.turns.length - 1];
+            // Get title from session info (saved by addTurn), or generate fallback
+            let sessionTitle: string | undefined = sessionInfo?.title ?? undefined;
 
-            // Try to get the actual title from ChatSessionStore (which generates evocative titles)
-            // ChatSessionStore stores session metadata including LLM-generated titles
-            let sessionTitle: string | undefined;
-            try {
-                const { chatSessionStore } = await import('./chat_session_store.js');
-                const chatSession = await chatSessionStore.getSession(sessionId);
-                if (chatSession?.title) {
-                    sessionTitle = chatSession.title;
+            // If no title from backend, try ChatSessionStore
+            if (!sessionTitle) {
+                try {
+                    const { chatSessionStore } = await import('./chat_session_store.js');
+                    const chatSession = await chatSessionStore.getSession(sessionId);
+                    if (chatSession?.title) {
+                        sessionTitle = chatSession.title;
+                    }
+                } catch {
+                    // ChatSessionStore not available
                 }
-            } catch {
-                // ChatSessionStore might not be available or session not found there
-                // Fall through to title generation
             }
 
-            // If ChatSessionStore doesn't have the title, generate it on-demand from the first user message
-            // This handles the case where title generation hasn't been triggered yet
+            // If still no title, generate from first user message as last resort
+            const firstTurn = sessionContext?.turns[0];
             if (!sessionTitle && firstTurn?.role === 'user') {
                 try {
                     const { generateSessionTitleWithFallback } = await import('./title_generator.js');
                     sessionTitle = await generateSessionTitleWithFallback(firstTurn.content);
-
-                    // Store the generated title in ChatSessionStore for future lookups
-                    // This syncs the title across both session stores
-                    try {
-                        const { chatSessionStore } = await import('./chat_session_store.js');
-                        await chatSessionStore.updateTitle(sessionId, sessionTitle);
-                    } catch {
-                        // Storing title failed, but we still have it for this session
-                    }
                 } catch {
-                    // Title generation failed, will use default below
+                    // Title generation failed
                 }
             }
+
+            // Use session info timestamps if available
+            const createdAt = sessionInfo?.createdAt ?? firstTurn?.timestamp;
+            const updatedAt = sessionInfo?.updatedAt ?? sessionContext?.turns[sessionContext.turns.length - 1]?.timestamp;
 
             const session: ChatSession = {
                 session_id: sessionId,
                 title: sessionTitle ?? `Session ${sessionId.slice(-8)}`,
-                created_at: toISOString(firstTurn?.timestamp),
-                updated_at: toISOString(lastTurn?.timestamp),
-                turns: sessionContext.turns.map((t) => ({
+                created_at: toISOString(createdAt),
+                updated_at: toISOString(updatedAt),
+                turns: sessionContext?.turns.map((t) => ({
                     id: t.id ?? `turn-${Date.now()}`,
                     role: t.role as 'user' | 'assistant',
                     content: t.content,
                     timestamp: toISOString(t.timestamp),
-                })),
+                })) ?? [],
             };
 
             // Populate both L1 + L2
@@ -338,7 +342,33 @@ export class SessionManager {
             // 1. Write to source of truth FIRST
             await this.memory.addTurn(sessionId, turn.role, turn.content);
 
-            // 2. Invalidate cache locally + publish to other instances
+            // 2. Generate evocative title for user messages if not already set
+            // This ensures session names are descriptive, not just "Nuova conversazione"
+            if (turn.role === 'user') {
+                // Generate evocative title using LLM
+                try {
+                    const { generateSessionTitleWithFallback } = await import('./title_generator.js');
+                    const evocativeTitle = await generateSessionTitleWithFallback(turn.content);
+
+                    // Save title to Me4BrAIn backend (source of truth)
+                    // Using the new updateSession method we just added to MemoryNamespace
+                    await this.memory.updateSession(sessionId, evocativeTitle);
+                    logger.debug('Session title updated', { sessionId, title: evocativeTitle });
+
+                    // Also update ChatSessionStore for local caching
+                    try {
+                        const { chatSessionStore } = await import('./chat_session_store.js');
+                        await chatSessionStore.updateTitle(sessionId, evocativeTitle);
+                    } catch {
+                        // ChatSessionStore update failed, but title is saved in backend
+                    }
+                } catch (titleError) {
+                    // Title generation failed, but the turn was saved successfully
+                    logger.warn('Title generation failed, using default', { sessionId, error: titleError });
+                }
+            }
+
+            // 3. Invalidate cache locally + publish to other instances
             await this.invalidateGlobal(sessionId);
             // Next request will repopulate via cache-aside
         } catch (error) {

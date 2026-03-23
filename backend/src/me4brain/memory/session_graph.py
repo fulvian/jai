@@ -50,6 +50,56 @@ COMMUNITY_COOLDOWN_KEY_PREFIX = "me4brain:community_detection:last_run"
 # Cooldown per community detection automatica (5 minuti per tenant)
 COMMUNITY_DETECTION_COOLDOWN_SECONDS = 300  # 5 min
 
+# RRF (Reciprocal Rank Fusion) parameter
+# Higher values give more weight to lower ranks
+RRF_K = 60
+
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+
+def reciprocal_rank_fusion(
+    result_lists: list[list[tuple[str, float]]],
+    k: float = RRF_K,
+) -> list[tuple[str, float]]:
+    """Combine multiple ranked result lists using Reciprocal Rank Fusion.
+
+    RRF produces a unified ranking from multiple retrieval runs.
+    Formula: RRF(doc) = sum of 1/(k + rank(doc)) for each list
+
+    This is the standard approach for combining vector, lexical, and graph search.
+
+    Args:
+        result_lists: List of result lists, each as (doc_id, score) tuples.
+                      Scores are ignored, only ranks matter.
+        k: RRF parameter controlling ranking sensitivity.
+           Higher = more weight to lower ranks (default: 60)
+
+    Returns:
+        Unified list of (doc_id, rrf_score) sorted by RRF score descending
+
+    Reference:
+        "Reciprocal Rank Fusion outperforms Condorcet and individual Rank"
+        by V. D. W. et al. (2009)
+    """
+    rrf_scores: dict[str, float] = {}
+
+    for result_list in result_lists:
+        for rank, (doc_id, _) in enumerate(result_list, start=1):
+            # RRF formula: 1 / (k + rank)
+            rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + (1 / (k + rank))
+
+    # Sort by RRF score descending
+    sorted_results = sorted(
+        rrf_scores.items(),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+
+    return sorted_results
+
+
 # ============================================================================
 # Data Models
 # ============================================================================
@@ -1238,21 +1288,24 @@ class SessionKnowledgeGraph:
         tenant_id: str,
         top_k: int = 10,
         use_reranking: bool = True,
+        use_bm25: bool = True,
     ) -> list[SessionSearchResult]:
-        """Ricerca semantica sessioni con pipeline 5-stage.
+        """Ricerca ibrida sessioni con pipeline 6-stage.
 
         Pipeline:
         1. BGE-M3 Embedding della query
         2. Neo4j Vector Search (top-50 candidati)
-        3. Graph Boost (PageRank personalizzato)
-        4. LLM Reranking (opzionale, via LlamaIndex LLMRerank)
-        5. Risultati finali ordinati
+        3. BM25 Lexical Search (top-50 candidati) - NEW
+        4. RRF Fusion (vector + lexical + graph) - NEW
+        5. LLM Reranking (opzionale, via LlamaIndex LLMRerank)
+        6. Risultati finali ordinati
 
         Args:
             query: Query di ricerca
             tenant_id: ID tenant
             top_k: Numero di risultati
-            use_reranking: Se attivare LLM reranking (Stage 4)
+            use_reranking: Se attivare LLM reranking (Stage 5)
+            use_bm25: Se usare BM25 lexical search (Stage 3)
 
         Returns:
             Lista ordinata di SessionSearchResult
@@ -1266,6 +1319,7 @@ class SessionKnowledgeGraph:
         query_embedding = await embedding_service.embed_query_async(query)
 
         # Stage 2: Neo4j Vector Search (candidati)
+        vector_results: list[tuple[str, float]] = []
         async with driver.session() as neo_session:
             try:
                 # Prova vector index nativo (Neo4j 5.11+)
@@ -1316,6 +1370,7 @@ class SessionKnowledgeGraph:
 
             candidates: list[SessionSearchResult] = []
             async for record in result:
+                vector_results.append((record[0], float(record[2])))
                 candidates.append(
                     SessionSearchResult(
                         session_id=record[0],
@@ -1331,14 +1386,39 @@ class SessionKnowledgeGraph:
         if not candidates:
             return []
 
-        # Stage 3: Graph Boost (via shared topics/relations)
+        # Stage 3: BM25 Lexical Search (if enabled)
+        bm25_results: list[tuple[str, float]] = []
+        if use_bm25:
+            # Get lexical search service (lazy import to avoid circular deps)
+            from me4brain.memory.lexical_search import get_lexical_search_service
+
+            lexical_service = get_lexical_search_service()
+            bm25_results = lexical_service.search_sessions(query, top_k=top_k * 5)
+
+        # Stage 4: RRF Fusion
+        if bm25_results:
+            # Combine vector and BM25 results using RRF
+            fused_results = reciprocal_rank_fusion(
+                [vector_results, bm25_results],
+                k=RRF_K,
+            )
+
+            # Create session_id -> candidate map for fast lookup
+            candidate_map = {c.session_id: c for c in candidates}
+
+            # Apply fused scores and resort
+            for session_id, rrf_score in fused_results:
+                if session_id in candidate_map:
+                    candidate_map[session_id].score = rrf_score
+
+        # Graph Boost (via shared topics/relations)
         for candidate in candidates:
             if len(candidate.topics) > 0:
                 # Boost sessioni con più topic (informazione più ricca)
                 topic_boost = min(len(candidate.topics) * 0.02, 0.1)
                 candidate.score += topic_boost
 
-        # Stage 4: LLM Reranking (opzionale)
+        # Stage 5: LLM Reranking (opzionale)
         if use_reranking and len(candidates) > top_k:
             candidates = await self._llm_rerank(query, candidates, top_k)
         else:

@@ -28,6 +28,11 @@ from me4brain.memory.working import (
     WorkingMemory,
     get_working_memory,
 )
+from me4brain.memory.lexical_search import (
+    BM25Indexer,
+    LexicalSearchService,
+    get_lexical_search_service,
+)
 
 __all__ = [
     # Working Memory
@@ -47,4 +52,8 @@ __all__ = [
     "ToolExecution",
     "ProceduralMemory",
     "get_procedural_memory",
+    # Lexical Search
+    "BM25Indexer",
+    "LexicalSearchService",
+    "get_lexical_search_service",
 ]
