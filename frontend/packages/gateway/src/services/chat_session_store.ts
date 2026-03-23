@@ -12,6 +12,8 @@
 import { Redis } from 'ioredis';
 import type { SessionConfig } from '@persan/shared';
 
+import { generateSessionTitleWithFallback } from './title_generator.js';
+
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface ChatTurn {
@@ -286,8 +288,11 @@ export class ChatSessionStore {
                 // Auto-create session if not exists
                 const exists = await this.redis.exists(`${PREFIX}${sessionId}`);
                 if (!exists) {
+                    // Try LLM title generation, fallback to truncation
                     const title = turn.role === 'user'
-                        ? turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : '')
+                        ? await generateSessionTitleWithFallback(turn.content).catch(() =>
+                              turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : ''),
+                          )
                         : 'Nuova conversazione';
                     const meta: SessionMeta = { title, created_at: now, updated_at: now };
                     await this.redis.set(`${PREFIX}${sessionId}`, JSON.stringify(meta));
@@ -304,11 +309,13 @@ export class ChatSessionStore {
                 if (metaJson) {
                     const meta: SessionMeta = JSON.parse(metaJson);
                     meta.updated_at = now;
-                    // Auto-title from first user message
+                    // Auto-title from first user message using LLM
                     if (turn.role === 'user') {
                         const turnCount = await this.redis.llen(`${PREFIX}${sessionId}:turns`);
                         if (turnCount === 1) {
-                            meta.title = turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : '');
+                            meta.title = await generateSessionTitleWithFallback(turn.content).catch(() =>
+                                turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : ''),
+                            );
                         }
                     }
                     await this.redis.set(`${PREFIX}${sessionId}`, JSON.stringify(meta));
@@ -330,7 +337,11 @@ export class ChatSessionStore {
         if (!session) {
             session = {
                 session_id: sessionId,
-                title: turn.role === 'user' ? turn.content.slice(0, 50) : 'Nuova conversazione',
+                title: turn.role === 'user'
+                    ? await generateSessionTitleWithFallback(turn.content).catch(() =>
+                          turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : ''),
+                      )
+                    : 'Nuova conversazione',
                 created_at: now,
                 updated_at: now,
                 turns: [],
@@ -340,7 +351,9 @@ export class ChatSessionStore {
         session.turns.push(turn);
         session.updated_at = now;
         if (session.turns.length === 1 && turn.role === 'user') {
-            session.title = turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : '');
+            session.title = await generateSessionTitleWithFallback(turn.content).catch(() =>
+                turn.content.slice(0, 50) + (turn.content.length > 50 ? '...' : ''),
+            );
         }
 
         // Fire-and-forget graph ingestion for memory fallback too

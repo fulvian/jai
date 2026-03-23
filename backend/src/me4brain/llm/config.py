@@ -67,6 +67,12 @@ class LLMConfig(BaseSettings):
         alias="LLM_FALLBACK_MODEL",
     )
 
+    # Session Title Generation
+    model_title_generation: str = Field(
+        default="qwen3.5:4b",
+        alias="LLM_TITLE_GENERATION_MODEL",
+    )
+
     # === Local LLM Providers (OpenAI-compatible APIs) ===
     ollama_base_url: str = Field(
         default="http://localhost:11434/v1",
