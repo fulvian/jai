@@ -624,7 +624,7 @@ class LlamaIndexToolRetriever:
     async def _apply_rescue(
         self,
         query: str,
-        _classification: DomainClassification,
+        classification: DomainClassification,
         original_domains: list[str],
     ) -> ToolRetrievalResult:
         """Apply rescue policies in sequence until successful.
@@ -699,3 +699,141 @@ class LlamaIndexToolRetriever:
             rescue_policy=RescuePolicy.NONE.value,
             rescue_trigger_reason="all_rescue_policies_failed",
         )
+
+    # =============================================================================
+    # Wave 2: Hybrid Retrieval Enhancement (Dense + Lexical)
+    # =============================================================================
+
+    async def _lexical_retrieve(
+        self,
+        query: str,
+        classification: DomainClassification,
+    ) -> list[RetrievedTool]:
+        """BM25-style lexical retrieval for recall boost.
+
+        When dense retrieval returns few results, lexical search can help
+        find tools that match keywords but may not have high vector similarity.
+
+        Args:
+            query: User query
+            classification: Domain classification for filtering
+
+        Returns:
+            List of tools found via lexical matching
+        """
+        # Wave 2: For now, implement simple keyword-based fallback
+        # Full BM25 would require rank_bm25 or similar dependency
+        query_terms = query.lower().split()
+        if not query_terms:
+            return []
+
+        index = self._tool_index.index
+        if index is None:
+            return []
+
+        # Get all tools from the index via global retrieval with high top_k
+        # Then filter by keyword match
+        try:
+            retriever = VectorIndexRetriever(
+                index=index,
+                similarity_top_k=self._config.coarse_top_k * 2,  # Get more for filtering
+            )
+            nodes = await retriever.aretrieve(query)
+
+            lexical_tools: list[RetrievedTool] = []
+            for node in nodes:
+                metadata = node.node.metadata
+                tool_name = metadata.get("tool_name", "") or metadata.get("name", "")
+                description = metadata.get("description", "").lower()
+                domain = metadata.get("domain", "")
+
+                # Check if any query term matches description or tool name
+                matches = sum(
+                    1 for term in query_terms if term in description or term in tool_name.lower()
+                )
+
+                if matches > 0:
+                    # Convert node to tool
+                    tool = self._nodes_to_tools([node])
+                    if tool:
+                        # Boost score based on keyword match count
+                        lexical_tool = tool[0]
+                        # Higher score = more keyword matches
+                        boost_factor = 1.0 + (matches / len(query_terms)) * 0.5
+                        lexical_tool = RetrievedTool(
+                            name=lexical_tool.name,
+                            domain=lexical_tool.domain,
+                            similarity_score=lexical_tool.similarity_score * boost_factor,
+                            schema=lexical_tool.schema,
+                            category=lexical_tool.category,
+                            skill=lexical_tool.skill,
+                        )
+                        lexical_tools.append(lexical_tool)
+
+            logger.debug(
+                "lexical_retrieval_complete",
+                query_preview=query[:50],
+                tools_found=len(lexical_tools),
+            )
+
+            return lexical_tools
+
+        except Exception as e:
+            logger.warning("lexical_retrieval_failed", error=str(e))
+            return []
+
+    def _merge_dense_lexical(
+        self,
+        dense_tools: list[RetrievedTool],
+        lexical_tools: list[RetrievedTool],
+    ) -> list[RetrievedTool]:
+        """Merge dense and lexical results using Reciprocal Rank Fusion.
+
+        RRF formula: score(d) = Σ (1 / (k + rank(d)))
+        where k is a constant (default 60) for rank smoothing.
+
+        Args:
+            dense_tools: Tools from vector retrieval
+            lexical_tools: Tools from lexical retrieval
+
+        Returns:
+            Merged and deduplicated tool list, sorted by RRF score
+        """
+        if not dense_tools:
+            return lexical_tools
+        if not lexical_tools:
+            return dense_tools
+
+        k = 60  # RRF constant for rank smoothing
+
+        # Build score maps
+        rrf_scores: dict[str, float] = {}
+        tool_by_name: dict[str, RetrievedTool] = {}
+
+        # Process dense tools (higher initial weight)
+        DENSE_WEIGHT = 1.0
+        for rank, tool in enumerate(dense_tools, start=1):
+            rrf_scores[tool.name] = rrf_scores.get(tool.name, 0) + (DENSE_WEIGHT * 1 / (k + rank))
+            if tool.name not in tool_by_name:
+                tool_by_name[tool.name] = tool
+
+        # Process lexical tools (lower weight but still contributing)
+        LEXICAL_WEIGHT = 0.5
+        for rank, tool in enumerate(lexical_tools, start=1):
+            rrf_scores[tool.name] = rrf_scores.get(tool.name, 0) + (LEXICAL_WEIGHT * 1 / (k + rank))
+            if tool.name not in tool_by_name:
+                tool_by_name[tool.name] = tool
+
+        # Sort by weighted RRF score descending
+        sorted_names = sorted(rrf_scores.keys(), key=lambda n: rrf_scores[n], reverse=True)
+
+        merged = [tool_by_name[name] for name in sorted_names]
+
+        logger.debug(
+            "dense_lexical_fusion_complete",
+            dense_count=len(dense_tools),
+            lexical_count=len(lexical_tools),
+            merged_count=len(merged),
+        )
+
+        return merged

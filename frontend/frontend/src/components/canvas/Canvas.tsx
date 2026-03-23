@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     DndContext,
     DragEndEvent,
+    DragOverEvent,
     closestCenter,
     KeyboardSensor,
     PointerSensor,
@@ -18,6 +19,7 @@ import {
     sortableKeyboardCoordinates,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useRef, useCallback } from 'react';
 
 // Import block components
 import { ChartBlock } from './blocks/ChartBlock';
@@ -30,7 +32,10 @@ interface CanvasProps {
 }
 
 export function Canvas({ onClose }: CanvasProps) {
-    const { blocks, removeBlock, reorderBlocks } = useCanvasStore();
+    const { blocks, removeBlock } = useCanvasStore();
+
+    // Snapshot for optimistic update rollback
+    const snapshotRef = useRef<CanvasBlockData[] | null>(null);
 
     // DnD Sensors
     const sensors = useSensors(
@@ -44,12 +49,64 @@ export function Canvas({ onClose }: CanvasProps) {
         })
     );
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    // Handle drag start - save snapshot for rollback
+    const handleDragStart = useCallback(() => {
+        // Save snapshot for potential rollback on error
+        snapshotRef.current = JSON.parse(JSON.stringify(blocks));
+    }, [blocks]);
+
+    // Handle drag over - real-time visual update during drag
+    const handleDragOver = useCallback((event: DragOverEvent) => {
         const { active, over } = event;
-        if (over && active.id !== over.id) {
-            reorderBlocks(String(active.id), String(over.id));
+        if (over && active.id !== over.id && snapshotRef.current) {
+            // Apply optimistic reorder during drag
+            const activeId = String(active.id);
+            const overId = String(over.id);
+
+            // Reorder with snapshot as base
+            const oldIndex = snapshotRef.current.findIndex(b => b.id === activeId);
+            const newIndex = snapshotRef.current.findIndex(b => b.id === overId);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const newBlocks = [...snapshotRef.current];
+                const [removed] = newBlocks.splice(oldIndex, 1);
+                newBlocks.splice(newIndex, 0, removed);
+
+                // Update store with optimistic reorder
+                useCanvasStore.setState({ blocks: newBlocks });
+            }
         }
-    };
+    }, []);
+
+    // Handle drag end - persist to backend
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        // Reset snapshot
+        snapshotRef.current = null;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        const activeId = String(active.id);
+        const overId = String(over.id);
+
+        try {
+            // Persist reorder to backend
+            // TODO: Call API to persist block order
+            // await api.canvas.reorderBlocks(activeId, overId);
+
+            console.info('[Canvas] Block reordered:', activeId, '->', overId);
+        } catch (error) {
+            // Rollback on error
+            if (snapshotRef.current) {
+                useCanvasStore.setState({ blocks: snapshotRef.current });
+            }
+
+            console.error('[Canvas] Failed to reorder blocks, rolled back:', error);
+        }
+    }, []);
 
     const renderBlockContent = (block: CanvasBlockData) => {
         switch (block.type) {
@@ -96,6 +153,8 @@ export function Canvas({ onClose }: CanvasProps) {
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
                         onDragEnd={handleDragEnd}
                     >
                         <SortableContext

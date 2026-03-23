@@ -307,7 +307,7 @@ export class SessionManager {
 
     // ── Write-Through ────────────────────────────────────────────────
 
-    async createSession(id: string, title: string, config?: SessionConfig): Promise<ChatSession> {
+    async createSession(_id: string, title: string, config?: SessionConfig): Promise<ChatSession> {
         try {
             // 1. Write to source of truth FIRST
             // Note: MemoryNamespace.createSession generates session_id on backend
@@ -326,16 +326,16 @@ export class SessionManager {
             };
 
             // 2. Invalidate cache (will be populated on next read)
-            await this.invalidateGlobal(id);
+            await this.invalidateGlobal(created.sessionId);
 
             // 3. Add to index for listing
             if (this.redisAvailable && this.redis) {
-                await this.redis.zadd(INDEX_KEY, Date.now(), id);
+                await this.redis.zadd(INDEX_KEY, Date.now(), created.sessionId);
             }
 
             return session;
         } catch (error) {
-            logger.error('Create session failed', { id, error });
+            logger.error('Create session failed', { error });
             throw error;
         }
     }

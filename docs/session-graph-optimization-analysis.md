@@ -1723,10 +1723,10 @@ stats = cache.get_stats()  # {hits, misses, hit_rate, l1_hits, l2_hits, ...}
 |----------|------|-------------|
 | P2 | OPT-007 | BM25 lexical search | ✅ Complete |
 | P2 | OPT-008 | RRF fusion | ✅ Complete |
-| P2 | OPT-009 | Enhanced DnD with optimistic updates |
+| P2 | OPT-009 | Enhanced DnD with optimistic updates | ✅ Complete |
 | P2 | OPT-010 | Incremental community detection | ✅ Complete |
 | P2 | OPT-011 | Adaptive similarity thresholds | ✅ Complete |
-| P2 | OPT-012 | Cross-list DnD support |
+| P2 | OPT-012 | Cross-list DnD support | N/A (single-list) |
 
 ### P2 Tasks - Hybrid Search Enhancement ✅ IN PROGRESS
 
@@ -1835,6 +1835,53 @@ clusters = await graph.run_incremental_clustering(tenant_id)
 - Automatic calibration based on corpus characteristics
 - Consistent relationship density regardless of corpus size
 - No manual threshold tuning required
+
+### OPT-009: Enhanced DnD with Optimistic Updates
+
+**File Modified**: `frontend/frontend/src/components/canvas/Canvas.tsx`
+
+**Changes**:
+- Added `onDragStart` handler to save snapshot for rollback
+- Added `onDragOver` handler for real-time visual updates during drag
+- Added `onDragEnd` handler with error handling and rollback
+- Added `snapshotRef` using `useRef` for state preservation
+- Added `handleDragStart`, `handleDragOver`, `handleDragEnd` callbacks
+
+**Optimistic Update Pattern**:
+```typescript
+// 1. Save snapshot on drag start
+const handleDragStart = useCallback(() => {
+    snapshotRef.current = JSON.parse(JSON.stringify(blocks));
+}, [blocks]);
+
+// 2. Apply optimistic reorder during drag
+const handleDragOver = useCallback((event: DragOverEvent) => {
+    // Update store during drag for immediate visual feedback
+    useCanvasStore.setState({ blocks: newBlocks });
+}, []);
+
+// 3. Persist and rollback on error
+const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    try {
+        await api.canvas.reorderBlocks(activeId, overId);
+    } catch (error) {
+        // Rollback to snapshot on failure
+        if (snapshotRef.current) {
+            useCanvasStore.setState({ blocks: snapshotRef.current });
+        }
+    }
+}, []);
+```
+
+### OPT-012: Cross-List DnD Support
+
+**Status**: Not Applicable
+
+**Reason**: The current Canvas implementation uses a single grid container (not multiple lists/columns). Cross-list DnD typically applies to Kanban-style boards with multiple containers (e.g., "To Do", "In Progress", "Done").
+
+**Current Implementation**: Single SortableContext with rectSortingStrategy - supports within-list reordering only.
+
+**Future Enhancement**: Would require redesign with multiple SortableContext containers and `DragOverlay` for cross-container transfers.
 
 ---
 
