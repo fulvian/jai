@@ -23,7 +23,7 @@ TITLE_GENERATION_SYSTEM_PROMPT = """You are a session title generator. Generate 
 # Costanti
 MAX_PROMPT_LENGTH = 2000
 MAX_TITLE_LENGTH = 50
-DEFAULT_TIMEOUT = 5.0  # secondi
+DEFAULT_TIMEOUT = 30.0  # secondi - aumentato per modelli thinking qwen3.5
 
 
 class GenerateTitleRequest(BaseModel):
@@ -55,23 +55,47 @@ def _build_title_request(prompt: str) -> LLMRequest:
             Message(role="user", content=prompt),
         ],
         model="",  # Viene impostato dal client
-        max_tokens=20,
+        max_tokens=2000,  # Aumentato per modelli thinking - deve contenere sia reasoning che titolo
         temperature=0.3,
     )
 
 
 def _parse_title(response_content: str | None) -> str | None:
-    """Parse della risposta LLM per estrarre il titolo."""
+    """Parse della risposta LLM per estrarre il titolo.
+
+    Gestisce sia risposte dirette che contenuti di reasoning (modelli qwen3.5).
+    Per reasoning content, il titolo appare tipicamente alla fine dopo "with" o simili.
+    """
     if not response_content:
         return None
 
     # Pulisci la risposta: rimuovi spazi multipli, newline, etc
-    title = response_content.strip()
+    content = response_content.strip()
 
     # Rimuovi eventuali virgolette
-    title = title.strip("\"'")
+    content = content.strip("\"'")
 
-    # Verifica che il titolo sia ragionevole (non troppo lungo, non vuoto)
+    # Verifica che non sia vuoto
+    if not content:
+        return None
+
+    # Se il contenuto è già entro i limiti, usalo direttamente
+    if len(content) <= MAX_TITLE_LENGTH:
+        title = content
+    else:
+        # Per contenuti lunghi (reasoning), estrai il titolo dalla fine
+        # I modelli thinking terminano spesso con frasi come "with 'Title'" o "with Title"
+        # o frasi come "Selection: Title"
+        title = _extract_title_from_reasoning(content)
+        if not title:
+            # Ultimo tentativo: prendi le ultime parole
+            words = content.split()
+            if len(words) <= 6:  # Allow slightly more words for reasoning extraction
+                title = " ".join(words[-6:])
+            else:
+                return None
+
+    # Validazione finale
     if not title or len(title) > MAX_TITLE_LENGTH:
         return None
 
@@ -81,6 +105,52 @@ def _parse_title(response_content: str | None) -> str | None:
         return None
 
     return title
+
+
+def _extract_title_from_reasoning(reasoning_content: str) -> str | None:
+    """Estrae il titolo dal content di reasoning dei modelli qwen3.5.
+
+    I modelli thinking terminano con il titolo alla fine, spesso dopo
+    frasi come "with", "Selection:", "Go with", etc.
+    """
+    import re
+
+    # Pattern comuni per trovare il titolo alla fine del reasoning
+    patterns = [
+        # "with 'Title'" or 'with Title' or "with Title"
+        r"with\s+[\"']([^\"']+)[\"']",
+        # "with Title" (no quotes)
+        r"with\s+([A-Za-z0-9\s\-,]+?)(?:\"|\'|$|\n)",
+        # "Selection: Title"
+        r"[Ss]election:\s*([A-Za-z0-9\s\-,]+?)(?:\"|\'|$|\n)",
+        # "Let's go with Title" or "Let's try with Title"
+        r"[Ll]et'?s\s+(?:go\s+with|try\s+with)\s+([A-Za-z0-9\s\-,]+?)(?:\"|\'|$|\n)",
+        # "final choice: Title" or "final title: Title"
+        r"(?:final\s+(?:choice|title):\s*)([\"']?[\w\s\-,]+?[\"']?)(?:\"|\'|$|\n)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, reasoning_content)
+        if match:
+            candidate = match.group(1).strip()
+            # Pulisci il candidato
+            candidate = re.sub(r"^\"|\'|\"$|\'$", "", candidate)  # Rimuovi virgolette
+            candidate = candidate.strip()
+            # Verifica che sia ragionevole (non troppo lungo, non troppo corto)
+            if 3 <= len(candidate) <= MAX_TITLE_LENGTH:
+                return candidate
+
+    # Fallback: prendi l'ultima riga non vuota e parsala
+    lines = [line.strip() for line in reasoning_content.split("\n") if line.strip()]
+    if lines:
+        last_line = lines[-1]
+        # Rimuovi prefissi comuni
+        last_line = re.sub(r"^(?:\d+\.\s*|\-\s*|\*\s*)+", "", last_line)
+        last_line = last_line.strip("\"'")
+        if 3 <= len(last_line) <= MAX_TITLE_LENGTH:
+            return last_line
+
+    return None
 
 
 async def generate_session_title(prompt: str, timeout: float = DEFAULT_TIMEOUT) -> str | None:

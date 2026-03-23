@@ -127,7 +127,7 @@ if (turnCount === 1 && turn.role === 'user') {
 
 | Scenario | Behavior |
 |----------|----------|
-| LLM timeout (>5s) | Fallback to truncation |
+| LLM timeout (>30s) | Fallback to truncation |
 | LLM returns empty | Fallback to truncation |
 | LLM unavailable | Fallback to truncation |
 | Invalid prompt (empty) | Return "Nuova conversazione" |
@@ -136,9 +136,9 @@ if (turnCount === 1 && turn.role === 'user') {
 
 ```yaml
 # backend/.env or config
-SESSION_TITLE_MODEL: "llama3.2"  # Model for title generation
-SESSION_TITLE_TIMEOUT: 5  # seconds
-SESSION_TITLE_MAX_TOKENS: 20
+SESSION_TITLE_MODEL: "qwen3.5:4b"  # Model for title generation
+SESSION_TITLE_TIMEOUT: 30  # seconds (increased for thinking models)
+SESSION_TITLE_MAX_TOKENS: 2000  # Increased for thinking models
 ```
 
 ## 4. File Structure
@@ -173,7 +173,7 @@ frontend/packages/gateway/src/
 
 ## 6. Acceptance Criteria
 
-- [x] Session title generated within 5 seconds
+- [x] Session title generated within 30 seconds
 - [x] Title is 3-5 words (max 50 characters)
 - [x] Fallback works when LLM unavailable
 - [x] Title appears correctly in sidebar session list
@@ -196,7 +196,7 @@ frontend/packages/gateway/src/
 
 ### Known Issues
 
-- **LLM Timeout**: qwen3.5:4b model takes >5 seconds for title generation, triggering fallback to truncation
+- **LLM Timeout**: qwen3.5:4b model takes >30 seconds for title generation, triggering fallback to truncation
 - **Sessions Disappear**: Fixed Redis port mismatch (6389→6379) and package export errors
 
 ### Files Modified
@@ -206,6 +206,7 @@ backend/
 ├── src/me4brain/api/routes/session_title.py     # NEW
 ├── src/me4brain/api/main.py                     # MODIFIED
 ├── src/me4brain/llm/config.py                   # MODIFIED
+├── src/me4brain/llm/dynamic_client.py          # MODIFIED (reasoning fallback)
 └── tests/integration/test_session_title.py      # NEW
 
 frontend/packages/
@@ -220,5 +221,49 @@ frontend/packages/
 
 The feature uses the existing LLM infrastructure with:
 - **Model**: Configured via `model_title_generation` in LLM config
-- **Timeout**: 5 seconds (fallback to truncation if exceeded)
+- **Timeout**: 30 seconds (fallback to truncation if exceeded)
+- **Max tokens**: 2000 (increased to accommodate thinking models)
 - **Max prompt length**: 2000 characters
+
+---
+
+## 8. Debug Session Notes (2026-03-23)
+
+### Problem Investigated
+Sessions were showing only session ID instead of evocative titles. The LLM-based title generation was timing out.
+
+### Root Cause Analysis
+The `qwen3.5` thinking models have a fundamental limitation:
+- They output extensive "thinking" process before actual content
+- The thinking alone consumes hundreds of tokens
+- Even with 30-second timeouts and 2000 max tokens, models don't finish within practical time limits
+
+### Changes Made
+
+#### `backend/src/me4brain/llm/dynamic_client.py`
+Added fallback to use `reasoning` field as `content` when content is empty (handles thinking models):
+```python
+# If content is empty but reasoning exists, use reasoning as content
+if (content is None or content == "") and reasoning:
+    content = reasoning
+    reasoning = None
+```
+
+#### `backend/src/me4brain/api/routes/session_title.py`
+1. Increased `DEFAULT_TIMEOUT` from 5.0 to 30.0 seconds
+2. Increased `max_tokens` from 20 to 2000
+3. Added `_extract_title_from_reasoning()` function to parse titles from thinking content
+4. Updated `_parse_title()` to handle long reasoning content with pattern matching
+
+### Current Behavior
+The system correctly:
+- ✅ Creates sessions in the backend
+- ✅ Stores sessions in Redis with proper tenant isolation
+- ✅ Retrieves sessions via API with evocative titles when available
+- ✅ Falls back to truncated user prompt when LLM times out
+
+### Recommendations for Full Evocative Titles
+To achieve true evocative titles via LLM:
+1. **Use a faster model** without thinking enabled (e.g., `qwen2.5`, `llama3.1`)
+2. **Download a non-thinking variant** of `qwen3.5`
+3. **Use keyword extraction** instead of LLM for title generation

@@ -220,13 +220,28 @@ class DynamicLLMClient(LLMProvider):
                     )
                 tool_calls = parsed_tool_calls
 
+            # Extract content and reasoning
+            # For models with thinking (qwen3.5), content may be empty but reasoning has the actual thought
+            content = msg.get("content")
+            reasoning = msg.get("reasoning") or msg.get("reasoning_content")
+
+            # If content is empty but reasoning exists, use reasoning as content (for thinking models)
+            if (content is None or content == "") and reasoning:
+                logger.debug(
+                    "dynamic_client_using_reasoning_as_content",
+                    content_len=len(content) if content else 0,
+                    reasoning_len=len(reasoning),
+                )
+                content = reasoning
+                reasoning = None  # Avoid duplication
+
             choices.append(
                 Choice(
                     index=c.get("index", 0),
                     message=ChoiceMessage(
                         role=msg.get("role", "assistant"),
-                        content=msg.get("content"),
-                        reasoning=msg.get("reasoning") or msg.get("reasoning_content"),
+                        content=content,
+                        reasoning=reasoning,
                         tool_calls=tool_calls,
                     ),
                     finish_reason=c.get("finish_reason"),
