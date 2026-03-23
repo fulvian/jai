@@ -9,11 +9,15 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./retry": {
+            "types": "./dist/retry.d.ts",
+            "import": "./dist/retry.js"
         }
     },
     "scripts": {
         "build": "tsc",
-        "lint": "eslint src/",
+        "lint": "eslint --ext .ts src/",
         "typecheck": "tsc --noEmit",
         "clean": "rm -rf dist",
         "test": "vitest run",
@@ -23,7 +27,10 @@
         "zod": "^3.24.1"
     },
     "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.56.1",
+        "@typescript-eslint/parser": "^8.56.1",
         "@types/node": "^20.14.0",
+        "eslint": "^9.39.2",
         "typescript": "^5.8.0",
         "vitest": "^2.1.9"
     }

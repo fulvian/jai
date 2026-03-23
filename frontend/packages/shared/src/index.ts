@@ -12,3 +12,6 @@ export * from './monitors.js';
 // Phase 3: Error types and config schemas
 export * from './errors.js';
 export * from './config.js';
+
+// Phase 4: Retry and resilience utilities
+export * from './retry.js';

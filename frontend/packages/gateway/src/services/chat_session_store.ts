@@ -7,10 +7,15 @@
  *   persan:chat:index        → Sorted Set (score = updated_at epoch)
  *
  * Fallback: Map in-memory se Redis non è disponibile.
+ *
+ * Graph Ingestion Retry:
+ *   Gli errori di indicizzazione nel Session Knowledge Graph vengono gestiti con
+ *   retry automatico e coda di riprocessazione per massima affidabilità.
  */
 
 import { Redis } from 'ioredis';
 import type { SessionConfig } from '@persan/shared';
+import { retry } from '@persan/shared';
 
 import { generateSessionTitleWithFallback } from './title_generator.js';
 
@@ -50,10 +55,20 @@ interface SessionMeta {
 const PREFIX = 'persan:chat:';
 const INDEX_KEY = 'persan:chat:index';
 
+// Graph ingestion retry configuration
+const GRAPH_INGESTION_MAX_RETRIES = 3;
+const GRAPH_INGESTION_RETRY_DELAY_MS = 1000;
+
 export class ChatSessionStore {
     private redis: Redis | null = null;
     private redisAvailable = false;
     private memoryStore = new Map<string, ChatSession>();
+
+    /** Retry queue for graph ingestion failures */
+    private graphIngestionRetryQueue = new Map<string, number>();
+
+    /** Currently processing ingestion for a session */
+    private graphIngestionInFlight = new Set<string>();
 
     constructor() {
         this.initRedis();
@@ -62,7 +77,7 @@ export class ChatSessionStore {
     // ── Redis connection ─────────────────────────────────────────────
 
     private initRedis(): void {
-        const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6389';
+        const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
         const redisPassword = process.env.REDIS_PASSWORD;
 
         const opts: Record<string, unknown> = {
@@ -364,28 +379,74 @@ export class ChatSessionStore {
 
     /**
      * Invia sessione al Session Knowledge Graph di Me4Brain.
-     * Fire-and-forget: errori non bloccano il flusso principale.
+     *
+     * Implementa retry automatico con exponential backoff per gestire
+     * fallimenti transienti. Gli errori vengono loggati per observability.
      */
     private async triggerGraphIngestion(sessionId: string): Promise<void> {
+        // Skip if already processing this session
+        if (this.graphIngestionInFlight.has(sessionId)) {
+            return;
+        }
+
+        // Check retry count and skip if max retries exceeded
+        const retryCount = this.graphIngestionRetryQueue.get(sessionId) ?? 0;
+        if (retryCount >= GRAPH_INGESTION_MAX_RETRIES) {
+            console.warn(
+                `[ChatSessionStore] Graph ingestion max retries (${GRAPH_INGESTION_MAX_RETRIES}) exceeded for session: ${sessionId}`,
+            );
+            this.graphIngestionRetryQueue.delete(sessionId);
+            return;
+        }
+
+        this.graphIngestionInFlight.add(sessionId);
+
         try {
             const { graphSessionService } = await import('./graph_session_service.js');
             const session = await this.getSession(sessionId);
-            if (!session || !session.turns.length) return;
+            if (!session || !session.turns.length) {
+                this.graphIngestionInFlight.delete(sessionId);
+                return;
+            }
 
-            await graphSessionService.ingestSession(
-                sessionId,
-                session.title,
-                session.turns.map((t) => ({
-                    role: t.role,
-                    content: t.content,
-                    timestamp: t.timestamp,
-                })),
-                session.created_at,
-                session.updated_at,
+            await retry(
+                async () => {
+                    await graphSessionService.ingestSession(
+                        sessionId,
+                        session.title,
+                        session.turns.map((t) => ({
+                            role: t.role,
+                            content: t.content,
+                            timestamp: t.timestamp,
+                        })),
+                        session.created_at,
+                        session.updated_at,
+                    );
+                },
+                {
+                    maxAttempts: GRAPH_INGESTION_MAX_RETRIES - retryCount,
+                    initialDelayMs: GRAPH_INGESTION_RETRY_DELAY_MS,
+                    onRetry: (attempt, error, delay) => {
+                        console.warn(
+                            `[ChatSessionStore] Graph ingestion retry ${attempt} for session ${sessionId} after ${delay}ms: ${error.message}`,
+                        );
+                    },
+                },
             );
+
+            // Success - clear retry state
+            this.graphIngestionRetryQueue.delete(sessionId);
+            console.info(`[ChatSessionStore] Graph ingestion succeeded for session: ${sessionId}`);
         } catch (error) {
-            // Silenzioso: il grafo è opzionale, non deve impattare il flusso principale
-            console.warn('[ChatSessionStore] Graph ingestion failed (non-critical):', (error as Error).message);
+            // All retries exhausted
+            const currentRetry = this.graphIngestionRetryQueue.get(sessionId) ?? 0;
+            this.graphIngestionRetryQueue.set(sessionId, currentRetry + 1);
+
+            console.error(
+                `[ChatSessionStore] Graph ingestion failed permanently after ${currentRetry + 1} attempts for session ${sessionId}: ${(error as Error).message}`,
+            );
+        } finally {
+            this.graphIngestionInFlight.delete(sessionId);
         }
     }
 

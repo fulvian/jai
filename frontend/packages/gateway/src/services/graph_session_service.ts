@@ -3,9 +3,14 @@
  *
  * Client Gateway per il Session Knowledge Graph di Me4Brain.
  * Gestisce comunicazione con gli endpoint /sessions/graph/* e /prompts/library/*
+ *
+ * Retry Logic:
+ *   Tutte le chiamate HTTP includono retry automatico con exponential backoff
+ *   per gestire fallimenti transienti di rete o servizio.
  */
 
 import { ofetch } from 'ofetch';
+import { retry } from '@persan/shared';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -90,9 +95,16 @@ class GraphSessionService {
 
     // ── Session Graph ────────────────────────────────────────────────
 
+    /** Retry configuration for ingest operations */
+    private static readonly INGEST_MAX_ATTEMPTS = 3;
+    private static readonly INGEST_INITIAL_DELAY_MS = 1000;
+
     /**
      * Indicizza una sessione nel grafo Neo4j.
      * Chiamato automaticamente dopo salvataggio su Redis.
+     *
+     * Implementa retry automatico con exponential backoff per gestire
+     * fallimenti transienti (5xx, network errors).
      */
     async ingestSession(
         sessionId: string,
@@ -101,28 +113,40 @@ class GraphSessionService {
         createdAt?: string,
         updatedAt?: string,
     ): Promise<{ sessionId: string; turnCount: number; status: string }> {
-        try {
-            const result = await ofetch(`${this.baseUrl}/sessions/graph/ingest`, {
-                method: 'POST',
-                headers: this.headers,
-                body: {
-                    session_id: sessionId,
-                    title,
-                    turns,
-                    created_at: createdAt,
-                    updated_at: updatedAt,
+        return retry(
+            async () => {
+                const result = await ofetch(`${this.baseUrl}/sessions/graph/ingest`, {
+                    method: 'POST',
+                    headers: this.headers,
+                    body: {
+                        session_id: sessionId,
+                        title,
+                        turns,
+                        created_at: createdAt,
+                        updated_at: updatedAt,
+                    },
+                    timeout: 30_000, // 30s per ingestione con embedding
+                });
+                return {
+                    sessionId: result.session_id,
+                    turnCount: result.turn_count,
+                    status: result.status,
+                };
+            },
+            {
+                maxAttempts: GraphSessionService.INGEST_MAX_ATTEMPTS,
+                initialDelayMs: GraphSessionService.INGEST_INITIAL_DELAY_MS,
+                exponentialBase: 2,
+                jitter: true,
+                // Only retry on server errors (5xx) or network errors
+                nonRetryableCodes: ['E400', 'E401', 'E403', 'E404'],
+                onRetry: (attempt, error, delay) => {
+                    console.warn(
+                        `[GraphSession] Ingest retry ${attempt} for session ${sessionId} after ${delay}ms: ${error.message}`,
+                    );
                 },
-                timeout: 30_000, // 30s per ingestione con embedding
-            });
-            return {
-                sessionId: result.session_id,
-                turnCount: result.turn_count,
-                status: result.status,
-            };
-        } catch (error) {
-            console.warn('[GraphSession] Ingest failed (non-blocking):', (error as Error).message);
-            throw error;
-        }
+            },
+        );
     }
 
     /**
