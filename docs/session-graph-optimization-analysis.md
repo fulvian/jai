@@ -1717,16 +1717,26 @@ stats = cache.get_stats()  # {hits, misses, hit_rate, l1_hits, l2_hits, ...}
 - `GraphExplorer.tsx` - Uses `data: nodes` from `useConnectedNodes()`
 - `SessionClusterSidebar.tsx` - Uses `data: clusters` from `useSessionClusters()`
 
-### Next Steps (P2-P3)
+### Next Steps (P3+)
 
-| Priority | Task | Description |
-|----------|------|-------------|
+All P0-P3 tasks are now complete. The optimization plan is at 100% completion.
+
+| Priority | Task | Description | Status |
+|----------|------|-------------|--------|
+| P0 | OPT-001 | Fire-and-forget pattern fix | ✅ Complete |
+| P0 | OPT-002 | Retry logic | ✅ Complete |
+| P0 | OPT-003 | Distributed cooldown | ✅ Complete |
+| P1 | OPT-004 | Embedding cache | ✅ Complete |
+| P1 | OPT-005 | Batch embeddings | ✅ Complete |
+| P1 | OPT-006 | Error states in hooks | ✅ Complete |
 | P2 | OPT-007 | BM25 lexical search | ✅ Complete |
 | P2 | OPT-008 | RRF fusion | ✅ Complete |
-| P2 | OPT-009 | Enhanced DnD with optimistic updates | ✅ Complete |
+| P2 | OPT-009 | Enhanced DnD optimistic updates | ✅ Complete |
 | P2 | OPT-010 | Incremental community detection | ✅ Complete |
 | P2 | OPT-011 | Adaptive similarity thresholds | ✅ Complete |
-| P2 | OPT-012 | Cross-list DnD support | N/A (single-list) |
+| P2 | OPT-012 | Cross-list DnD | N/A (single-list) |
+| P3 | OPT-013 | Adaptive TTL | ✅ Complete |
+| P3 | OPT-014 | SpaCy NER entity extraction | ✅ Complete |
 
 ### P2 Tasks - Hybrid Search Enhancement ✅ IN PROGRESS
 
@@ -1882,6 +1892,98 @@ const handleDragEnd = useCallback(async (event: DragEndEvent) => {
 **Current Implementation**: Single SortableContext with rectSortingStrategy - supports within-list reordering only.
 
 **Future Enhancement**: Would require redesign with multiple SortableContext containers and `DragOverlay` for cross-container transfers.
+
+---
+
+### P3 Tasks - Advanced Optimizations ✅ COMPLETED
+
+| Task | Description | Status | Files |
+|------|-------------|--------|-------|
+| **OPT-013** | Adaptive TTL in SessionManager | ✅ Complete | `session_manager.ts` |
+| **OPT-014** | Entity extraction with SpaCy | ✅ Complete | `entity_extractor.py` |
+
+### OPT-013: Adaptive TTL in SessionManager Implementation
+
+**File Modified**: `frontend/packages/gateway/src/services/session_manager.ts`
+
+**Changes**:
+- Added `accessCount` and `lastAccessAt` to `CachedSession` interface for tracking access frequency
+- Added adaptive TTL constants: `MIN_TTL_SECONDS` (5 min), `MAX_TTL_SECONDS` (60 min)
+- Added `ACCESS_COUNT_FOR_MAX_TTL` (10 accesses) threshold for maximum TTL
+- Added `computeAdaptiveTTL()` method that scales TTL based on access count
+- Updated `shouldServe()` to use adaptive TTL instead of fixed TTL
+- Updated L1/L2 cache hit paths to increment `accessCount` and update `lastAccessAt`
+- Improved LRU eviction to use `lastAccessAt` instead of creation order
+
+**Adaptive TTL Algorithm**:
+- Sessions accessed <10 times: TTL scales linearly from 5min to 60min
+- Sessions accessed ≥10 times: Maximum 60min TTL
+- New sessions (<1 minute old): Use default 30min TTL for grace period
+
+**Benefits**:
+- Hot sessions stay in cache longer (reduced API calls)
+- Cold sessions expire faster (memory efficiency)
+- Automatic tuning based on actual usage patterns
+
+### OPT-014: Entity Extraction with SpaCy NER Implementation
+
+**New File**: `backend/src/me4brain/memory/entity_extractor.py`
+
+**Features**:
+- `EntityExtractor`: SpaCy-based NER with graceful fallback
+- `ExtractedEntity`: Dataclass for structured entity representation
+- `EntityExtractionResult`: Result container with metadata
+- `extract_and_store_entities()`: Integration with Neo4j knowledge graph
+
+**Entity Types Supported** (SpaCy pre-trained):
+| SpaCy Label | Schema Type | Description |
+|-------------|------------|-------------|
+| PERSON | person | People names |
+| ORG | organization | Companies, organizations |
+| GPE | location | Countries, cities, states |
+| DATE | date | Dates, time expressions |
+| MONEY | money | Monetary values |
+| PRODUCT | product | Products |
+| EVENT | event | Events |
+| WORK_OF_ART | work_of_art | Titles of books, songs |
+| LAW | law | Legal documents |
+| LANGUAGE | language | Language names |
+
+**Fallback Extraction** (when SpaCy not available):
+- Email addresses (regex pattern)
+- URLs (regex pattern)
+- Date patterns (multiple formats)
+- Money patterns (USD, EUR, GBP)
+- Phone numbers
+
+**Enhanced Graph Schema**:
+```cypher
+// Entity nodes with NER metadata
+(:Entity {name, type, label, confidence})
+
+// Mentions relationship from Turn to Entity
+(:Turn)-[:MENTIONS {extracted_at}]->(:Entity)
+```
+
+**Dependency Added** (optional):
+```
+uv sync --extra spacy
+python -m spacy download en_core_web_sm
+```
+
+**Usage**:
+```python
+from me4brain.memory import get_entity_extractor, extract_and_store_entities
+
+extractor = get_entity_extractor()
+result = extractor.extract("Apple was founded by Steve Jobs in California.")
+
+for entity in result.entities:
+    print(f"{entity.text} -> {entity.schema_type}")
+
+# With Neo4j integration
+await extract_and_store_entities(session_id, tenant_id, turns, driver)
+```
 
 ---
 

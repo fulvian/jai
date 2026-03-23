@@ -99,6 +99,12 @@ llm = [
     "google-generativeai>=0.8",
 ]
 
+# Optional: SpaCy for NER entity extraction (OPT-014)
+spacy = [
+    "spacy>=3.8",
+]
+# Download SpaCy model with: python -m spacy download en_core_web_sm
+
 [project.scripts]
 me4brain = "me4brain.api.main:main"
 
@@ -146,6 +152,7 @@ module = [
     "sentence_transformers.*",
     "redis.*",
     "keycloak.*",
+    "spacy.*",
 ]
 ignore_missing_imports = true
 

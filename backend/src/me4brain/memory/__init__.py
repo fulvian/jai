@@ -7,10 +7,22 @@ Quattro layer cognitivi del sistema di memoria:
 - Procedural Memory (Layer IV): Skill & Muscle Memory
 """
 
+from me4brain.memory.entity_extractor import (
+    EntityExtractionResult,
+    EntityExtractor,
+    ExtractedEntity,
+    extract_and_store_entities,
+    get_entity_extractor,
+)
 from me4brain.memory.episodic import (
     Episode,
     EpisodicMemory,
     get_episodic_memory,
+)
+from me4brain.memory.lexical_search import (
+    BM25Indexer,
+    LexicalSearchService,
+    get_lexical_search_service,
 )
 from me4brain.memory.procedural import (
     ProceduralMemory,
@@ -27,11 +39,6 @@ from me4brain.memory.semantic import (
 from me4brain.memory.working import (
     WorkingMemory,
     get_working_memory,
-)
-from me4brain.memory.lexical_search import (
-    BM25Indexer,
-    LexicalSearchService,
-    get_lexical_search_service,
 )
 
 __all__ = [
@@ -56,4 +63,10 @@ __all__ = [
     "BM25Indexer",
     "LexicalSearchService",
     "get_lexical_search_service",
+    # Entity Extraction (OPT-014)
+    "EntityExtractor",
+    "ExtractedEntity",
+    "EntityExtractionResult",
+    "get_entity_extractor",
+    "extract_and_store_entities",
 ]

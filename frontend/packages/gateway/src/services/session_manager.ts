@@ -32,10 +32,16 @@ const logger = {
 const CACHE_PREFIX = 'persan:cache:';
 const LOCK_PREFIX = 'persan:lock:';
 const INDEX_KEY = 'persan:cache:index';
-const TTL_SECONDS = 30 * 60; // 30 minutes
+const TTL_SECONDS = 30 * 60; // 30 minutes (default TTL)
 const LOCK_TTL = 10; // seconds
 const L1_SIZE = 1000; // Hot sessions in-memory
 const PUBSUB_CHANNEL = 'cache:invalidate';
+
+// Adaptive TTL configuration (OPT-013)
+const MIN_TTL_SECONDS = 5 * 60; // 5 minutes minimum for cold sessions
+const MAX_TTL_SECONDS = 60 * 60; // 60 minutes maximum for hot sessions
+const ACCESS_COUNT_FOR_MAX_TTL = 10; // Access count threshold for maximum TTL
+const TTL_GRACE_PERIOD_MS = 60 * 1000; // 1 minute grace period for new sessions
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -43,6 +49,8 @@ interface CachedSession {
     data: ChatSession;
     createdAt: number;
     ttl: number;
+    accessCount: number;  // Track access frequency for adaptive TTL
+    lastAccessAt: number; // Track last access for recency scoring
 }
 
 interface CacheMetrics {
@@ -164,6 +172,9 @@ export class SessionManager {
         const l1Data = this.l1Cache.get(cacheKey);
         if (l1Data && this.shouldServe(l1Data)) {
             this.metrics.l1Hits++;
+            // Adaptive TTL: increment access count and update last access time
+            l1Data.accessCount++;
+            l1Data.lastAccessAt = Date.now();
             // LRU: move to end
             this.l1Cache.delete(cacheKey);
             this.l1Cache.set(cacheKey, l1Data);
@@ -178,6 +189,9 @@ export class SessionManager {
                     const payload: CachedSession = JSON.parse(cached);
                     if (this.shouldServe(payload)) {
                         this.metrics.l2Hits++;
+                        // Adaptive TTL: increment access count on L2 hit
+                        payload.accessCount = (payload.accessCount || 0) + 1;
+                        payload.lastAccessAt = Date.now();
                         // Promote to L1
                         this.promoteToL1(cacheKey, payload);
                         return payload.data;
@@ -284,6 +298,8 @@ export class SessionManager {
                 data: session,
                 createdAt: Date.now(),
                 ttl: TTL_SECONDS,
+                accessCount: 1,  // First access
+                lastAccessAt: Date.now(),
             };
             this.promoteToL1(cacheKey, payload);
 
@@ -588,8 +604,10 @@ export class SessionManager {
     // ── Cache Helpers ────────────────────────────────────────────────
 
     private shouldServe(cached: CachedSession): boolean {
+        // Compute adaptive TTL based on access frequency
+        const adaptiveTTL = this.computeAdaptiveTTL(cached.accessCount, cached.createdAt);
+        const ttlMs = adaptiveTTL * 1000;
         const ageMs = Date.now() - cached.createdAt;
-        const ttlMs = cached.ttl * 1000;
         const remaining = ttlMs - ageMs;
 
         if (remaining <= 0) return false;
@@ -649,13 +667,46 @@ export class SessionManager {
 
     private promoteToL1(key: string, payload: CachedSession): void {
         if (this.l1Cache.size >= L1_SIZE) {
-            // Simple LRU eviction
-            const firstKey = this.l1Cache.keys().next().value as string | undefined;
-            if (firstKey) {
-                this.l1Cache.delete(firstKey);
+            // LRU eviction - remove least recently accessed item
+            let oldestKey: string | undefined;
+            let oldestTime = Infinity;
+
+            for (const [k, v] of this.l1Cache) {
+                if (v.lastAccessAt < oldestTime) {
+                    oldestTime = v.lastAccessAt;
+                    oldestKey = k;
+                }
+            }
+
+            if (oldestKey) {
+                this.l1Cache.delete(oldestKey);
             }
         }
         this.l1Cache.set(key, payload);
+    }
+
+    /**
+     * Compute adaptive TTL based on access frequency.
+     * Hot sessions (frequently accessed) get longer TTL.
+     * Cold sessions get shorter TTL.
+     */
+    private computeAdaptiveTTL(accessCount: number, createdAt: number): number {
+        // New sessions get grace period - use default TTL initially
+        const ageMs = Date.now() - createdAt;
+        if (ageMs < TTL_GRACE_PERIOD_MS) {
+            return TTL_SECONDS;
+        }
+
+        // Compute TTL based on access count (linear scaling between min and max)
+        if (accessCount >= ACCESS_COUNT_FOR_MAX_TTL) {
+            return MAX_TTL_SECONDS;
+        }
+
+        // Linear interpolation between MIN and MAX based on access count
+        const ratio = accessCount / ACCESS_COUNT_FOR_MAX_TTL;
+        const ttl = MIN_TTL_SECONDS + (MAX_TTL_SECONDS - MIN_TTL_SECONDS) * ratio;
+
+        return Math.round(ttl);
     }
 
     // ── Metrics ──────────────────────────────────────────────────────
