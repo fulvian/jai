@@ -7,12 +7,10 @@ Uses a lightweight LLM call to determine which tool domains are needed.
 from __future__ import annotations
 
 import asyncio
-import json
-import re
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -20,28 +18,24 @@ if TYPE_CHECKING:
     from me4brain.cache.cache_manager import CacheManager
 
 from me4brain.engine.hybrid_router.metrics import (
-    CLASSIFICATION_TOTAL,
-    CLASSIFICATION_LATENCY,
-    LLM_ERRORS,
-    DEGRADATION_LEVEL,
-    DEGRADATION_TRANSITIONS,
-    CLASSIFICATION_CONFIDENCE,
-    CLASSIFICATION_RETRIES,
-    QUERY_WITH_CONTEXT,
     CACHE_HITS,
     CACHE_MISSES,
-    CACHE_HIT_RATIO,
+    CLASSIFICATION_CONFIDENCE,
+    CLASSIFICATION_LATENCY,
+    CLASSIFICATION_RETRIES,
+    CLASSIFICATION_TOTAL,
+    LLM_ERRORS,
+    QUERY_WITH_CONTEXT,
+)
+from me4brain.engine.hybrid_router.trace_contract import (
+    FallbackType,
+    StageTrace,
+    StageType,
 )
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
     DomainComplexity,
     HybridRouterConfig,
-)
-from me4brain.engine.hybrid_router.trace_contract import (
-    StageTrace,
-    StageType,
-    FallbackType,
-    create_stage_trace,
 )
 from me4brain.llm.nanogpt import NanoGPTClient
 from me4brain.utils.json_utils import robust_json_parse
@@ -121,7 +115,6 @@ class DomainClassifier:
             return None
 
         try:
-            from me4brain.cache.cache_manager import CachedResponse
             from me4brain.cache.query_normalizer import generate_cache_key
 
             # Generate cache key
@@ -403,7 +396,7 @@ Current time: {current_datetime}"""
                         self._llm.generate_response(request),
                         timeout=DOMAIN_CLASSIFICATION_TIMEOUT,
                     )
-                except asyncio.TimeoutError as e:
+                except TimeoutError as e:
                     last_error = e
                     CLASSIFICATION_RETRIES.labels(reason="timeout").inc()
                     LLM_ERRORS.labels(error_type="timeout").inc()
@@ -622,7 +615,7 @@ Current time: {current_datetime}"""
                     trace.provider_resolved = getattr(self._llm, "provider", "unknown")
                     trace.model_effective = self._config.router_model
 
-                except asyncio.TimeoutError as e:
+                except TimeoutError as e:
                     last_error = e
                     logger.warning(
                         "domain_classification_timeout",
@@ -843,108 +836,67 @@ Current time: {current_datetime}"""
         trace.used_fallback_keywords = True
         return classification, trace
 
+    def _get_keyword_map(self) -> dict[str, list[str]]:
+        """Get keyword map for domain classification.
+
+        First tries to get keywords from ToolContractRegistry (auto-sync).
+        Falls back to hardcoded map if registry is not populated.
+
+        Returns:
+            Dictionary mapping domain -> list of keywords
+        """
+        # ✅ Wave 1.4: Auto-sync keywords from registry
+        try:
+            from me4brain.engine.tool_contract import ToolContractRegistry
+
+            registry = ToolContractRegistry.get_instance()
+            registry_keywords = registry.get_domain_keywords()
+
+            # Check if registry has meaningful keywords (not empty)
+            if registry_keywords and any(kw for kw in registry_keywords.values() if kw):
+                # Merge registry keywords with fallback map
+                merged: dict[str, list[str]] = dict(FALLBACK_KEYWORD_MAP)
+
+                # Add registry keywords, preserving existing entries
+                for domain, keywords in registry_keywords.items():
+                    if domain in merged:
+                        # Add new keywords not already present
+                        existing = set(merged[domain])
+                        for kw in keywords:
+                            if kw.lower() not in [k.lower() for k in existing]:
+                                merged[domain].append(kw)
+                    else:
+                        # New domain from registry
+                        merged[domain] = keywords
+
+                self._logger.debug(
+                    "keyword_map_synced_from_registry",
+                    domains_with_keywords=len(merged),
+                )
+                return merged
+
+        except Exception as e:
+            self._logger.debug(
+                "keyword_map_registry_sync_failed",
+                error=str(e),
+            )
+
+        # Fall back to hardcoded map
+        return FALLBACK_KEYWORD_MAP
+
     def _fallback_classification(self, query: str) -> DomainClassification:
         """Generate fallback classification when LLM fails.
 
         Uses keyword-based domain detection instead of generic web_search.
+        Keywords are auto-synced from ToolContractRegistry when available.
         """
         query_lower = query.lower()
         detected_domains: list[str] = []
 
-        KEYWORD_DOMAIN_MAP = {
-            "geo_weather": [
-                "meteo",
-                "tempo",
-                "pioggia",
-                "temperatura",
-                "weather",
-                "forecast",
-                "neve",
-                "vento",
-            ],
-            "finance_crypto": [
-                "prezzo",
-                "bitcoin",
-                "crypto",
-                "azioni",
-                "stock",
-                "borsa",
-                "trading",
-                "ethereum",
-                "finanza",
-                # NOTE: "scommesse", "betting", "odds" removed - these belong to sports_nba
-            ],
-            "web_search": ["cerca", "trova", "search", "find", "ricerca", "notizie", "news"],
-            "google_workspace": [
-                "email",
-                "mail",
-                "gmail",
-                "calendar",
-                "calendario",
-                "drive",
-                "documento",
-                "doc",
-                "sheet",
-                "foglio",
-            ],
-            "productivity": ["promemoria", "reminder", "nota", "task", "attività", "appuntamento"],
-            "travel": ["volo", "hotel", "viaggio", "prenota", "flight", "booking", "aeroporto"],
-            "food": ["ristorante", "mangiare", "pizza", "cibo", "restaurant", "menu"],
-            "sports_nba": [
-                # Core NBA keywords
-                "nba",
-                "basket",
-                "basketball",
-                "partita",
-                "partite",
-                # Italian betting keywords (B4 FIX: expanded)
-                "scommessa",
-                "scommesse",  # PLURAL - was missing
-                "pronostico",
-                "pronostici",  # PLURAL
-                "sistema scommesse",
-                "value bet",
-                # English betting keywords (B4 FIX: added)
-                "betting",
-                "bet",
-                "bets",
-                "odds",
-                "spread",
-                "over/under",
-                "over under",
-                "moneyline",
-                "point spread",
-                "betting lines",
-                "betting tips",
-                "picks",
-                "predictions",
-                "wager",
-                # Italian betting-related
-                "analisi scommesse",
-                "pronostico vincente",
-                "sistema vincente",
-                # Team names (common)
-                "lakers",
-                "celtics",
-                "warriors",
-                "bulls",
-                "heat",
-                "knicks",
-                "nets",
-                "bucks",
-                "nuggets",
-                "suns",
-                "76ers",
-                "sixers",
-            ],
-            "sports_booking": ["campo", "tennis", "calcetto", "padel", "prenotare campo"],
-            "science_research": ["paper", "ricerca", "arxiv", "pubmed", "scientifico", "studio"],
-            "medical": ["farmaco", "medico", "sintomo", "salute", "medicina", "dottore"],
-            "entertainment": ["film", "musica", "cinema", "netflix", "spotify", "serie tv"],
-            "shopping": ["comprare", "amazon", "negozio", "shop", "acquista"],
-        }
+        # ✅ Wave 1.4: Use auto-synced keyword map
+        keyword_map = self._get_keyword_map()
 
-        for domain, keywords in KEYWORD_DOMAIN_MAP.items():
+        for domain, keywords in keyword_map.items():
             if any(kw in query_lower for kw in keywords):
                 if domain in self._domains:
                     detected_domains.append(domain)
@@ -1135,3 +1087,100 @@ Current time: {current_datetime}"""
             lines.append(f"{role_label}: {content}")
 
         return "\n".join(lines)
+
+
+# ✅ Wave 1.4: Hardcoded fallback keyword map
+# This is used when ToolContractRegistry is not populated or fails
+# NOTE: This is imported and used by _get_keyword_map() method in DomainClassifier
+FALLBACK_KEYWORD_MAP: dict[str, list[str]] = {
+    "geo_weather": [
+        "meteo",
+        "tempo",
+        "pioggia",
+        "temperatura",
+        "weather",
+        "forecast",
+        "neve",
+        "vento",
+    ],
+    "finance_crypto": [
+        "prezzo",
+        "bitcoin",
+        "crypto",
+        "azioni",
+        "stock",
+        "borsa",
+        "trading",
+        "ethereum",
+        "finanza",
+        # NOTE: "scommesse", "betting", "odds" removed - these belong to sports_nba
+    ],
+    "web_search": ["cerca", "trova", "search", "find", "ricerca", "notizie", "news"],
+    "google_workspace": [
+        "email",
+        "mail",
+        "gmail",
+        "calendar",
+        "calendario",
+        "drive",
+        "documento",
+        "doc",
+        "sheet",
+        "foglio",
+    ],
+    "productivity": ["promemoria", "reminder", "nota", "task", "attività", "appuntamento"],
+    "travel": ["volo", "hotel", "viaggio", "prenota", "flight", "booking", "aeroporto"],
+    "food": ["ristorante", "mangiare", "pizza", "cibo", "restaurant", "menu"],
+    "sports_nba": [
+        # Core NBA keywords
+        "nba",
+        "basket",
+        "basketball",
+        "partita",
+        "partite",
+        # Italian betting keywords
+        "scommessa",
+        "scommesse",
+        "pronostico",
+        "pronostici",
+        "sistema scommesse",
+        "value bet",
+        # English betting keywords
+        "betting",
+        "bet",
+        "bets",
+        "odds",
+        "spread",
+        "over/under",
+        "over under",
+        "moneyline",
+        "point spread",
+        "betting lines",
+        "betting tips",
+        "picks",
+        "predictions",
+        "wager",
+        # Italian betting-related
+        "analisi scommesse",
+        "pronostico vincente",
+        "sistema vincente",
+        # Team names (common)
+        "lakers",
+        "celtics",
+        "warriors",
+        "bulls",
+        "heat",
+        "knicks",
+        "nets",
+        "bucks",
+        "nuggets",
+        "suns",
+        "76ers",
+        "sixers",
+    ],
+    "sports_booking": ["campo", "tennis", "calcetto", "padel", "prenotare campo"],
+    "science_research": ["paper", "ricerca", "arxiv", "pubmed", "scientifico", "studio"],
+    "medical": ["farmaco", "medico", "sintomo", "salute", "medicina", "dottore"],
+    "entertainment": ["film", "musica", "cinema", "netflix", "spotify", "serie tv"],
+    "shopping": ["comprare", "amazon", "negozio", "shop", "acquista"],
+}

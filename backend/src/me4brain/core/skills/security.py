@@ -6,7 +6,6 @@ Rileva pattern pericolosi e classifica livello di rischio.
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import structlog
 
@@ -94,7 +93,7 @@ class SkillSecurityValidator:
 
     def __init__(
         self,
-        custom_deny_patterns: Optional[list[tuple[str, str]]] = None,
+        custom_deny_patterns: list[tuple[str, str]] | None = None,
     ):
         """Inizializza validator.
 
@@ -107,8 +106,7 @@ class SkillSecurityValidator:
 
         # Compila regex
         self._compiled_patterns = [
-            (re.compile(pattern, re.IGNORECASE), desc)
-            for pattern, desc in self.deny_patterns
+            (re.compile(pattern, re.IGNORECASE), desc) for pattern, desc in self.deny_patterns
         ]
 
     def validate_code(self, code: str) -> SecurityValidationResult:
@@ -224,7 +222,7 @@ class SkillSecurityValidator:
 
 
 # Singleton
-_security_validator: Optional[SkillSecurityValidator] = None
+_security_validator: SkillSecurityValidator | None = None
 
 
 def get_skill_security_validator() -> SkillSecurityValidator:

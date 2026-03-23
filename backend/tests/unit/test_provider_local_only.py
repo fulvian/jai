@@ -1,7 +1,8 @@
 """Provider factory tests for strict local-only mode."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from me4brain.llm.provider_factory import resolve_model_client
 

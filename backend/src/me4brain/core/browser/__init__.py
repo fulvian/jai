@@ -2,6 +2,7 @@
 
 from me4brain.core.browser.types import (
     ActionType,
+    ActRequest,
     BrowserAction,
     BrowserActionResult,
     BrowserConfig,
@@ -12,7 +13,6 @@ from me4brain.core.browser.types import (
     CreateSessionRequest,
     ExtractRequest,
     NavigateRequest,
-    ActRequest,
     RecordingState,
     SessionResponse,
     StagehandConfig,

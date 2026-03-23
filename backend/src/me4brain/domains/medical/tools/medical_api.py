@@ -101,7 +101,7 @@ async def rxnorm_interactions(drug_name_or_rxcui: str) -> dict[str, Any]:
                 rxcui = rxcui_list[0]
 
             response = await client.get(
-                f"https://rxnav.nlm.nih.gov/REST/interaction/interaction.json",
+                "https://rxnav.nlm.nih.gov/REST/interaction/interaction.json",
                 params={"rxcui": rxcui},
             )
             response.raise_for_status()
@@ -188,7 +188,7 @@ async def icite_metrics(pmid: str) -> dict[str, Any]:
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.get(
-                f"https://icite.od.nih.gov/api/pubs",
+                "https://icite.od.nih.gov/api/pubs",
                 params={"pmids": pmid},
             )
             response.raise_for_status()
@@ -232,7 +232,7 @@ async def icite_batch(pmids: str) -> dict[str, Any]:
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.get(
-                f"https://icite.od.nih.gov/api/pubs",
+                "https://icite.od.nih.gov/api/pubs",
                 params={"pmids": pmids},
             )
             response.raise_for_status()

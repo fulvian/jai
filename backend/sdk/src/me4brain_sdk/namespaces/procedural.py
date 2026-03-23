@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Procedural Memory Namespace - Skills and tool management."""
 
 from typing import Any

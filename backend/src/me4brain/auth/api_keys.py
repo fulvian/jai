@@ -9,12 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-import structlog
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+
+import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -42,8 +41,8 @@ class APIKey:
     key_prefix: str  # First 8 chars for identification
     scopes: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
-    last_used_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
+    last_used_at: datetime | None = None
+    expires_at: datetime | None = None
     is_active: bool = True
     rate_limit: int = 60  # requests per minute
     metadata: dict = field(default_factory=dict)
@@ -155,8 +154,8 @@ class APIKeyManager:
         self,
         user_id: str,
         name: str,
-        scopes: Optional[list[str]] = None,
-        expires_at: Optional[datetime] = None,
+        scopes: list[str] | None = None,
+        expires_at: datetime | None = None,
         rate_limit: int = 60,
     ) -> tuple[APIKey, str]:
         """Create a new API key for a user.
@@ -205,7 +204,7 @@ class APIKeyManager:
 
         return api_key, raw_key
 
-    async def get_key(self, key_id: str) -> Optional[APIKey]:
+    async def get_key(self, key_id: str) -> APIKey | None:
         """Get an API key by ID.
 
         Args:
@@ -216,7 +215,7 @@ class APIKeyManager:
         """
         return self._keys.get(key_id)
 
-    async def get_key_by_hash(self, key_hash: str) -> Optional[APIKey]:
+    async def get_key_by_hash(self, key_hash: str) -> APIKey | None:
         """Get an API key by its hash.
 
         Args:
@@ -242,7 +241,7 @@ class APIKeyManager:
         key_ids = self._keys_by_user.get(user_id, [])
         return [self._keys[kid] for kid in key_ids if kid in self._keys]
 
-    async def validate_key(self, raw_key: str) -> Optional[APIKey]:
+    async def validate_key(self, raw_key: str) -> APIKey | None:
         """Validate an API key and return the associated APIKey object.
 
         Args:
@@ -323,7 +322,7 @@ class APIKeyManager:
 
 
 # Singleton instance
-_api_key_manager: Optional[APIKeyManager] = None
+_api_key_manager: APIKeyManager | None = None
 
 
 def get_api_key_manager() -> APIKeyManager:

@@ -452,7 +452,6 @@ class ToolExecutor:
         Prima tenta dispatch via domain handlers (architettura modulare),
         poi fallback a handler legacy inline.
         """
-        import os
         from me4brain.retrieval.domain_dispatch import dispatch_to_domain
 
         # NUOVA ARCHITETTURA: Tenta domain handler first
@@ -555,7 +554,7 @@ class ToolExecutor:
                 vs_currency = arguments.get("vs_currency", "usd")
 
                 response = await client.get(
-                    f"https://api.coingecko.com/api/v3/simple/price",
+                    "https://api.coingecko.com/api/v3/simple/price",
                     params={"ids": coin_id, "vs_currencies": vs_currency},
                 )
                 response.raise_for_status()
@@ -2299,7 +2298,6 @@ class ToolExecutor:
         - get_price: Prezzo corrente
         - get_ticker_24h: Statistiche 24h
         """
-        import os
 
         # Binance non richiede auth per dati pubblici
         base_url = "https://api.binance.com/api/v3"
@@ -2436,15 +2434,15 @@ class ToolExecutor:
 
     def _get_google_credentials(self) -> Any:
         """Get Google OAuth2 credentials from environment or token file with auto-refresh."""
-        import os
         import json
+        import os
         from pathlib import Path
 
         # Try token.json first
         token_path = Path(os.getenv("GOOGLE_TOKEN_PATH", "data/google_token.json"))
         if token_path.exists():
-            from google.oauth2.credentials import Credentials
             from google.auth.transport.requests import Request
+            from google.oauth2.credentials import Credentials
 
             with open(token_path) as f:
                 token_data = json.load(f)
@@ -2774,8 +2772,9 @@ class ToolExecutor:
         if not credentials:
             return {"error": "Google credentials not configured"}
 
-        from googleapiclient.discovery import build
         from datetime import datetime, timedelta
+
+        from googleapiclient.discovery import build
 
         service = build("calendar", "v3", credentials=credentials)
 
@@ -3053,8 +3052,9 @@ class ToolExecutor:
 
         # Meet usa Calendar API per creare meeting
         if method_name == "create_meeting":
-            from googleapiclient.discovery import build
             from datetime import datetime, timedelta
+
+            from googleapiclient.discovery import build
 
             calendar_service = build("calendar", "v3", credentials=credentials)
 

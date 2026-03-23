@@ -4,11 +4,11 @@ Tests per tutti i domain handlers inclusi nella piattaforma Me4BrAIn.
 Mocka le API esterne per test affidabili e veloci.
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime, UTC
 import asyncio
-from typing import Callable, Any
+from typing import Any
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 
 def call_can_handle(handler: Any, query: str) -> float:
@@ -227,14 +227,16 @@ class TestFinanceCryptoHandler:
     def test_extract_coin_ids(self, handler):
         assert "bitcoin" in handler._extract_coin_ids("Prezzo Bitcoin")
         assert "ethereum" in handler._extract_coin_ids("Prezzo ethereum")
-        assert "bitcoin,ethereum" == handler._extract_coin_ids("Prezzo criptovalute")
+        assert handler._extract_coin_ids("Prezzo criptovalute") == "bitcoin,ethereum"
 
     def test_extract_ticker(self, handler):
         assert handler._extract_ticker("Quotazione Apple") == "AAPL"
         assert handler._extract_ticker("Prezzo Tesla") == "TSLA"
         assert handler._extract_ticker("Valore Nvidia") == "NVDA"
         # "di" e "lungo" matchano il pattern 2-5 lettere. Usiamo parole lunghe per il default.
-        assert handler._extract_ticker("Qualcosa incredibilmente straordinario") == "AAPL"  # Default
+        assert (
+            handler._extract_ticker("Qualcosa incredibilmente straordinario") == "AAPL"
+        )  # Default
 
     @pytest.mark.asyncio
     async def test_execute_crypto_price(self, handler):
@@ -891,7 +893,9 @@ class TestSportsNBAHandler:
         assert handler._detect_pattern("quote scommesse", handler.ODDS_PATTERNS) is True
         assert handler._detect_pattern("betting odds nba", handler.ODDS_PATTERNS) is True
         # "pronostico" è ora in BETTING_ANALYSIS_PATTERNS
-        assert handler._detect_pattern("pronostico lakers", handler.BETTING_ANALYSIS_PATTERNS) is True
+        assert (
+            handler._detect_pattern("pronostico lakers", handler.BETTING_ANALYSIS_PATTERNS) is True
+        )
 
     def test_detect_pattern_no_match(self, handler):
         assert handler._detect_pattern("qualcosa altro", handler.GAME_PATTERNS) is False
@@ -913,7 +917,9 @@ class TestSportsNBAHandler:
     # --- Execute Tests: Games ---
     @pytest.mark.asyncio
     async def test_execute_games_success(self, handler):
-        with patch("me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard") as mock_games:
+        with patch(
+            "me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard"
+        ) as mock_games:
             mock_games.return_value = {
                 "games": [{"id": 1, "home_team": "Lakers", "visitor_team": "Celtics"}]
             }
@@ -924,24 +930,32 @@ class TestSportsNBAHandler:
 
     @pytest.mark.asyncio
     async def test_execute_games_error(self, handler):
-        with patch("me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard") as mock_games:
+        with patch(
+            "me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard"
+        ) as mock_games:
             mock_games.return_value = {"error": "API limit exceeded"}
             # Cascade tries next sources... if all fail it returns false
             # But we need to mock other steps too to be safe
             with patch("me4brain.domains.sports_nba.tools.nba_api.espn_scoreboard") as mock_espn:
                 mock_espn.return_value = {"error": "fail"}
-                with patch("me4brain.domains.sports_nba.tools.nba_api.balldontlie_games") as mock_bdl:
+                with patch(
+                    "me4brain.domains.sports_nba.tools.nba_api.balldontlie_games"
+                ) as mock_bdl:
                     mock_bdl.return_value = {"error": "fail"}
                     results = await handler.execute("calendario nba", {}, {})
                     assert results[0].success is False
 
     @pytest.mark.asyncio
     async def test_execute_games_exception(self, handler):
-        with patch("me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard") as mock_games:
+        with patch(
+            "me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard"
+        ) as mock_games:
             mock_games.side_effect = Exception("Network error")
             with patch("me4brain.domains.sports_nba.tools.nba_api.espn_scoreboard") as mock_espn:
                 mock_espn.return_value = {"error": "fail"}
-                with patch("me4brain.domains.sports_nba.tools.nba_api.balldontlie_games") as mock_bdl:
+                with patch(
+                    "me4brain.domains.sports_nba.tools.nba_api.balldontlie_games"
+                ) as mock_bdl:
                     mock_bdl.return_value = {"error": "fail"}
                     results = await handler.execute("schedule nba", {}, {})
                     assert len(results) >= 1
@@ -966,9 +980,7 @@ class TestSportsNBAHandler:
 
     @pytest.mark.asyncio
     async def test_execute_player_stats_player_not_found(self, handler):
-        with patch(
-            "me4brain.domains.sports_nba.tools.nba_api.balldontlie_players"
-        ) as mock_players:
+        with patch("me4brain.domains.sports_nba.tools.nba_api.balldontlie_players") as mock_players:
             mock_players.return_value = {"players": []}
             results = await handler.execute("stats giocatore sconosciuto", {}, {})
             assert len(results) >= 1
@@ -977,9 +989,7 @@ class TestSportsNBAHandler:
 
     @pytest.mark.asyncio
     async def test_execute_player_stats_exception(self, handler):
-        with patch(
-            "me4brain.domains.sports_nba.tools.nba_api.balldontlie_players"
-        ) as mock_players:
+        with patch("me4brain.domains.sports_nba.tools.nba_api.balldontlie_players") as mock_players:
             mock_players.side_effect = Exception("API timeout")
             results = await handler.execute("career stats doncic", {}, {})
             assert len(results) >= 1
@@ -1083,7 +1093,9 @@ class TestSportsNBAHandler:
     @pytest.mark.asyncio
     async def test_execute_chained_analysis_all_fail(self, handler):
         with (
-            patch("me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard") as mock_games,
+            patch(
+                "me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard"
+            ) as mock_games,
             patch("me4brain.domains.sports_nba.tools.nba_api.espn_scoreboard") as mock_scoreboard,
             patch("me4brain.domains.sports_nba.tools.nba_api.espn_injuries") as mock_injuries,
             patch("me4brain.domains.sports_nba.tools.nba_api.odds_api_odds") as mock_odds,
@@ -1106,7 +1118,9 @@ class TestSportsNBAHandler:
     @pytest.mark.asyncio
     async def test_execute_default_fallback(self, handler):
         """Query senza pattern specifico dovrebbe fallback a games."""
-        with patch("me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard") as mock_games:
+        with patch(
+            "me4brain.domains.sports_nba.tools.nba_api.nba_api_live_scoreboard"
+        ) as mock_games:
             # Deve avere games per essere considerato successo dal primo tool della cascata
             mock_games.return_value = {"games": [{"id": 1}]}
             results = await handler.execute("nba lakers celtics", {}, {})
@@ -1290,9 +1304,7 @@ class TestGoogleWorkspaceHandler:
     # --- Execute Tests: Drive ---
     @pytest.mark.asyncio
     async def test_execute_drive_success(self, handler):
-        with patch(
-            "me4brain.domains.google_workspace.tools.google_api.drive_search"
-        ) as mock_drive:
+        with patch("me4brain.domains.google_workspace.tools.google_api.drive_search") as mock_drive:
             mock_drive.return_value = {
                 "files": [{"id": "1", "name": "Test.pdf", "mimeType": "application/pdf"}]
             }
@@ -1323,9 +1335,7 @@ class TestGoogleWorkspaceHandler:
 
     @pytest.mark.asyncio
     async def test_execute_drive_exception(self, handler):
-        with patch(
-            "me4brain.domains.google_workspace.tools.google_api.drive_search"
-        ) as mock_drive:
+        with patch("me4brain.domains.google_workspace.tools.google_api.drive_search") as mock_drive:
             mock_drive.side_effect = Exception("API timeout")
             results = await handler.execute("Cerca file su Drive", {}, {})
             assert len(results) == 1
@@ -1335,9 +1345,7 @@ class TestGoogleWorkspaceHandler:
     # --- Execute Tests: Gmail ---
     @pytest.mark.asyncio
     async def test_execute_gmail_success(self, handler):
-        with patch(
-            "me4brain.domains.google_workspace.tools.google_api.gmail_search"
-        ) as mock_gmail:
+        with patch("me4brain.domains.google_workspace.tools.google_api.gmail_search") as mock_gmail:
             mock_gmail.return_value = {
                 "messages": [{"id": "1", "subject": "Test email", "from": "test@test.com"}]
             }
@@ -1348,9 +1356,7 @@ class TestGoogleWorkspaceHandler:
 
     @pytest.mark.asyncio
     async def test_execute_gmail_error(self, handler):
-        with patch(
-            "me4brain.domains.google_workspace.tools.google_api.gmail_search"
-        ) as mock_gmail:
+        with patch("me4brain.domains.google_workspace.tools.google_api.gmail_search") as mock_gmail:
             mock_gmail.return_value = {"error": "Access denied"}
             results = await handler.execute("email inbox gmail", {}, {})
             assert len(results) == 1
@@ -1358,9 +1364,7 @@ class TestGoogleWorkspaceHandler:
 
     @pytest.mark.asyncio
     async def test_execute_gmail_exception(self, handler):
-        with patch(
-            "me4brain.domains.google_workspace.tools.google_api.gmail_search"
-        ) as mock_gmail:
+        with patch("me4brain.domains.google_workspace.tools.google_api.gmail_search") as mock_gmail:
             mock_gmail.side_effect = Exception("Network error")
             results = await handler.execute("email posta gmail", {}, {})
             assert len(results) == 1
@@ -1615,7 +1619,7 @@ class TestWebSearchHandler:
         ) as mock_smart:
             mock_smart.return_value = {
                 "source": "duckduckgo_instant",
-                "Abstract": "Python is a programming language"
+                "Abstract": "Python is a programming language",
             }
             results = await handler.execute("cerca python", {}, {})
             assert len(results) == 1

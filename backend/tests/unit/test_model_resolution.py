@@ -4,10 +4,12 @@ Tests the resolve_model_client() function which routes model IDs to appropriate
 LLM providers (Ollama, LM Studio, NanoGPT).
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from me4brain.llm.provider_factory import resolve_model_client
+
 from me4brain.llm.config import LLMConfig
+from me4brain.llm.provider_factory import resolve_model_client
 
 
 @pytest.fixture

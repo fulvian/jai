@@ -4,10 +4,11 @@ Verifica l'intero flusso con un manuale reale (Arduino Uno).
 Richiede Neo4j e Qdrant running.
 """
 
-import pytest
 import asyncio
 import os
 import time
+
+import pytest
 from pypdf import PdfReader
 
 
@@ -23,13 +24,47 @@ def get_manual_text():
     return text
 
 
+async def _check_neo4j_available() -> bool:
+    """Check if Neo4j is reachable."""
+    try:
+        from neo4j import AsyncGraphDatabase
+
+        driver = AsyncGraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+        await driver.verify_connectivity()
+        await driver.close()
+        return True
+    except Exception:
+        return False
+
+
+async def _check_qdrant_available() -> bool:
+    """Check if Qdrant is reachable."""
+    try:
+        import httpx
+
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get("http://localhost:6333/collections")
+            return response.status_code == 200
+    except Exception:
+        return False
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_lightrag_full_integration():
     """Test E2E di LightRAG con LLM reale e manuale Arduino.
 
     Richiede Neo4j e Qdrant running (docker-compose up).
+    Salta automaticamente se i servizi non sono disponibili.
     """
+    # Check Neo4j availability
+    if not await _check_neo4j_available():
+        pytest.skip("Neo4j not available at bolt://localhost:7687 (auth: neo4j/password)")
+
+    # Check Qdrant availability
+    if not await _check_qdrant_available():
+        pytest.skip("Qdrant not available at http://localhost:6333")
+
     from me4brain.memory import get_semantic_memory
     from me4brain.retrieval.lightrag import LightRAG
 

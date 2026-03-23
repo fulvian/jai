@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Namespaces package for Me4BrAIn SDK."""
 
 from me4brain_sdk.namespaces.working import WorkingNamespace

@@ -10,10 +10,10 @@ Real multi-intent sports queries testing the full routing pipeline:
 Coverage: 5+ real sports_nba multi-intent queries with fallback verification.
 """
 
-import pytest
+from unittest.mock import AsyncMock, patch
+
 import numpy as np
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import Any
+import pytest
 
 from me4brain.engine.hybrid_router.router import HybridToolRouter
 from me4brain.engine.hybrid_router.types import (
@@ -21,15 +21,13 @@ from me4brain.engine.hybrid_router.types import (
     DomainComplexity,
     HybridRouterConfig,
     RetrievedTool,
-    ToolRetrievalResult,
     SubQuery,
+    ToolRetrievalResult,
 )
-from me4brain.engine.types import ToolTask
 from me4brain.llm.models import (
-    LLMResponse,
     Choice,
     ChoiceMessage,
-    Message,
+    LLMResponse,
     MessageRole,
     ToolCall,
     ToolCallFunction,
@@ -226,10 +224,11 @@ class TestE2ESportsNBAMultiIntent:
                     mock_retrieve.return_value = retrieval_result
 
                     # Mock Stage 3: LLM execution
-                    llm_response = LLMResponse(model="default",
+                    llm_response = LLMResponse(
+                        model="default",
                         choices=[
                             Choice(
-                                    message=ChoiceMessage(
+                                message=ChoiceMessage(
                                     role=MessageRole.ASSISTANT,
                                     content="",
                                     tool_calls=[
@@ -244,7 +243,7 @@ class TestE2ESportsNBAMultiIntent:
                                 ),
                                 index=0,
                             )
-                        ]
+                        ],
                     )
                     mock_llm_client.generate_response.return_value = llm_response
 
@@ -345,7 +344,8 @@ class TestE2ESportsNBAMultiIntent:
                         mock_retrieve.return_value = retrieval_result
 
                         # Mock Stage 3: LLM execution (multi-tool)
-                        llm_response = LLMResponse(model="default",
+                        llm_response = LLMResponse(
+                            model="default",
                             choices=[
                                 Choice(
                                     message=ChoiceMessage(
@@ -370,7 +370,7 @@ class TestE2ESportsNBAMultiIntent:
                                     ),
                                     index=0,
                                 )
-                            ]
+                            ],
                         )
                         mock_llm_client.generate_response.return_value = llm_response
 
@@ -475,7 +475,8 @@ class TestE2ESportsNBAMultiIntent:
                         )
                         mock_retrieve.return_value = retrieval_result
 
-                        llm_response = LLMResponse(model="default",
+                        llm_response = LLMResponse(
+                            model="default",
                             choices=[
                                 Choice(
                                     message=ChoiceMessage(
@@ -507,7 +508,7 @@ class TestE2ESportsNBAMultiIntent:
                                     ),
                                     index=0,
                                 )
-                            ]
+                            ],
                         )
                         mock_llm_client.generate_response.return_value = llm_response
 
@@ -601,7 +602,8 @@ class TestE2ESportsNBAMultiIntent:
                         )
                         mock_retrieve.return_value = retrieval_result
 
-                        llm_response = LLMResponse(model="default",
+                        llm_response = LLMResponse(
+                            model="default",
                             choices=[
                                 Choice(
                                     message=ChoiceMessage(
@@ -626,7 +628,7 @@ class TestE2ESportsNBAMultiIntent:
                                     ),
                                     index=0,
                                 )
-                            ]
+                            ],
                         )
                         mock_llm_client.generate_response.return_value = llm_response
 
@@ -652,127 +654,130 @@ class TestE2ESportsNBAMultiIntent:
         - Stage 2: Retrieve injury and game tools
         - Stage 3: Execute multi-tool pipeline
         """
-        with patch.object(initialized_router, "_intent_analyzer", None):
-            with patch.object(
+        with (
+            patch.object(initialized_router, "_intent_analyzer", None),
+            patch.object(
                 initialized_router._classifier,
                 "classify_with_fallback",
                 new_callable=AsyncMock,
-            ) as mock_classify:
-                classification = DomainClassification(
-                    domains=[DomainComplexity(name="sports_nba", complexity="high")],
-                    confidence=0.94,
-                    query_summary="Check team injuries and upcoming games",
-                )
-                mock_classify.return_value = (classification, False)
+            ) as mock_classify,
+        ):
+            classification = DomainClassification(
+                domains=[DomainComplexity(name="sports_nba", complexity="high")],
+                confidence=0.94,
+                query_summary="Check team injuries and upcoming games",
+            )
+            mock_classify.return_value = (classification, False)
+
+            with patch.object(
+                initialized_router._decomposer,
+                "decompose",
+                new_callable=AsyncMock,
+            ) as mock_decompose:
+                sub_queries = [
+                    SubQuery(
+                        text="What are the Lakers current injuries?",
+                        domain="sports_nba",
+                        intent="injury_report",
+                    ),
+                    SubQuery(
+                        text="What are the Celtics current injuries?",
+                        domain="sports_nba",
+                        intent="injury_report",
+                    ),
+                    SubQuery(
+                        text="What are the upcoming games for Lakers and Celtics?",
+                        domain="sports_nba",
+                        intent="games_query",
+                    ),
+                ]
+                mock_decompose.return_value = sub_queries
 
                 with patch.object(
-                    initialized_router._decomposer,
-                    "decompose",
+                    initialized_router._retriever,
+                    "retrieve",
                     new_callable=AsyncMock,
-                ) as mock_decompose:
-                    sub_queries = [
-                        SubQuery(
-                            text="What are the Lakers current injuries?",
+                ) as mock_retrieve:
+                    retrieved_tools = [
+                        RetrievedTool(
+                            name="get_team_injuries",
                             domain="sports_nba",
-                            intent="injury_report",
+                            similarity_score=0.98,
+                            schema={
+                                "type": "function",
+                                "function": {
+                                    "name": "get_team_injuries",
+                                    "description": "Get team injuries",
+                                    "parameters": {"type": "object"},
+                                },
+                            },
                         ),
-                        SubQuery(
-                            text="What are the Celtics current injuries?",
+                        RetrievedTool(
+                            name="get_nba_games",
                             domain="sports_nba",
-                            intent="injury_report",
-                        ),
-                        SubQuery(
-                            text="What are the upcoming games for Lakers and Celtics?",
-                            domain="sports_nba",
-                            intent="games_query",
+                            similarity_score=0.95,
+                            schema={
+                                "type": "function",
+                                "function": {
+                                    "name": "get_nba_games",
+                                    "description": "Get NBA games",
+                                    "parameters": {"type": "object"},
+                                },
+                            },
                         ),
                     ]
-                    mock_decompose.return_value = sub_queries
+                    retrieval_result = ToolRetrievalResult(
+                        tools=retrieved_tools,
+                        total_payload_bytes=2600,
+                        domains_searched=["sports_nba"],
+                    )
+                    mock_retrieve.return_value = retrieval_result
 
-                    with patch.object(
-                        initialized_router._retriever,
-                        "retrieve",
-                        new_callable=AsyncMock,
-                    ) as mock_retrieve:
-                        retrieved_tools = [
-                            RetrievedTool(
-                                name="get_team_injuries",
-                                domain="sports_nba",
-                                similarity_score=0.98,
-                                schema={
-                                    "type": "function",
-                                    "function": {
-                                        "name": "get_team_injuries",
-                                        "description": "Get team injuries",
-                                        "parameters": {"type": "object"},
-                                    },
-                                },
-                            ),
-                            RetrievedTool(
-                                name="get_nba_games",
-                                domain="sports_nba",
-                                similarity_score=0.95,
-                                schema={
-                                    "type": "function",
-                                    "function": {
-                                        "name": "get_nba_games",
-                                        "description": "Get NBA games",
-                                        "parameters": {"type": "object"},
-                                    },
-                                },
-                            ),
-                        ]
-                        retrieval_result = ToolRetrievalResult(
-                            tools=retrieved_tools,
-                            total_payload_bytes=2600,
-                            domains_searched=["sports_nba"],
-                        )
-                        mock_retrieve.return_value = retrieval_result
-
-                        llm_response = LLMResponse(model="default",
-                            choices=[
-                                Choice(
-                                    message=ChoiceMessage(
-                                        role=MessageRole.ASSISTANT,
-                                        content="",
-                                        tool_calls=[
-                                            ToolCall(
-                                                id="call_1",
-                                                function=ToolCallFunction(
-                                                    name="get_team_injuries",
-                                                    arguments='{"team_name": "Lakers"}',
-                                                ),
+                    llm_response = LLMResponse(
+                        model="default",
+                        choices=[
+                            Choice(
+                                message=ChoiceMessage(
+                                    role=MessageRole.ASSISTANT,
+                                    content="",
+                                    tool_calls=[
+                                        ToolCall(
+                                            id="call_1",
+                                            function=ToolCallFunction(
+                                                name="get_team_injuries",
+                                                arguments='{"team_name": "Lakers"}',
                                             ),
-                                            ToolCall(
-                                                id="call_2",
-                                                function=ToolCallFunction(
-                                                    name="get_team_injuries",
-                                                    arguments='{"team_name": "Celtics"}',
-                                                ),
+                                        ),
+                                        ToolCall(
+                                            id="call_2",
+                                            function=ToolCallFunction(
+                                                name="get_team_injuries",
+                                                arguments='{"team_name": "Celtics"}',
                                             ),
-                                            ToolCall(
-                                                id="call_3",
-                                                function=ToolCallFunction(
-                                                    name="get_nba_games",
-                                                    arguments='{"date": "2026-03-22"}',
-                                                ),
+                                        ),
+                                        ToolCall(
+                                            id="call_3",
+                                            function=ToolCallFunction(
+                                                name="get_nba_games",
+                                                arguments='{"date": "2026-03-22"}',
                                             ),
-                                        ],
-                                    ),
-                                    index=0,
-                                )
-                            ]
-                        )
-                        mock_llm_client.generate_response.return_value = llm_response
+                                        ),
+                                    ],
+                                ),
+                                index=0,
+                            )
+                        ],
+                    )
+                    mock_llm_client.generate_response.return_value = llm_response
 
-                        result = await initialized_router.route(
-                            query="Check Lakers and Celtics injuries, then show me their upcoming games"
-                        )
+                    result = await initialized_router.route(
+                        query="Check Lakers and Celtics injuries, then show me their upcoming games"
+                    )
 
-                        assert len(result) == 3, "Should have 3 tool calls for injury + games"
-                        tool_names = [t.tool_name for t in result]
-                        assert tool_names.count("get_team_injuries") == 2
-                        assert "get_nba_games" in tool_names
+                    assert len(result) == 3, "Should have 3 tool calls for injury + games"
+                    tool_names = [t.tool_name for t in result]
+                    assert tool_names.count("get_team_injuries") == 2
+                    assert "get_nba_games" in tool_names
 
 
 class TestE2EFallbackAndErrorHandling:
@@ -837,76 +842,79 @@ class TestE2EFallbackAndErrorHandling:
         - Stage 2: Fallback to global top-K retrieval (no domain filtering)
         - Stage 3: Execute with full tool set
         """
-        with patch.object(initialized_router, "_intent_analyzer", None):
-            with patch.object(
+        with (
+            patch.object(initialized_router, "_intent_analyzer", None),
+            patch.object(
                 initialized_router._classifier,
                 "classify_with_fallback",
                 new_callable=AsyncMock,
-            ) as mock_classify:
-                classification = DomainClassification(
-                    domains=[],  # No domains detected
-                    confidence=0.35,  # Low confidence
-                    query_summary="Unclear query",
-                )
-                mock_classify.return_value = (classification, True)  # Used fallback
+            ) as mock_classify,
+        ):
+            classification = DomainClassification(
+                domains=[],  # No domains detected
+                confidence=0.35,  # Low confidence
+                query_summary="Unclear query",
+            )
+            mock_classify.return_value = (classification, True)  # Used fallback
 
-                with patch.object(
-                    initialized_router._retriever,
-                    "retrieve_global_topk",
-                    new_callable=AsyncMock,
-                ) as mock_global_retrieve:
-                    retrieved_tools = [
-                        RetrievedTool(
-                            name="get_nba_games",
-                            domain="sports_nba",
-                            similarity_score=0.75,
-                            schema={
-                                "type": "function",
-                                "function": {
-                                    "name": "get_nba_games",
-                                    "description": "Get NBA games",
-                                    "parameters": {"type": "object"},
-                                },
+            with patch.object(
+                initialized_router._retriever,
+                "retrieve_global_topk",
+                new_callable=AsyncMock,
+            ) as mock_global_retrieve:
+                retrieved_tools = [
+                    RetrievedTool(
+                        name="get_nba_games",
+                        domain="sports_nba",
+                        similarity_score=0.75,
+                        schema={
+                            "type": "function",
+                            "function": {
+                                "name": "get_nba_games",
+                                "description": "Get NBA games",
+                                "parameters": {"type": "object"},
                             },
+                        },
+                    )
+                ]
+                retrieval_result = ToolRetrievalResult(
+                    tools=retrieved_tools,
+                    total_payload_bytes=1200,
+                    domains_searched=[],  # Global search
+                )
+                mock_global_retrieve.return_value = retrieval_result
+
+                llm_response = LLMResponse(
+                    model="default",
+                    choices=[
+                        Choice(
+                            message=ChoiceMessage(
+                                role=MessageRole.ASSISTANT,
+                                content="",
+                                tool_calls=[
+                                    ToolCall(
+                                        id="call_1",
+                                        function=ToolCallFunction(
+                                            name="get_nba_games",
+                                            arguments='{"date": "2026-03-22"}',
+                                        ),
+                                    )
+                                ],
+                            ),
+                            index=0,
                         )
-                    ]
-                    retrieval_result = ToolRetrievalResult(
-                        tools=retrieved_tools,
-                        total_payload_bytes=1200,
-                        domains_searched=[],  # Global search
-                    )
-                    mock_global_retrieve.return_value = retrieval_result
+                    ],
+                )
+                mock_llm_client.generate_response.return_value = llm_response
 
-                    llm_response = LLMResponse(model="default",
-                        choices=[
-                            Choice(
-                                    message=ChoiceMessage(
-                                    role=MessageRole.ASSISTANT,
-                                    content="",
-                                    tool_calls=[
-                                        ToolCall(
-                                            id="call_1",
-                                            function=ToolCallFunction(
-                                                name="get_nba_games",
-                                                arguments='{"date": "2026-03-22"}',
-                                            ),
-                                        )
-                                    ],
-                                ),
-                                index=0,
-                            )
-                        ]
-                    )
-                    mock_llm_client.generate_response.return_value = llm_response
+                result = await initialized_router.route(
+                    query="ambiguous unclear query about something"
+                )
 
-                    result = await initialized_router.route(
-                        query="ambiguous unclear query about something"
-                    )
-
-                    # Verify fallback was used
-                    assert mock_classify.called
-                    assert mock_global_retrieve.called  # Global retrieval used
-                    assert len(result) > 0
+                # Verify fallback was used
+                assert mock_classify.called
+                assert mock_global_retrieve.called  # Global retrieval used
+                assert len(result) > 0
 
     @pytest.mark.asyncio
     async def test_e2e_no_tools_retrieved_empty_result(self, initialized_router, mock_llm_client):
@@ -917,36 +925,38 @@ class TestE2EFallbackAndErrorHandling:
         - Stage 2: No relevant tools found
         - Stage 3: Return empty result list
         """
-        with patch.object(initialized_router, "_intent_analyzer", None):
-            with patch.object(
+        with (
+            patch.object(initialized_router, "_intent_analyzer", None),
+            patch.object(
                 initialized_router._classifier,
                 "classify_with_fallback",
                 new_callable=AsyncMock,
-            ) as mock_classify:
-                classification = DomainClassification(
-                    domains=[DomainComplexity(name="sports_nba", complexity="low")],
-                    confidence=0.85,
-                    query_summary="Some query",
+            ) as mock_classify,
+        ):
+            classification = DomainClassification(
+                domains=[DomainComplexity(name="sports_nba", complexity="low")],
+                confidence=0.85,
+                query_summary="Some query",
+            )
+            mock_classify.return_value = (classification, False)
+
+            with patch.object(
+                initialized_router._retriever,
+                "retrieve",
+                new_callable=AsyncMock,
+            ) as mock_retrieve:
+                # Return empty retrieval result
+                retrieval_result = ToolRetrievalResult(
+                    tools=[],  # No tools
+                    total_payload_bytes=0,
+                    domains_searched=["sports_nba"],
                 )
-                mock_classify.return_value = (classification, False)
+                mock_retrieve.return_value = retrieval_result
 
-                with patch.object(
-                    initialized_router._retriever,
-                    "retrieve",
-                    new_callable=AsyncMock,
-                ) as mock_retrieve:
-                    # Return empty retrieval result
-                    retrieval_result = ToolRetrievalResult(
-                        tools=[],  # No tools
-                        total_payload_bytes=0,
-                        domains_searched=["sports_nba"],
-                    )
-                    mock_retrieve.return_value = retrieval_result
+                result = await initialized_router.route(query="Some unrelated query")
 
-                    result = await initialized_router.route(query="Some unrelated query")
-
-                    # Should return empty list
-                    assert result == []
+                # Should return empty list
+                assert result == []
 
     @pytest.mark.asyncio
     async def test_e2e_llm_execution_error_graceful_handling(
@@ -959,50 +969,52 @@ class TestE2EFallbackAndErrorHandling:
         - Stage 3: LLM raises exception
         - Graceful return of empty list
         """
-        with patch.object(initialized_router, "_intent_analyzer", None):
-            with patch.object(
+        with (
+            patch.object(initialized_router, "_intent_analyzer", None),
+            patch.object(
                 initialized_router._classifier,
                 "classify_with_fallback",
                 new_callable=AsyncMock,
-            ) as mock_classify:
-                classification = DomainClassification(
-                    domains=[DomainComplexity(name="sports_nba", complexity="medium")],
-                    confidence=0.9,
-                    query_summary="Some query",
-                )
-                mock_classify.return_value = (classification, False)
+            ) as mock_classify,
+        ):
+            classification = DomainClassification(
+                domains=[DomainComplexity(name="sports_nba", complexity="medium")],
+                confidence=0.9,
+                query_summary="Some query",
+            )
+            mock_classify.return_value = (classification, False)
 
-                with patch.object(
-                    initialized_router._retriever,
-                    "retrieve",
-                    new_callable=AsyncMock,
-                ) as mock_retrieve:
-                    retrieved_tools = [
-                        RetrievedTool(
-                            name="get_nba_games",
-                            domain="sports_nba",
-                            similarity_score=0.9,
-                            schema={
-                                "type": "function",
-                                "function": {
-                                    "name": "get_nba_games",
-                                    "description": "Get NBA games",
-                                    "parameters": {"type": "object"},
-                                },
+            with patch.object(
+                initialized_router._retriever,
+                "retrieve",
+                new_callable=AsyncMock,
+            ) as mock_retrieve:
+                retrieved_tools = [
+                    RetrievedTool(
+                        name="get_nba_games",
+                        domain="sports_nba",
+                        similarity_score=0.9,
+                        schema={
+                            "type": "function",
+                            "function": {
+                                "name": "get_nba_games",
+                                "description": "Get NBA games",
+                                "parameters": {"type": "object"},
                             },
-                        )
-                    ]
-                    retrieval_result = ToolRetrievalResult(
-                        tools=retrieved_tools,
-                        total_payload_bytes=1200,
-                        domains_searched=["sports_nba"],
+                        },
                     )
-                    mock_retrieve.return_value = retrieval_result
+                ]
+                retrieval_result = ToolRetrievalResult(
+                    tools=retrieved_tools,
+                    total_payload_bytes=1200,
+                    domains_searched=["sports_nba"],
+                )
+                mock_retrieve.return_value = retrieval_result
 
-                    # Make LLM raise exception
-                    mock_llm_client.generate_response.side_effect = Exception("LLM service error")
+                # Make LLM raise exception
+                mock_llm_client.generate_response.side_effect = Exception("LLM service error")
 
-                    result = await initialized_router.route(query="Get NBA games")
+                result = await initialized_router.route(query="Get NBA games")
 
-                    # Should return empty list gracefully
-                    assert result == []
+                # Should return empty list gracefully
+                assert result == []

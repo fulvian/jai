@@ -12,12 +12,12 @@ from me4brain.engine.hybrid_router.tool_retriever import (
     ToolRetriever,
 )
 from me4brain.engine.hybrid_router.trace_contract import (
-    StageTrace,
-    StageType,
     FallbackType,
     PipelineTrace,
-    create_stage_trace,
+    StageTrace,
+    StageType,
     create_pipeline_trace,
+    create_stage_trace,
 )
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,

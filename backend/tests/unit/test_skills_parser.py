@@ -1,17 +1,15 @@
 """Unit tests per il sistema Skill - Parser, Types, Watcher."""
 
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 
-from me4brain.core.skills.parser import SkillParser, SkillParseError
+from me4brain.core.skills.parser import SkillParseError, SkillParser
 from me4brain.core.skills.types import (
     ExecutionTrace,
-    Skill,
-    SkillDefinition,
     ScoredSkill,
+    Skill,
     ToolCall,
 )
 

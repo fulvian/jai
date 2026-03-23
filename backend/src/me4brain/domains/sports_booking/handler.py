@@ -121,9 +121,9 @@ class SportsBookingHandler(DomainHandler):
         context: dict[str, Any],
     ) -> list[DomainExecutionResult]:
         """Esegue la query sul dominio sports_booking."""
+        from datetime import datetime
+
         from .tools.playtomic_api import execute_tool
-        import re
-        from datetime import datetime, timedelta
 
         query_lower = query.lower()
         results: list[DomainExecutionResult] = []
@@ -255,8 +255,8 @@ class SportsBookingHandler(DomainHandler):
 
     def _extract_date(self, query: str) -> str | None:
         """Estrae data dalla query."""
-        from datetime import datetime, timedelta
         import re
+        from datetime import datetime, timedelta
 
         today = datetime.now()
 

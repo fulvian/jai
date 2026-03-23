@@ -1,12 +1,13 @@
 """Integration test for complex finance query (Yahooquery + Analytics)."""
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pandas as pd
-from unittest.mock import AsyncMock, MagicMock, patch
+import pytest
 
-from me4brain.domains.finance_crypto.tools.finance_api import yahooquery_historical
 from me4brain.domains.finance_crypto.analytics.financial_analytics import analyze_asset
+from me4brain.domains.finance_crypto.tools.finance_api import yahooquery_historical
 
 
 @pytest.mark.asyncio
@@ -38,15 +39,13 @@ class TestComplexFinanceQuery:
         tickers = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "^GSPC"]
         frames = []
         for ticker in tickers:
+            key = ticker.replace("USDT", "")
             df = pd.DataFrame(
                 {
-                    "open": mock_multi_symbol_data[ticker.replace("USDT", "").replace("^", "")]
-                    * 0.99,
-                    "high": mock_multi_symbol_data[ticker.replace("USDT", "").replace("^", "")]
-                    * 1.02,
-                    "low": mock_multi_symbol_data[ticker.replace("USDT", "").replace("^", "")]
-                    * 0.98,
-                    "close": mock_multi_symbol_data[ticker.replace("USDT", "").replace("^", "")],
+                    "open": mock_multi_symbol_data[key] * 0.99,
+                    "high": mock_multi_symbol_data[key] * 1.02,
+                    "low": mock_multi_symbol_data[key] * 0.98,
+                    "close": mock_multi_symbol_data[key],
                     "volume": np.random.randint(1_000_000, 10_000_000, 252),
                 }
             )
@@ -57,9 +56,7 @@ class TestComplexFinanceQuery:
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = multi_index_data
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols=tickers, period="ytd")
 
         # Verify yahooquery result structure
@@ -74,9 +71,7 @@ class TestComplexFinanceQuery:
             assert len(result["data"][ticker]["ohlcv"]) == 252
 
         # Now test analytics: convert to price series and analyze
-        sp500_prices = pd.Series(
-            [row["close"] for row in result["data"]["^GSPC"]["ohlcv"]], index=dates
-        )
+        sp500_prices = pd.Series([row["close"] for row in result["data"]["^GSPC"]["ohlcv"]])
         analysis = analyze_asset(sp500_prices, include_technical=True)
 
         # Verify analytics structure
@@ -101,32 +96,25 @@ class TestComplexFinanceQuery:
     async def test_batch_query_optimization(self):
         """Verify that batch query returns all symbols in single API call."""
         tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META"]
-        mock_data = MagicMock()
-        mock_data.history.return_value = pd.DataFrame({"close": [100, 101, 102]})
-
         mock_ticker = MagicMock()
-        mock_ticker.history.return_value = mock_data
+        mock_ticker.history.return_value = pd.DataFrame({"close": [100, 101, 102]})
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols=tickers, period="1mo")
 
         # Should have called Ticker once with all symbols
         assert mock_ticker.history.call_count == 1
-        # Verify all symbols were requested
-        call_args = mock_ticker.history.call_args
         # The historical method should have been called with period and interval
-        assert "period" in call_args.kwargs or len(call_args.args) > 0
+        history_args = mock_ticker.history.call_args
+        assert history_args is not None
+        assert "period" in history_args.kwargs
 
     async def test_fallback_on_yahooquery_failure(self):
         """Test that fallback mechanism works when yahooquery fails."""
         mock_ticker = MagicMock()
         mock_ticker.history.side_effect = Exception("API rate limit exceeded")
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols="AAPL")
 
         assert "error" in result

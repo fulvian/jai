@@ -2,6 +2,10 @@
 Queue package - Async task queue for background processing.
 """
 
+from me4brain.queue.queue_manager import (
+    QueueManager,
+    get_queue_manager,
+)
 from me4brain.queue.tasks import (
     TASK_CLASSIFY_DOMAIN,
     TASK_SUMMARIZE_CONVERSATION,
@@ -14,10 +18,6 @@ from me4brain.queue.tasks import (
     get_task,
     register_task,
     task,
-)
-from me4brain.queue.queue_manager import (
-    QueueManager,
-    get_queue_manager,
 )
 
 __all__ = [

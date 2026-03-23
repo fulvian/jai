@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
-from typing import Callable, Optional
+from collections.abc import Callable
+from datetime import datetime
 
 import structlog
 
@@ -96,9 +96,7 @@ class AlertManager:
         """
         self._notifiers.append(notifier)
 
-    def evaluate(
-        self, metric_name: str, value: float, labels: Optional[dict] = None
-    ) -> Optional[Alert]:
+    def evaluate(self, metric_name: str, value: float, labels: dict | None = None) -> Alert | None:
         """
         Valuta metriche contro regole.
 
@@ -188,14 +186,10 @@ class AlertManager:
         """Ottiene alerts attivi."""
         return list(self._active_alerts.values())
 
-    def get_resolved_alerts(self, since: Optional[datetime] = None) -> list[Alert]:
+    def get_resolved_alerts(self, since: datetime | None = None) -> list[Alert]:
         """Ottiene alerts risolti recentemente."""
         if since:
-            return [
-                a
-                for a in self._resolved_alerts
-                if a.resolved_at and a.resolved_at > since
-            ]
+            return [a for a in self._resolved_alerts if a.resolved_at and a.resolved_at > since]
         return self._resolved_alerts[-10:]  # Ultimi 10
 
     def clear_resolved(self) -> int:
@@ -248,7 +242,7 @@ async def webhook_notifier(alert: Alert, webhook_url: str) -> None:
 
 
 # Singleton
-_alert_manager: Optional[AlertManager] = None
+_alert_manager: AlertManager | None = None
 
 
 def get_alert_manager() -> AlertManager:

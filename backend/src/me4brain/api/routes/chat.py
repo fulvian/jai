@@ -7,16 +7,15 @@ multi-turn capable chat completions following OpenAI API style.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from me4brain.database import ConversationRepository, get_session
+from me4brain.database import get_session
 from me4brain.engine.conversation_manager import ConversationManager
-from me4brain.models.conversation import Message, MessageRole
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
@@ -32,13 +31,13 @@ class ChatMessage(BaseModel):
 
     role: Literal["user", "assistant", "system"]
     content: str
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class ChatCompletionRequest(BaseModel):
     """Request model for chat completions."""
 
-    conversation_id: Optional[str] = Field(
+    conversation_id: str | None = Field(
         default=None,
         description="Existing conversation ID. If not provided, a new conversation is created.",
     )
@@ -46,7 +45,7 @@ class ChatCompletionRequest(BaseModel):
         ...,
         description="List of messages in the conversation",
     )
-    model: Optional[str] = Field(
+    model: str | None = Field(
         default=None,
         description="Model to use. If not provided, auto-selected.",
     )
@@ -88,8 +87,8 @@ class ChatCompletionResponse(BaseModel):
     created: int  # Unix timestamp
     model: str
     choices: list[ChatCompletionChoice]
-    conversation_id: Optional[str] = None
-    classification: Optional[dict[str, Any]] = None
+    conversation_id: str | None = None
+    classification: dict[str, Any] | None = None
 
 
 # =============================================================================
@@ -124,8 +123,6 @@ async def create_chat_completion(
         Chat completion response with conversation_id
     """
     import time
-
-    from me4brain.engine.conversation_manager import ConversationManager
 
     manager = ConversationManager(session)
 
@@ -251,7 +248,6 @@ async def get_chat_history(
     Returns:
         Conversation with messages formatted as chat history
     """
-    from me4brain.engine.conversation_manager import ConversationManager
 
     manager = ConversationManager(session)
 

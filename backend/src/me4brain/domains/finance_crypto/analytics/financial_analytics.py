@@ -71,6 +71,7 @@ def calculate_drawdown(prices: pd.Series) -> dict[str, Any]:
             "trough_price": float(prices.iloc[0]) if len(prices) > 0 else 0.0,
             "peak_date": str(prices.index[0]) if len(prices) > 0 else "N/A",
             "trough_date": str(prices.index[0]) if len(prices) > 0 else "N/A",
+            "drawdown_series": [0.0] if len(prices) > 0 else [],
         }
 
     rolling_max = prices.expanding().max()
@@ -88,6 +89,7 @@ def calculate_drawdown(prices: pd.Series) -> dict[str, Any]:
         "trough_price": float(prices[trough_idx]),
         "peak_date": str(peak_idx),
         "trough_date": str(trough_idx),
+        "drawdown_series": drawdown.fillna(0.0).tolist(),
     }
 
 

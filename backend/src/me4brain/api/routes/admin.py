@@ -13,7 +13,7 @@ import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from me4brain.api.middleware.auth import AuthenticatedUser, require_role, get_current_user_dev
+from me4brain.api.middleware.auth import AuthenticatedUser, require_role
 from me4brain.core.sleep_mode import get_sleep_mode
 from me4brain.retrieval import create_openapi_ingester
 

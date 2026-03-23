@@ -1,8 +1,9 @@
 """Unit tests for queue manager module."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 
 class TestQueuedTask:
@@ -99,7 +100,6 @@ class TestQueueManager:
     async def test_enqueue_classify(self, mock_redis):
         """Test enqueueing a classification task."""
         from me4brain.queue.queue_manager import QueueManager
-        from me4brain.queue.tasks import TASK_CLASSIFY_DOMAIN
 
         with patch("redis.asyncio") as mock_redis_module:
             mock_redis_module.from_url.return_value = mock_redis

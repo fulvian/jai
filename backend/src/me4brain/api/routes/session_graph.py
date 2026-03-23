@@ -17,7 +17,6 @@ from pydantic import BaseModel, Field
 
 from me4brain.api.middleware.auth import AuthenticatedUser, get_current_user_dev
 from me4brain.memory.session_graph import (
-    ConnectedNode,
     PromptTemplateNode,
     get_session_graph,
 )

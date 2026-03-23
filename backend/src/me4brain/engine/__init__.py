@@ -15,17 +15,32 @@ Example:
     print(response.answer)
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from me4brain.engine.catalog import ToolCatalog
+from me4brain.engine.executor import ParallelExecutor
+from me4brain.engine.router import ToolRouter
+from me4brain.engine.synthesizer import ResponseSynthesizer
 from me4brain.engine.types import (
     EngineResponse,
     ToolDefinition,
     ToolResult,
     ToolTask,
 )
-from me4brain.engine.catalog import ToolCatalog
-from me4brain.engine.router import ToolRouter
-from me4brain.engine.executor import ParallelExecutor
-from me4brain.engine.synthesizer import ResponseSynthesizer
-from me4brain.engine.core import ToolCallingEngine
+
+if TYPE_CHECKING:
+    from me4brain.engine.core import ToolCallingEngine
+
+
+def __getattr__(name: str):
+    if name == "ToolCallingEngine":
+        from me4brain.engine.core import ToolCallingEngine
+
+        return ToolCallingEngine
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # Types

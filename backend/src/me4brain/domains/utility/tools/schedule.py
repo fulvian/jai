@@ -2,7 +2,6 @@
 
 import hashlib
 from datetime import datetime
-from typing import Optional
 
 import structlog
 
@@ -23,9 +22,9 @@ async def schedule_task(
     name: str,
     schedule: str,
     action: str,
-    params: Optional[dict] = None,
-    webhook_url: Optional[str] = None,
-    description: Optional[str] = None,
+    params: dict | None = None,
+    webhook_url: str | None = None,
+    description: str | None = None,
 ) -> dict:
     """
     Schedula un task per esecuzione futura.
@@ -61,9 +60,7 @@ async def schedule_task(
     schedule_type, expression = _parse_schedule_expression(schedule)
 
     # Genera ID
-    job_id = hashlib.sha256(
-        f"{name}:{datetime.now().isoformat()}".encode()
-    ).hexdigest()[:12]
+    job_id = hashlib.sha256(f"{name}:{datetime.now().isoformat()}".encode()).hexdigest()[:12]
 
     # Configura delivery
     channels = ["log"]

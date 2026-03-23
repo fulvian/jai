@@ -1,11 +1,9 @@
 """Test E2E per flusso HITL (Human-in-the-Loop)."""
 
-import asyncio
 import pytest
+
 from me4brain.engine.executor import ParallelExecutor
-from me4brain.engine.catalog import ToolCatalog
 from me4brain.engine.types import ToolTask
-from me4brain.engine.permission_validator import PermissionLevel
 
 
 class MockCatalog:

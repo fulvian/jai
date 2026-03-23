@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -48,9 +47,9 @@ async def create_job(request: CreateJobRequest) -> JobResponse:
     parser = ScheduleParser()
 
     # Genera ID
-    job_id = hashlib.sha256(
-        f"{request.name}:{datetime.now().isoformat()}".encode()
-    ).hexdigest()[:12]
+    job_id = hashlib.sha256(f"{request.name}:{datetime.now().isoformat()}".encode()).hexdigest()[
+        :12
+    ]
 
     # Crea job
     job = ScheduledJob(
@@ -87,7 +86,7 @@ async def create_job(request: CreateJobRequest) -> JobResponse:
 
 @router.get("/jobs", response_model=list[JobResponse])
 async def list_jobs(
-    tenant_id: Optional[str] = None,
+    tenant_id: str | None = None,
     enabled_only: bool = False,
 ) -> list[JobResponse]:
     """

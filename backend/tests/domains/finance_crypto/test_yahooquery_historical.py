@@ -1,9 +1,10 @@
 """Unit tests for yahooquery_historical tool."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 import pandas as pd
-from datetime import datetime
+import pytest
 
 from me4brain.domains.finance_crypto.tools.finance_api import yahooquery_historical
 
@@ -32,9 +33,7 @@ class TestYahooqueryHistorical:
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = sample_historical_data
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols="AAPL", period="3mo")
 
         assert "error" not in result
@@ -57,9 +56,7 @@ class TestYahooqueryHistorical:
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = multi_index_data
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols=tickers, period="ytd")
 
         assert "error" not in result
@@ -73,9 +70,7 @@ class TestYahooqueryHistorical:
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = error_data
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols="INVALID", period="1d")
 
         assert "error" in result
@@ -96,9 +91,7 @@ class TestYahooqueryHistorical:
         mock_ticker = MagicMock()
         mock_ticker.history.side_effect = Exception("Network error")
 
-        with patch(
-            "me4brain.domains.finance_crypto.tools.finance_api.Ticker", return_value=mock_ticker
-        ):
+        with patch("yahooquery.Ticker", return_value=mock_ticker):
             result = await yahooquery_historical(symbols="AAPL")
 
         assert "error" in result
@@ -107,15 +100,19 @@ class TestYahooqueryHistorical:
     @pytest.mark.asyncio
     async def test_parameter_validation(self):
         """Test that string symbols are converted to list."""
-        mock_ticker = MagicMock()
-        mock_ticker.history.return_value = pd.DataFrame({"close": [100, 101]})
+        mock_history = pd.DataFrame({"close": [100, 101]})
+        mock_ticker_cls = MagicMock()
+        mock_ticker_instance = MagicMock()
+        mock_ticker_instance.history.return_value = mock_history
+        mock_ticker_cls.return_value = mock_ticker_instance
 
-        with patch("me4brain.domains.finance_finance_api.Ticker", return_value=mock_ticker):
-            result = await yahooquery_historical(symbols="AAPL")
+        with patch("yahooquery.Ticker", mock_ticker_cls):
+            await yahooquery_historical(symbols="AAPL")
 
         # Verify Ticker called with list
-        call_args = mock_ticker.history.call_args
-        assert isinstance(mock_ticker.call_args[0][0], list)  # First arg should be list
+        call_args = mock_ticker_cls.call_args
+        assert isinstance(call_args.args[0], list)
+        assert call_args.args[0] == ["AAPL"]
 
     def test_retry_logic(self):
         """Test that yahooquery_historical_with_retry retries on failure."""

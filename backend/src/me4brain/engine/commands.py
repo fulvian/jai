@@ -1,8 +1,8 @@
 """Slash Commands - Parser e handlers per comandi slash."""
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 import structlog
 
@@ -39,8 +39,8 @@ class SlashCommands:
 
     def __init__(
         self,
-        working_memory_getter: Optional[Callable] = None,
-        semantic_memory_getter: Optional[Callable] = None,
+        working_memory_getter: Callable | None = None,
+        semantic_memory_getter: Callable | None = None,
     ):
         """
         Inizializza handlers.
@@ -64,7 +64,7 @@ class SlashCommands:
         """
         return message.strip().startswith("/")
 
-    def parse(self, message: str) -> Optional[ParsedCommand]:
+    def parse(self, message: str) -> ParsedCommand | None:
         """
         Parse messaggio in comando e argomenti.
 
@@ -86,7 +86,7 @@ class SlashCommands:
 
         return ParsedCommand(command=command, args=args)
 
-    async def execute(self, message: str, session_id: str) -> Optional[str]:
+    async def execute(self, message: str, session_id: str) -> str | None:
         """
         Esegue comando slash se presente.
 
@@ -235,7 +235,7 @@ _I comandi slash vengono eseguiti immediatamente senza passare per l'agente._
 
 
 # Singleton
-_slash_commands: Optional[SlashCommands] = None
+_slash_commands: SlashCommands | None = None
 
 
 def get_slash_commands() -> SlashCommands:

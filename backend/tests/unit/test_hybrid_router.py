@@ -1,6 +1,7 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-import json
-from unittest.mock import MagicMock, AsyncMock, patch
+
 from me4brain.engine.hybrid_router.router import HybridToolRouter
 from me4brain.engine.hybrid_router.types import HybridRouterConfig, RetrievedTool, SubQuery
 

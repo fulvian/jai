@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from redis.asyncio import Redis
@@ -43,7 +42,7 @@ class SharedContext:
         task_id: str,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
     ) -> None:
         """
         Imposta valore nel context.
@@ -73,7 +72,7 @@ class SharedContext:
             key=key,
         )
 
-    async def get(self, task_id: str, key: str) -> Optional[Any]:
+    async def get(self, task_id: str, key: str) -> Any | None:
         """
         Legge valore dal context.
 
@@ -122,7 +121,7 @@ class SharedContext:
         self,
         from_task: str,
         to_task: str,
-        keys: Optional[list[str]] = None,
+        keys: list[str] | None = None,
     ) -> int:
         """
         Copia context da un task a un altro.
@@ -187,7 +186,7 @@ class SharedContext:
 
         await self.redis.expire(context_key, self.ttl_seconds)
 
-    async def delete(self, task_id: str, key: Optional[str] = None) -> None:
+    async def delete(self, task_id: str, key: str | None = None) -> None:
         """
         Elimina context o singola chiave.
 
@@ -216,7 +215,7 @@ class SharedContext:
     async def extend_ttl(
         self,
         task_id: str,
-        seconds: Optional[int] = None,
+        seconds: int | None = None,
     ) -> None:
         """
         Estende TTL di un context.
@@ -230,10 +229,10 @@ class SharedContext:
 
 
 # Singleton
-_shared_context: Optional[SharedContext] = None
+_shared_context: SharedContext | None = None
 
 
-def get_shared_context() -> Optional[SharedContext]:
+def get_shared_context() -> SharedContext | None:
     """Ottiene shared context globale."""
     return _shared_context
 

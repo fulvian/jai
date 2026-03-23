@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import Optional
 
 import structlog
 import yaml
@@ -50,9 +49,7 @@ class SkillParser:
         content = path.read_text(encoding="utf-8")
         return self.parse_content(content, source_path=str(path))
 
-    def parse_content(
-        self, content: str, source_path: Optional[str] = None
-    ) -> SkillDefinition:
+    def parse_content(self, content: str, source_path: str | None = None) -> SkillDefinition:
         """
         Parse contenuto markdown con frontmatter.
 
@@ -66,9 +63,7 @@ class SkillParser:
         match = self.FRONTMATTER_PATTERN.match(content.strip())
 
         if not match:
-            raise SkillParseError(
-                f"Frontmatter YAML non trovato in {source_path or 'contenuto'}"
-            )
+            raise SkillParseError(f"Frontmatter YAML non trovato in {source_path or 'contenuto'}")
 
         yaml_str = match.group(1)
         markdown_body = match.group(2).strip()

@@ -127,8 +127,9 @@ class TravelHandler(DomainHandler):
         analysis: dict[str, Any],
         context: dict[str, Any],
     ) -> list[DomainExecutionResult]:
-        from .tools.travel_api import execute_tool
         import re
+
+        from .tools.travel_api import execute_tool
 
         query_lower = query.lower()
 

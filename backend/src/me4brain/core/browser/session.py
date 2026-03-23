@@ -229,9 +229,7 @@ class BrowserSessionWrapper:
 
         elif "type" in instr_lower or "fill" in instr_lower:
             # Cerca input field
-            await self._page.fill(
-                "input", instruction.split('"')[1] if '"' in instruction else ""
-            )
+            await self._page.fill("input", instruction.split('"')[1] if '"' in instruction else "")
 
         elif "scroll" in instr_lower:
             await self._page.evaluate("window.scrollBy(0, 500)")

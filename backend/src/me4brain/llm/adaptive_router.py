@@ -17,20 +17,18 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
-from me4brain.llm.model_profiles import (
-    ModelProfile,
-    ModelProvider,
-    get_best_model_for_task,
-    get_model_profile,
-    get_context_window_for_model,
-)
 from me4brain.core.monitoring.resource_monitor import (
     HardwareResourceMonitor,
     get_resource_monitor,
+)
+from me4brain.llm.model_profiles import (
+    ModelProvider,
+    get_context_window_for_model,
+    get_model_profile,
 )
 
 if TYPE_CHECKING:
@@ -62,7 +60,7 @@ class RoutingDecision:
     model_id: str
     reason: str
     estimated_tokens: int
-    fallback_model: Optional[str] = None
+    fallback_model: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -95,9 +93,9 @@ class AdaptiveModelRouter:
 
     def __init__(
         self,
-        resource_monitor: Optional[HardwareResourceMonitor] = None,
-        local_provider: Optional[LLMProvider] = None,
-        cloud_provider: Optional[LLMProvider] = None,
+        resource_monitor: HardwareResourceMonitor | None = None,
+        local_provider: LLMProvider | None = None,
+        cloud_provider: LLMProvider | None = None,
         local_model: str = "qwen3.5-4b-mlx",
         cloud_model: str = "mistralai/mistral-large-3-675b-instruct-2512",
         prefer_local: bool = True,
@@ -117,7 +115,7 @@ class AdaptiveModelRouter:
         query: str,
         tools_count: int = 0,
         sub_queries_count: int = 0,
-        domains: Optional[list[str]] = None,
+        domains: list[str] | None = None,
     ) -> QueryComplexity:
         """Stima la complessità di una query.
 
@@ -243,7 +241,7 @@ class AdaptiveModelRouter:
         component: ComponentType,
         estimated_tokens: int,
         reason: str,
-        fallback_model: Optional[str] = None,
+        fallback_model: str | None = None,
     ) -> RoutingDecision:
         """Crea decisione per modello locale."""
         self._stats.total_requests += 1
@@ -352,7 +350,7 @@ class AdaptiveModelRouter:
         self._cooldown_until = 0
 
 
-_adaptive_router: Optional[AdaptiveModelRouter] = None
+_adaptive_router: AdaptiveModelRouter | None = None
 
 
 def get_adaptive_router(

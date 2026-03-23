@@ -2,7 +2,7 @@
 
 import pytest
 
-from me4brain.core.interfaces import DomainHandler, DomainCapability, DomainVolatility
+from me4brain.core.interfaces import DomainCapability, DomainHandler, DomainVolatility
 from me4brain.core.plugin_registry import PluginRegistry
 
 

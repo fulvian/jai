@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -38,9 +37,9 @@ class SupervisorAgent:
 
     def __init__(
         self,
-        registry: Optional[AgentRegistry] = None,
-        messenger: Optional[AgentMessenger] = None,
-        redis: Optional[Redis] = None,
+        registry: AgentRegistry | None = None,
+        messenger: AgentMessenger | None = None,
+        redis: Redis | None = None,
     ):
         """
         Inizializza supervisor.
@@ -64,8 +63,8 @@ class SupervisorAgent:
         self,
         task: str,
         context: dict,
-        required_capability: Optional[str] = None,
-    ) -> Optional[AgentProfile]:
+        required_capability: str | None = None,
+    ) -> AgentProfile | None:
         """
         Seleziona miglior agente per task.
 
@@ -108,7 +107,7 @@ class SupervisorAgent:
         logger.warning("no_agent_available", task=task[:50])
         return None
 
-    def _infer_capability(self, task: str) -> Optional[str]:
+    def _infer_capability(self, task: str) -> str | None:
         """
         Inferisce capability da task description.
 
@@ -214,9 +213,7 @@ class SupervisorAgent:
                 "status": agent.status.value,
                 "current_task": agent.current_task,
                 "success_rate": agent.success_rate,
-                "last_active": (
-                    agent.last_active.isoformat() if agent.last_active else None
-                ),
+                "last_active": (agent.last_active.isoformat() if agent.last_active else None),
             }
 
         return status
@@ -224,7 +221,7 @@ class SupervisorAgent:
     async def recall(
         self,
         handoff_id: str,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Richiama risultato da handoff.
 
@@ -252,9 +249,7 @@ class SupervisorAgent:
             "task": handoff.task,
             "result": handoff.result,
             "created_at": handoff.created_at.isoformat(),
-            "completed_at": (
-                handoff.completed_at.isoformat() if handoff.completed_at else None
-            ),
+            "completed_at": (handoff.completed_at.isoformat() if handoff.completed_at else None),
         }
 
     async def complete_handoff(
@@ -300,10 +295,10 @@ class SupervisorAgent:
 
 
 # Singleton
-_supervisor: Optional[SupervisorAgent] = None
+_supervisor: SupervisorAgent | None = None
 
 
-def get_supervisor() -> Optional[SupervisorAgent]:
+def get_supervisor() -> SupervisorAgent | None:
     """Ottiene supervisor globale."""
     return _supervisor
 

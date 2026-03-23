@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -50,7 +50,7 @@ class TenantLimits(BaseModel):
     max_browser_sessions: int = 2
 
     @classmethod
-    def for_tier(cls, tier: TenantTier) -> "TenantLimits":
+    def for_tier(cls, tier: TenantTier) -> TenantLimits:
         """Limiti predefiniti per tier."""
         defaults = {
             TenantTier.FREE: cls(
@@ -98,7 +98,7 @@ class TenantFeatures(BaseModel):
     dedicated_resources: bool = False
 
     @classmethod
-    def for_tier(cls, tier: TenantTier) -> "TenantFeatures":
+    def for_tier(cls, tier: TenantTier) -> TenantFeatures:
         """Features predefinite per tier."""
         defaults = {
             TenantTier.FREE: cls(),
@@ -131,7 +131,7 @@ class TenantConfig(BaseModel):
     features: TenantFeatures = Field(default_factory=TenantFeatures)
 
     # Metadata
-    owner_email: Optional[str] = None
+    owner_email: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -142,8 +142,8 @@ class TenantConfig(BaseModel):
         tenant_id: str,
         name: str,
         tier: TenantTier = TenantTier.FREE,
-        owner_email: Optional[str] = None,
-    ) -> "TenantConfig":
+        owner_email: str | None = None,
+    ) -> TenantConfig:
         """Factory per creare tenant con defaults per tier."""
         return cls(
             id=tenant_id,
@@ -165,7 +165,7 @@ class TenantInfo(BaseModel):
     created_at: datetime
 
     @classmethod
-    def from_config(cls, config: TenantConfig) -> "TenantInfo":
+    def from_config(cls, config: TenantConfig) -> TenantInfo:
         """Crea da config completa."""
         return cls(
             id=config.id,
@@ -203,7 +203,7 @@ class TenantUsage(BaseModel):
     estimated_cost_usd: float = 0.0
 
     # Timestamps
-    last_activity: Optional[datetime] = None
+    last_activity: datetime | None = None
     period_start: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -215,7 +215,7 @@ class TenantQuota(BaseModel):
     current: int
     limit: int
     remaining: int
-    reset_at: Optional[datetime] = None
+    reset_at: datetime | None = None
 
     @property
     def is_exceeded(self) -> bool:
@@ -238,19 +238,19 @@ class TenantCreateRequest(BaseModel):
 
     name: str
     tier: TenantTier = TenantTier.FREE
-    owner_email: Optional[str] = None
+    owner_email: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TenantUpdateRequest(BaseModel):
     """Request per aggiornare tenant."""
 
-    name: Optional[str] = None
-    tier: Optional[TenantTier] = None
-    status: Optional[TenantStatus] = None
-    limits: Optional[TenantLimits] = None
-    features: Optional[TenantFeatures] = None
-    metadata: Optional[dict[str, Any]] = None
+    name: str | None = None
+    tier: TenantTier | None = None
+    status: TenantStatus | None = None
+    limits: TenantLimits | None = None
+    features: TenantFeatures | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class TenantListResponse(BaseModel):

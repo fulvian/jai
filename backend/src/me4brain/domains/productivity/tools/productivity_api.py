@@ -1,6 +1,7 @@
 """Productivity Tools API - Bridge to Skills."""
 
 from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)

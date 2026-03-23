@@ -6,7 +6,8 @@ per funzionalità come reranking.
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import structlog
 from llama_index.core.base.llms.types import (
@@ -28,7 +29,7 @@ logger = structlog.get_logger(__name__)
 class NanoGPTLlamaIndexAdapter(CustomLLM):
     """Adapter to use Me4BrAIn LLM client with LlamaIndex.
 
-    Wraps the configured LLM client (NanoGPT or Ollama) to provide 
+    Wraps the configured LLM client (NanoGPT or Ollama) to provide
     LlamaIndex-compatible LLM interface for use with rerankers.
     """
 
@@ -68,9 +69,7 @@ class NanoGPTLlamaIndexAdapter(CustomLLM):
         config = get_llm_config()
         if config.use_local_tool_calling:
             return OllamaClient(base_url=config.ollama_base_url, model=config.ollama_model)
-        return NanoGPTClient(
-            api_key=config.nanogpt_api_key, base_url=config.nanogpt_base_url
-        )
+        return NanoGPTClient(api_key=config.nanogpt_api_key, base_url=config.nanogpt_base_url)
 
     @property
     def metadata(self) -> LLMMetadata:

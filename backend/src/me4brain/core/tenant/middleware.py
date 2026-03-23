@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, Optional, Set
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from me4brain.core.tenant.context import set_tenant, reset_tenant
+from me4brain.core.tenant.context import reset_tenant, set_tenant
 from me4brain.core.tenant.store import TenantStore
 from me4brain.core.tenant.types import TenantStatus
 
@@ -18,7 +18,7 @@ logger = structlog.get_logger(__name__)
 
 
 # Public endpoints che non richiedono tenant
-DEFAULT_PUBLIC_PATHS: Set[str] = {
+DEFAULT_PUBLIC_PATHS: set[str] = {
     "/health",
     "/health/ready",
     "/health/components",
@@ -50,8 +50,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        public_paths: Optional[Set[str]] = None,
-        tenant_store: Optional[TenantStore] = None,
+        public_paths: set[str] | None = None,
+        tenant_store: TenantStore | None = None,
     ):
         """
         Args:
@@ -136,7 +136,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
 
         return False
 
-    def _extract_tenant_id(self, request: Request) -> Optional[str]:
+    def _extract_tenant_id(self, request: Request) -> str | None:
         """
         Estrae tenant ID dalla request.
 
@@ -217,8 +217,9 @@ async def require_feature(feature: str):
     """
 
     async def _check(request: Request):
-        from me4brain.core.tenant.context import get_tenant_config
         from fastapi import HTTPException
+
+        from me4brain.core.tenant.context import get_tenant_config
 
         config = get_tenant_config()
         if not config:

@@ -11,7 +11,6 @@ Provides:
 from __future__ import annotations
 
 import structlog
-from typing import Optional
 
 logger = structlog.get_logger(__name__)
 
@@ -56,9 +55,9 @@ def setup_tracing(
     try:
         from opentelemetry import trace
         from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+        from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from opentelemetry.sdk.resources import Resource
 
         # Create resource with service name
         resource = Resource.create({"service.name": service_name})
@@ -124,7 +123,7 @@ def setup_fastapi_instrumentation(app) -> None:
 
 def create_span(
     name: str,
-    attributes: Optional[dict] = None,
+    attributes: dict | None = None,
 ):
     """Create a new span context manager.
 
@@ -163,7 +162,7 @@ class TracingContext:
     def __init__(
         self,
         name: str,
-        attributes: Optional[dict] = None,
+        attributes: dict | None = None,
     ):
         self.name = name
         self.attributes = attributes or {}
@@ -191,13 +190,13 @@ class TracingContext:
         if self.span is not None:
             self.span.set_attribute(key, value)
 
-    def add_event(self, name: str, attributes: Optional[dict] = None) -> None:
+    def add_event(self, name: str, attributes: dict | None = None) -> None:
         """Add an event to the current span."""
         if self.span is not None:
             self.span.add_event(name, attributes=attributes or {})
 
 
-def get_current_trace_id() -> Optional[str]:
+def get_current_trace_id() -> str | None:
     """Get the current trace ID as a hex string.
 
     Returns:
@@ -217,7 +216,7 @@ def get_current_trace_id() -> Optional[str]:
         return None
 
 
-def get_current_span_id() -> Optional[str]:
+def get_current_span_id() -> str | None:
     """Get the current span ID as a hex string.
 
     Returns:

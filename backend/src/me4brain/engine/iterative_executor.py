@@ -6,26 +6,25 @@ Each step selects a small subset of tools (max 10) relevant to that step.
 
 from __future__ import annotations
 
-from me4brain.engine.prompts.registry import PromptHintsRegistry
-from me4brain.utils.json_utils import robust_json_parse
-from me4brain.llm.provider_factory import resolve_model_client
-
-from collections.abc import AsyncGenerator
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar
 import asyncio
 import json
 import re
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import structlog
 
 from me4brain.engine.executor import ParallelExecutor
-from me4brain.engine.hybrid_router.types import SubQuery, RetrievedTool
-from me4brain.engine.types import ToolTask, ToolResult
+from me4brain.engine.hybrid_router.types import RetrievedTool, SubQuery
+from me4brain.engine.prompts.registry import PromptHintsRegistry
+from me4brain.engine.types import ToolResult, ToolTask
+from me4brain.llm.provider_factory import resolve_model_client
+from me4brain.utils.json_utils import robust_json_parse
 
 if TYPE_CHECKING:
-    from me4brain.llm import NanoGPTClient
     from me4brain.engine.hybrid_router.llama_tool_retriever import LlamaIndexToolRetriever
+    from me4brain.llm import NanoGPTClient
 
 logger = structlog.get_logger(__name__)
 
@@ -614,6 +613,7 @@ class IterativeExecutor:
         Returns the ExecutionContext via a final 'execution_done' event.
         """
         import time
+
         from me4brain.engine.session_context import get_current_session_id
 
         # FIX Issue #6: Log session_id to verify propagation through async tasks
@@ -1645,7 +1645,6 @@ Reply with EXACTLY ONE of these JSON formats:
             Dictionary of arguments suitable for the tool
         """
         import re
-        from typing import get_type_hints
 
         # Get parameter schema from the tool definition
         parameters = tool_schema.get("parameters", {})
@@ -1825,7 +1824,6 @@ Reply with EXACTLY ONE of these JSON formats:
 
         Returns validated args dict if valid, None if validation fails.
         """
-        import re
 
         validated = {}
 
@@ -1922,7 +1920,7 @@ Reply with EXACTLY ONE of these JSON formats:
                 ),
                 timeout=120.0,  # 120 second timeout (development)
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "graph_prompt_hints_retrieval_timeout",
                 domain=sub_query.domain,
@@ -1978,6 +1976,7 @@ Reply with EXACTLY ONE of these JSON formats:
             # Convert dict schemas to Pydantic Tool models
             # tool_schemas is list[dict] with format: {"type": "function", "function": {...}}
             import asyncio as _asyncio
+
             from me4brain.llm.models import LLMRequest, Tool, ToolFunction
 
             tool_models: list[Tool] = []
@@ -2030,7 +2029,7 @@ Reply with EXACTLY ONE of these JSON formats:
                         response = await asyncio.wait_for(
                             tc_client.generate_response(request), timeout=tool_selection_timeout
                         )
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.warning(
                             "step_tool_selection_timeout",
                             step_id=step_id,
@@ -2358,8 +2357,9 @@ NOW EXECUTE:"""
             self._cache_hits = getattr(self, "_cache_hits", 0) + 1
             return self._hints_cache[cache_key]
 
-        from me4brain.memory.semantic import get_semantic_memory
         import yaml
+
+        from me4brain.memory.semantic import get_semantic_memory
 
         semantic = get_semantic_memory()
         driver = await semantic.get_driver()
@@ -2390,7 +2390,7 @@ NOW EXECUTE:"""
                         hints_parts.append(
                             f"DOMAIN [{domain.upper()}]:\n{domain_record['content']}"
                         )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(
                         "graph_domain_hints_timeout",
                         domain=domain,
@@ -2441,7 +2441,7 @@ NOW EXECUTE:"""
                             tool_hint += f" regole: {record['hard_rules']}\n"
 
                         hints_parts.append(tool_hint)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(
                         "graph_tool_hints_timeout",
                         tool_names_count=len(tool_names),
@@ -2463,7 +2463,7 @@ NOW EXECUTE:"""
                         await asyncio.wait_for(
                             self._ensure_fewshot_index_exists(driver), timeout=neo4j_query_timeout
                         )
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.warning(
                             "graph_fewshot_index_timeout",
                             timeout_seconds=neo4j_query_timeout,
@@ -2506,7 +2506,7 @@ NOW EXECUTE:"""
                                 "\n=== FEW-SHOT EXAMPLES (CONTEXTUALLY RELEVANT) ===\n"
                             )
                             hints_parts.extend(examples)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.warning(
                             "graph_fewshot_search_timeout",
                             timeout_seconds=neo4j_query_timeout,

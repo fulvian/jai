@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -36,9 +35,9 @@ class BrowserManager:
 
     def __init__(
         self,
-        redis: Optional[Redis] = None,
+        redis: Redis | None = None,
         max_sessions: int = DEFAULT_MAX_SESSIONS,
-        default_config: Optional[BrowserConfig] = None,
+        default_config: BrowserConfig | None = None,
     ):
         """
         Inizializza manager.
@@ -53,7 +52,7 @@ class BrowserManager:
         self.default_config = default_config or BrowserConfig()
 
         # In-memory session registry (browser contexts non serializzabili)
-        self._sessions: dict[str, "BrowserSessionWrapper"] = {}
+        self._sessions: dict[str, BrowserSessionWrapper] = {}
         self._lock = asyncio.Lock()
 
     def _session_key(self, session_id: str) -> str:
@@ -62,8 +61,8 @@ class BrowserManager:
 
     async def create_session(
         self,
-        config: Optional[BrowserConfig] = None,
-        start_url: Optional[str] = None,
+        config: BrowserConfig | None = None,
+        start_url: str | None = None,
     ) -> BrowserSession:
         """
         Crea nuova sessione browser.
@@ -83,8 +82,7 @@ class BrowserManager:
             active = await self.count_active()
             if active >= self.max_sessions:
                 raise RuntimeError(
-                    f"Max sessions reached ({self.max_sessions}). "
-                    "Close existing sessions first."
+                    f"Max sessions reached ({self.max_sessions}). Close existing sessions first."
                 )
 
             session_id = str(uuid.uuid4())[:12]
@@ -141,7 +139,7 @@ class BrowserManager:
 
             return session
 
-    async def get_session(self, session_id: str) -> Optional[BrowserSession]:
+    async def get_session(self, session_id: str) -> BrowserSession | None:
         """
         Recupera metadata sessione.
 
@@ -163,7 +161,7 @@ class BrowserManager:
 
         return None
 
-    async def get_wrapper(self, session_id: str) -> Optional["BrowserSessionWrapper"]:
+    async def get_wrapper(self, session_id: str) -> BrowserSessionWrapper | None:
         """
         Recupera wrapper con browser context.
 
@@ -263,10 +261,10 @@ class BrowserManager:
 
 
 # Singleton
-_browser_manager: Optional[BrowserManager] = None
+_browser_manager: BrowserManager | None = None
 
 
-def get_browser_manager() -> Optional[BrowserManager]:
+def get_browser_manager() -> BrowserManager | None:
     """Ottiene manager globale."""
     return _browser_manager
 

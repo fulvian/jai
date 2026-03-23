@@ -5,8 +5,9 @@ Strategia di Routing:
 - Tavily: Query complesse, ricerche deep, estrazione contenuti (1000 credit/mese)
 """
 
-from typing import Any
 import os
+from typing import Any
+
 import httpx
 import structlog
 

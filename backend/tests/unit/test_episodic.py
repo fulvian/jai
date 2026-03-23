@@ -1,8 +1,10 @@
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
-from me4brain.memory.episodic import EpisodicMemory, Episode
-from qdrant_client.models import PointStruct, ScoredPoint
+from qdrant_client.models import ScoredPoint
+
+from me4brain.memory.episodic import Episode, EpisodicMemory
 
 
 @pytest.fixture

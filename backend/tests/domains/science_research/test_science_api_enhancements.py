@@ -1,11 +1,13 @@
 """Tests for science_research domain enhancements (P0 and P1 fixes)."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from me4brain.domains.science_research.tools import science_api
+
 from me4brain.domains.science_research.handler import ScienceResearchHandler
+from me4brain.domains.science_research.tools import science_api
 from me4brain.engine.synthesizer import ResponseSynthesizer
-from me4brain.models.tool_result import ToolResult
+from me4brain.engine.types import ToolResult
 
 
 class TestSemanticScholarEnhancements:
@@ -232,7 +234,7 @@ class TestScienceResearchWebFallback:
         }
 
         with patch(
-            "me4brain.domains.web_search.tools.web_api.duckduckgo_search",
+            "me4brain.domains.web_search.tools.search_api.duckduckgo_instant",
             new_callable=AsyncMock,
         ) as mock_web:
             mock_web.return_value = mock_web_result

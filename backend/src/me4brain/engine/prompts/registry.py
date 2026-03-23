@@ -88,7 +88,7 @@ class PromptHintsRegistry:
 
         for yaml_file in self._domains_dir.glob("*.yaml"):
             try:
-                with open(yaml_file, "r", encoding="utf-8") as f:
+                with open(yaml_file, encoding="utf-8") as f:
                     data = yaml.safe_load(f)
 
                 if data and "hints" in data:
@@ -119,7 +119,7 @@ class PromptHintsRegistry:
 
         for yaml_file in self._skill_categories_dir.glob("*.yaml"):
             try:
-                with open(yaml_file, "r", encoding="utf-8") as f:
+                with open(yaml_file, encoding="utf-8") as f:
                     data = yaml.safe_load(f)
 
                 if data:

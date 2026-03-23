@@ -674,10 +674,10 @@ class SportsNBAHandler(DomainHandler):
 
         Rileva se è per una partita specifica o per il daily slate.
         """
-        from me4brain.domains.sports_nba.tools.betting_analyzer import NBABettingAnalyzer
         from me4brain.domains.response_guardrails import (
             apply_response_guardrails,
         )
+        from me4brain.domains.sports_nba.tools.betting_analyzer import NBABettingAnalyzer
 
         analyzer = NBABettingAnalyzer()
         query_lower = query.lower()

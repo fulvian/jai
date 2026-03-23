@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta
-from typing import Optional
+from zoneinfo import ZoneInfo
 
 import structlog
 from croniter import croniter
-from zoneinfo import ZoneInfo
 
 from me4brain.core.scheduler.types import ScheduledJob, ScheduleType
 
@@ -37,9 +36,7 @@ class ScheduleParser:
         "w": 604800,
     }
 
-    def next_run(
-        self, job: ScheduledJob, from_time: Optional[datetime] = None
-    ) -> datetime:
+    def next_run(self, job: ScheduledJob, from_time: datetime | None = None) -> datetime:
         """
         Calcola prossimo run time per un job.
 
@@ -63,9 +60,7 @@ class ScheduleParser:
         else:
             raise ValueError(f"Unknown schedule type: {schedule_type}")
 
-    def _parse_cron(
-        self, expression: str, timezone: str, base_time: datetime
-    ) -> datetime:
+    def _parse_cron(self, expression: str, timezone: str, base_time: datetime) -> datetime:
         """
         Parse espressione cron.
 

@@ -1,6 +1,7 @@
+from unittest.mock import patch
+
 import pytest
-import time
-from unittest.mock import MagicMock, patch
+
 from me4brain.utils.metrics import MetricsService, track_latency
 
 

@@ -6,9 +6,11 @@ Covers domain classification → decomposition → tool retrieval workflows.
 Coverage target: 10+ tests across 3 test classes
 """
 
-import pytest
+from unittest.mock import AsyncMock, Mock
+
 import numpy as np
-from unittest.mock import Mock, AsyncMock, patch
+import pytest
+
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.query_decomposer import QueryDecomposer
 from me4brain.engine.hybrid_router.tool_retriever import ToolRetriever

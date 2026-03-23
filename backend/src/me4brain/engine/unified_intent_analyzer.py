@@ -13,7 +13,6 @@ This module provides:
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -21,7 +20,6 @@ from typing import TYPE_CHECKING
 import structlog
 from pydantic import BaseModel, Field, field_validator
 
-from me4brain.llm.provider_factory import resolve_model_client
 from me4brain.utils.json_utils import parse_llm_json_response
 
 if TYPE_CHECKING:
@@ -211,7 +209,7 @@ class UnifiedIntentAnalyzer:
 
     def __init__(
         self,
-        llm_client: "LLMProvider",
+        llm_client: LLMProvider,
         config,
     ) -> None:
         """Initialize the UnifiedIntentAnalyzer.
@@ -235,7 +233,7 @@ class UnifiedIntentAnalyzer:
         logger.info("unified_intent_warm_up_start")
         from me4brain.llm.models import LLMRequest, Message, MessageRole
 
-        client, actual_model = resolve_model_client(self.config.model_routing)
+        actual_model = self.config.model_routing
         dummy_queries = ["ciao", "meteo", "scrivimi una mail"]
         for q in dummy_queries:
             try:
@@ -246,7 +244,7 @@ class UnifiedIntentAnalyzer:
                     max_tokens=20,
                     temperature=0.1,
                 )
-                await client.generate_response(llm_request)
+                await self.llm_client.generate_response(llm_request)
             except Exception as e:
                 logger.warning("warm_up_query_failed", query=q, error=str(e))
 
@@ -373,6 +371,7 @@ Respond with ONLY valid JSON (no other text):
             ValueError: If query is empty or invalid
         """
         import time
+
         from me4brain.engine.intent_monitoring import get_intent_monitor
 
         start_time = time.monotonic()
@@ -448,7 +447,7 @@ Respond with ONLY valid JSON (no other text):
             # Call LLM
             from me4brain.llm.models import LLMRequest, Message, MessageRole
 
-            client, actual_model = resolve_model_client(self.config.model_routing)
+            actual_model = self.config.model_routing
             llm_request = LLMRequest(
                 messages=[
                     Message(role=MessageRole.USER, content=prompt),
@@ -458,7 +457,7 @@ Respond with ONLY valid JSON (no other text):
                 max_tokens=max_tokens,
             )
 
-            response = await client.generate_response(llm_request)
+            response = await self.llm_client.generate_response(llm_request)
 
             if not response.choices or not response.choices[0].message.content:
                 logger.warning(
@@ -648,51 +647,13 @@ Respond with ONLY valid JSON (no other text):
             query_preview=query[:50],
         )
 
-        detected_domains = self._extract_domains_from_query(query)
-
-        # Check for conversational patterns
-        q = query.lower().strip()
-        conversational_patterns = [
-            "chi sei",
-            "come stai",
-            "grazie",
-            "ciao",
-            "hello",
-            "hi ",
-            "buongiorno",
-            "buonasera",
-            "cosa sai fare",
-            "aiuto",
-            "chi ti ha creato",
-            "come funzioni",
-            "cosa pensi",
-        ]
-        is_conversational = any(p in q for p in conversational_patterns)
-
-        if detected_domains:
-            return IntentAnalysis(
-                intent=IntentType.TOOL_REQUIRED,
-                domains=detected_domains,
-                complexity=QueryComplexity.SIMPLE,
-                confidence=0.5,
-                reasoning=f"fallback_keyword_match:{reason}",
-            )
-        elif is_conversational or len(q.split()) <= 3:
-            return IntentAnalysis(
-                intent=IntentType.CONVERSATIONAL,
-                domains=[],
-                complexity=QueryComplexity.SIMPLE,
-                confidence=0.6,
-                reasoning=f"fallback_conversational_pattern:{reason}",
-            )
-        else:
-            return IntentAnalysis(
-                intent=IntentType.TOOL_REQUIRED,
-                domains=["web_search"],
-                complexity=QueryComplexity.MODERATE,
-                confidence=0.4,
-                reasoning=f"fallback_uncertain_default_tool:{reason}",
-            )
+        return IntentAnalysis(
+            intent=IntentType.TOOL_REQUIRED,
+            domains=["general"],
+            complexity=QueryComplexity.SIMPLE,
+            confidence=0.5,
+            reasoning=f"fallback:{reason}",
+        )
 
     def _extract_domains_from_query(self, query: str) -> list[str]:
         """Utility to extract domains from query using keywords."""
@@ -708,6 +669,11 @@ Respond with ONLY valid JSON (no other text):
                 "neve",
                 "previsioni",
                 "gradi",
+                "weather",
+                "forecast",
+                "temperature",
+                "climate",
+                "tempo",
             ],
             "finance_crypto": [
                 "prezzo",
@@ -719,7 +685,16 @@ Respond with ONLY valid JSON (no other text):
                 "euro",
                 "dollaro",
             ],
-            "web_search": ["cerca", "trova", "notizie", "news", "chi è", "cos'è", "wikipedia"],
+            "web_search": [
+                "cerca",
+                "trova",
+                "notizie",
+                "news",
+                "chi è",
+                "cos'è",
+                "wikipedia",
+                "search",
+            ],
             "google_workspace": [
                 "email",
                 "scrivi",

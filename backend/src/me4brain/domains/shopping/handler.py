@@ -1,8 +1,9 @@
 """Shopping Domain Handler - Marketplaces, Price Comparison, and Purchases."""
 
-from datetime import UTC, datetime
 from typing import Any
+
 import structlog
+
 from me4brain.core.interfaces import (
     DomainCapability,
     DomainExecutionResult,

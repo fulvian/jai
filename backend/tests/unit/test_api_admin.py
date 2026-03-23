@@ -1,8 +1,10 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch, AsyncMock
+
 from me4brain.api.main import app
-from me4brain.api.middleware.auth import get_current_user, AuthenticatedUser
+from me4brain.api.middleware.auth import AuthenticatedUser, get_current_user
 
 client = TestClient(app)
 

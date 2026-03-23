@@ -1,7 +1,7 @@
 """Cache Manager - Gestione cache centralizzata con TTL per domain."""
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from redis.asyncio import Redis
@@ -56,7 +56,7 @@ class CacheManager:
     # Namespace per chiavi
     KEY_PREFIX = "me4brain:cache"
 
-    def __init__(self, redis: Redis, key_prefix: Optional[str] = None):
+    def __init__(self, redis: Redis, key_prefix: str | None = None):
         """
         Inizializza il cache manager.
 
@@ -71,7 +71,7 @@ class CacheManager:
         self._hits = 0
         self._misses = 0
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """
         Recupera valore dalla cache.
 
@@ -100,8 +100,8 @@ class CacheManager:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
-        domain: Optional[str] = None,
+        ttl: int | None = None,
+        domain: str | None = None,
     ) -> bool:
         """
         Salva valore in cache.
@@ -119,9 +119,7 @@ class CacheManager:
 
         # Determina TTL
         if ttl is None:
-            ttl = self.DEFAULT_TTLS.get(
-                domain or "default", self.DEFAULT_TTLS["default"]
-            )
+            ttl = self.DEFAULT_TTLS.get(domain or "default", self.DEFAULT_TTLS["default"])
 
         try:
             serialized = json.dumps(value, default=str)
@@ -160,9 +158,7 @@ class CacheManager:
             cursor = 0
 
             while True:
-                cursor, keys = await self.redis.scan(
-                    cursor=cursor, match=full_pattern, count=100
-                )
+                cursor, keys = await self.redis.scan(cursor=cursor, match=full_pattern, count=100)
 
                 if keys:
                     count += await self.redis.delete(*keys)
@@ -195,9 +191,7 @@ class CacheManager:
             cursor = 0
 
             while True:
-                cursor, keys = await self.redis.scan(
-                    cursor=cursor, match=full_pattern, count=100
-                )
+                cursor, keys = await self.redis.scan(cursor=cursor, match=full_pattern, count=100)
                 keys_count += len(keys)
                 if cursor == 0:
                     break
@@ -227,10 +221,10 @@ class CacheManager:
 
 
 # Singleton globale
-_cache_manager: Optional[CacheManager] = None
+_cache_manager: CacheManager | None = None
 
 
-def get_cache_manager() -> Optional[CacheManager]:
+def get_cache_manager() -> CacheManager | None:
     """Ottiene il cache manager globale."""
     return _cache_manager
 

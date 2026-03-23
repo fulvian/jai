@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """SDK-specific exceptions for Me4BrAIn."""
 
 from typing import Any

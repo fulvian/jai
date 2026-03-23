@@ -9,11 +9,9 @@ deploying UnifiedIntentAnalyzer with gradual rollout:
 """
 
 import hashlib
-import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import structlog
 
@@ -125,7 +123,7 @@ class FeatureFlagManager:
             new_percentage=percentage,
         )
 
-    def should_use_unified_analyzer(self, user_id: Optional[str] = None) -> bool:
+    def should_use_unified_analyzer(self, user_id: str | None = None) -> bool:
         """Determine if unified analyzer should be used for this request.
 
         Uses consistent hashing to ensure same user always gets same treatment.
@@ -145,9 +143,7 @@ class FeatureFlagManager:
         # For canary and beta, use traffic percentage with consistent hashing
         if user_id:
             # Hash user ID to get consistent bucket
-            hash_value = int(
-                hashlib.md5(user_id.encode()).hexdigest(), 16
-            ) % 100
+            hash_value = int(hashlib.md5(user_id.encode()).hexdigest(), 16) % 100
             return hash_value < self._traffic_percentage
         else:
             # No user ID, use random bucket
@@ -192,9 +188,7 @@ class FeatureFlagManager:
             accuracy: Classification accuracy (0.0-1.0)
             cache_hit_rate: Cache hit rate (0.0-1.0)
         """
-        error_rate = (
-            failed_queries / queries_processed if queries_processed > 0 else 0.0
-        )
+        error_rate = failed_queries / queries_processed if queries_processed > 0 else 0.0
 
         metrics = RolloutMetrics(
             phase=phase,
@@ -216,7 +210,7 @@ class FeatureFlagManager:
             metrics=metrics.to_dict(),
         )
 
-    def get_metrics(self, phase: Optional[RolloutPhase] = None) -> Optional[RolloutMetrics]:
+    def get_metrics(self, phase: RolloutPhase | None = None) -> RolloutMetrics | None:
         """Get metrics for a rollout phase.
 
         Args:
@@ -284,7 +278,7 @@ class FeatureFlagManager:
 
 
 # Global feature flag manager instance
-_feature_flag_manager: Optional[FeatureFlagManager] = None
+_feature_flag_manager: FeatureFlagManager | None = None
 
 
 def get_feature_flag_manager() -> FeatureFlagManager:

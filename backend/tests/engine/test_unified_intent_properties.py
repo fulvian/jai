@@ -14,17 +14,19 @@ Tests for:
 """
 
 import json
-import pytest
 from unittest.mock import AsyncMock
-from hypothesis import given, strategies as st, assume
+
+import pytest
+from hypothesis import assume, given
+from hypothesis import strategies as st
+
 from me4brain.engine.unified_intent_analyzer import (
-    UnifiedIntentAnalyzer,
     IntentType,
     QueryComplexity,
+    UnifiedIntentAnalyzer,
 )
-from me4brain.llm.models import LLMResponse, Choice, ChoiceMessage, Usage
 from me4brain.llm.config import get_llm_config
-
+from me4brain.llm.models import Choice, ChoiceMessage, LLMResponse, Usage
 
 # Available domains from the prompt
 AVAILABLE_DOMAINS = [
@@ -107,7 +109,7 @@ def create_llm_response(content: str) -> LLMResponse:
 
 class TestWeatherKeywordProperty:
     """Test Property 5.2: Weather keywords → tool_required + geo_weather.
-    
+
     **Validates: Requirements FR1.3, AC1**
     """
 
@@ -115,7 +117,7 @@ class TestWeatherKeywordProperty:
     @pytest.mark.asyncio
     async def test_weather_keywords_trigger_tool_required(self, analyzer, mock_llm_client, keyword):
         """Property: All weather keywords trigger tool_required intent with geo_weather domain.
-        
+
         For all queries containing weather keywords, the analyzer SHALL classify them as
         tool_required with geo_weather domain.
         """
@@ -139,7 +141,7 @@ class TestWeatherKeywordProperty:
 
 class TestConversationalPatternProperty:
     """Test Property 5.3: Conversational patterns → conversational + empty domains.
-    
+
     **Validates: Requirements FR1.6-FR1.9, AC2**
     """
 
@@ -149,7 +151,7 @@ class TestConversationalPatternProperty:
         self, analyzer, mock_llm_client, pattern
     ):
         """Property: All conversational patterns trigger conversational intent with empty domains.
-        
+
         For all queries matching conversational patterns, the analyzer SHALL classify them as
         conversational with empty domains list.
         """
@@ -172,7 +174,7 @@ class TestConversationalPatternProperty:
 
 class TestDomainConsistencyProperty:
     """Test Property 5.4: Domain consistency (conversational ⟺ empty domains).
-    
+
     **Validates: Requirements FR2.2, Design Property 3**
     """
 
@@ -185,7 +187,7 @@ class TestDomainConsistencyProperty:
         self, analyzer, mock_llm_client, intent_str, domains
     ):
         """Property: Domain consistency holds for all queries.
-        
+
         For all queries:
         - If intent is conversational, then domains must be empty
         - If intent is tool_required, then domains must be non-empty
@@ -220,7 +222,7 @@ class TestDomainConsistencyProperty:
 
 class TestConfidenceBoundsProperty:
     """Test Property 5.5: Confidence bounds (0.0 ≤ confidence ≤ 1.0).
-    
+
     **Validates: Requirements NFR2, Design Property 1**
     """
 
@@ -228,7 +230,7 @@ class TestConfidenceBoundsProperty:
     @pytest.mark.asyncio
     async def test_confidence_bounds_property(self, analyzer, mock_llm_client, confidence):
         """Property: Confidence score is always within bounds [0.0, 1.0].
-        
+
         For all queries, the confidence score SHALL be between 0.0 and 1.0 inclusive.
         """
         response_content = json.dumps(
@@ -249,7 +251,7 @@ class TestConfidenceBoundsProperty:
 
 class TestIntentTypeValidityProperty:
     """Test Property 5.6: Intent type validity (only CONVERSATIONAL or TOOL_REQUIRED).
-    
+
     **Validates: Requirements FR1.1, Design Property 1**
     """
 
@@ -259,7 +261,7 @@ class TestIntentTypeValidityProperty:
     @pytest.mark.asyncio
     async def test_intent_type_validity_property(self, analyzer, mock_llm_client, intent_str):
         """Property: Intent type is always valid (CONVERSATIONAL or TOOL_REQUIRED).
-        
+
         For all queries, the intent SHALL be either CONVERSATIONAL or TOOL_REQUIRED.
         """
         domains = [] if intent_str == "conversational" else ["geo_weather"]
@@ -284,7 +286,7 @@ class TestIntentTypeValidityProperty:
 
 class TestComplexityValidityProperty:
     """Test Property 5.7: Complexity validity (only SIMPLE, MODERATE, or COMPLEX).
-    
+
     **Validates: Requirements FR3.1, Design Property 1**
     """
 
@@ -294,7 +296,7 @@ class TestComplexityValidityProperty:
     @pytest.mark.asyncio
     async def test_complexity_validity_property(self, analyzer, mock_llm_client, complexity_str):
         """Property: Complexity is always valid (SIMPLE, MODERATE, or COMPLEX).
-        
+
         For all queries, the complexity SHALL be one of: SIMPLE, MODERATE, or COMPLEX.
         """
         response_content = json.dumps(
@@ -319,7 +321,7 @@ class TestComplexityValidityProperty:
 
 class TestDomainsValidityProperty:
     """Test Property 5.8: Domains are valid (only from AVAILABLE_DOMAINS).
-    
+
     **Validates: Requirements FR2.4, FR2.5, Design Property 1**
     """
 
@@ -334,7 +336,7 @@ class TestDomainsValidityProperty:
     @pytest.mark.asyncio
     async def test_domains_validity_property(self, analyzer, mock_llm_client, domains):
         """Property: All domains are valid (from AVAILABLE_DOMAINS).
-        
+
         For all queries, every domain in the domains list SHALL be from AVAILABLE_DOMAINS.
         """
         response_content = json.dumps(
@@ -361,7 +363,7 @@ class TestRandomQueryProperty:
     @pytest.mark.asyncio
     async def test_random_query_produces_valid_analysis(self, analyzer, mock_llm_client, query):
         """Property: Any query produces a valid IntentAnalysis.
-        
+
         For all queries, the analyzer SHALL return a valid IntentAnalysis with:
         - Valid intent type
         - Valid complexity
@@ -404,7 +406,7 @@ class TestErrorHandlingProperty:
     @pytest.mark.asyncio
     async def test_llm_failure_produces_valid_fallback(self, analyzer, mock_llm_client):
         """Property: LLM failure always produces valid fallback analysis.
-        
+
         When LLM fails, the analyzer SHALL return a valid IntentAnalysis with fallback values.
         """
         mock_llm_client.generate_response.side_effect = Exception("LLM error")
@@ -434,7 +436,7 @@ class TestComplexityConsistencyProperty:
     @pytest.mark.asyncio
     async def test_complexity_matches_domain_count(self, analyzer, mock_llm_client, num_domains):
         """Property: Complexity should be consistent with number of domains.
-        
+
         - Simple: 1 domain
         - Moderate: 1-2 domains
         - Complex: 2+ domains

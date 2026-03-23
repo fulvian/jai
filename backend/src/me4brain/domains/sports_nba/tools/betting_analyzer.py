@@ -720,7 +720,6 @@ class NBABettingAnalyzer:
 
         return None
 
-
     def to_dict(self, analysis: BettingAnalysis) -> dict[str, Any]:
         """Converte BettingAnalysis in dict per output JSON."""
         return {
@@ -788,26 +787,25 @@ class NBABettingAnalyzer:
 
 from me4brain.engine.types import ToolDefinition, ToolParameter
 
+
 async def nba_betting_analyzer(
-    home_team: str | None = None,
-    away_team: str | None = None,
-    analyze_all_today: bool = False
+    home_team: str | None = None, away_team: str | None = None, analyze_all_today: bool = False
 ) -> dict[str, Any]:
     """Professional NBA betting analysis engine."""
     analyzer = NBABettingAnalyzer()
-    
+
     if analyze_all_today:
         results = await analyzer.analyze_daily_slate()
-        return {
-            "total_games": len(results),
-            "analyses": [analyzer.to_dict(a) for a in results]
-        }
-    
+        return {"total_games": len(results), "analyses": [analyzer.to_dict(a) for a in results]}
+
     if home_team and away_team:
         analysis = await analyzer.analyze_game(home_team, away_team)
         return analyzer.to_dict(analysis)
-    
-    return {"error": "Missing parameters. Provide home_team/away_team or set analyze_all_today=True"}
+
+    return {
+        "error": "Missing parameters. Provide home_team/away_team or set analyze_all_today=True"
+    }
+
 
 def get_tool_definitions() -> list[ToolDefinition]:
     return [
@@ -835,6 +833,7 @@ def get_tool_definitions() -> list[ToolDefinition]:
             category="betting",
         )
     ]
+
 
 def get_executors() -> dict:
     return {"nba_betting_analyzer": nba_betting_analyzer}

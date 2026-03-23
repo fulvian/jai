@@ -590,7 +590,6 @@ class EpisodicMemory:
         Returns:
             Lista di episodi candidati
         """
-        from datetime import UTC, datetime
 
         client = await self.get_client()
 

@@ -243,7 +243,7 @@ class PluginRegistry:
                     timeout=0.5,  # 500ms max per valutazione
                 )
                 return handler, score
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "handler_evaluation_timeout",
                     domain=handler.domain_name,

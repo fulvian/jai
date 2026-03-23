@@ -8,7 +8,7 @@ Provides:
 - CachedResponse: Pydantic model for cached classification results
 """
 
-from me4brain.cache.cache_manager import CacheManager, CachedResponse
+from me4brain.cache.cache_manager import CachedResponse, CacheManager
 from me4brain.cache.query_normalizer import QueryNormalizer, generate_cache_key
 from me4brain.cache.semantic_cache import SemanticCache
 

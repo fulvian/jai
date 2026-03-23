@@ -96,7 +96,7 @@ class MultiDomainOrchestrator:
         for domain, task in tasks.items():
             try:
                 results[domain] = await task
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("domain_timeout", domain=domain, timeout=self.timeout_per_domain)
                 results[domain] = [
                     DomainExecutionResult(

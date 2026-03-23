@@ -173,10 +173,10 @@ async def get_engine():
     lock = _get_engine_lock()
     async with lock:
         if _engine_instance is None:
-            from me4brain.engine import ToolCallingEngine
             from me4brain.core.skills import Crystallizer, get_skill_approval_manager
-            from me4brain.core.skills.security import get_skill_security_validator
             from me4brain.core.skills.persistence import persist_skill_to_disk
+            from me4brain.core.skills.security import get_skill_security_validator
+            from me4brain.engine import ToolCallingEngine
 
             _engine_instance = await ToolCallingEngine.create()  # Uses hybrid routing by default
 
@@ -354,7 +354,7 @@ async def _build_memory_context(
 async def _rewrite_query_with_context(
     session_id: str,
     query: str,
-    llm_client: "NanoGPTClient | None" = None,
+    llm_client: NanoGPTClient | None = None,
     tenant_id: str = "default",
     user_id: str = "default",
 ) -> str:
@@ -377,8 +377,8 @@ async def _rewrite_query_with_context(
     Returns:
         Query riscritta (self-contained) o originale se rewriting non necessario
     """
-    from me4brain.memory import get_working_memory
     from me4brain.engine.context_rewriter import get_context_rewriter
+    from me4brain.memory import get_working_memory
 
     if llm_client is None:
         raise ValueError("llm_client is required for query rewriting")
@@ -439,8 +439,8 @@ async def _extract_entities_llm(
     """
     import json as _json
 
-    from me4brain.llm.provider_factory import get_reasoning_client
     from me4brain.llm.models import LLMRequest, Message, MessageRole
+    from me4brain.llm.provider_factory import get_reasoning_client
 
     extraction_prompt = (
         "Analizza questa conversazione ed estrai le entità chiave e le relazioni.\n\n"

@@ -8,14 +8,14 @@ messages, and conversation summaries using SQLAlchemy 2.0.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Optional, Sequence
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from me4brain.database.models import ConversationModel, ConversationSummaryModel, MessageModel
+from me4brain.database.models import ConversationModel, MessageModel
 from me4brain.models.conversation import (
     Conversation,
     ConversationCreate,
@@ -101,8 +101,8 @@ class ConversationRepository:
     async def get_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[Conversation]:
+        user_id: str | None = None,
+    ) -> Conversation | None:
         """Get a conversation by ID.
 
         Args:
@@ -178,7 +178,7 @@ class ConversationRepository:
         self,
         conversation_id: str,
         message: MessageCreate,
-    ) -> Optional[Message]:
+    ) -> Message | None:
         """Add a message to a conversation.
 
         Args:
@@ -219,7 +219,7 @@ class ConversationRepository:
         conversation_id: str,
         limit: int = 50,
         offset: int = 0,
-    ) -> Optional[Sequence[Message]]:
+    ) -> Sequence[Message] | None:
         """Get messages for a conversation.
 
         Args:
@@ -252,8 +252,8 @@ class ConversationRepository:
         self,
         conversation_id: str,
         update_data: ConversationUpdate,
-        user_id: Optional[str] = None,
-    ) -> Optional[Conversation]:
+        user_id: str | None = None,
+    ) -> Conversation | None:
         """Update a conversation.
 
         Args:
@@ -301,7 +301,7 @@ class ConversationRepository:
     async def archive_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ) -> bool:
         """Archive a conversation.
 
@@ -327,7 +327,7 @@ class ConversationRepository:
     async def delete_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ) -> bool:
         """Delete a conversation and all its messages.
 
@@ -351,7 +351,7 @@ class ConversationRepository:
         self,
         conversation_id: str,
         max_tokens: int = 2000,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get formatted conversation context for LLM.
 
         Args:

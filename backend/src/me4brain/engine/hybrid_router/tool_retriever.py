@@ -186,19 +186,19 @@ class ToolRetriever:
 
     async def get_tool_by_name(self, name: str) -> RetrievedTool | None:
         """Get a specific tool by name from the schema map.
-        
+
         Args:
             name: Tool name
-            
+
         Returns:
             RetrievedTool object or None if not found
         """
         schema = self._schemas.get(name)
         if not schema:
             return None
-            
+
         domain = self._domains.get(name, "unknown")
-        
+
         return RetrievedTool(
             name=name,
             domain=domain,

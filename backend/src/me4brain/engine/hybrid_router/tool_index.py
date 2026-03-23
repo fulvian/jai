@@ -8,11 +8,12 @@ Gestisce l'indicizzazione dei tool in Qdrant usando LlamaIndex:
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
 import structlog
-from llama_index.core import Document, Settings, VectorStoreIndex
+from llama_index.core import Settings, VectorStoreIndex
 from llama_index.core.schema import TextNode
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import AsyncQdrantClient, QdrantClient
@@ -22,20 +23,24 @@ from qdrant_client.http.models import (
     Filter,
     FilterSelector,
     MatchValue,
+    PointStruct,
     VectorParams,
 )
 
-from me4brain.retrieval.llamaindex_bridge import Me4BrAInEmbedding
 from me4brain.engine.hybrid_router.constants import (
     CAPABILITIES_COLLECTION,
-    EMBEDDING_DIM,
-    CAPABILITY_TYPE_TOOL,
     CAPABILITY_SUBTYPE_STATIC,
+    CAPABILITY_TYPE_TOOL,
+    EMBEDDING_DIM,
     PRIORITY_BOOST_STATIC_TOOL,
 )
 from me4brain.engine.hybrid_router.tool_hierarchy import get_tool_hierarchy
+from me4brain.retrieval.llamaindex_bridge import Me4BrAInEmbedding
 
 logger = structlog.get_logger(__name__)
+
+# Fixed point ID for catalog manifest - ensures hash persistence across rebuilds
+CATALOG_MANIFEST_POINT_ID = "__catalog_manifest__"
 
 
 class ToolIndexManager:
@@ -131,26 +136,82 @@ class ToolIndexManager:
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
     def _get_stored_hash(self) -> str | None:
-        """Get stored catalog hash from Qdrant collection metadata."""
+        """Get stored catalog hash from dedicated meta-record.
+
+        Uses a fixed-point ID to store the manifest, ensuring persistence
+        across collection rebuilds and reindexing operations.
+        """
         try:
             info = self._client.get_collection(CAPABILITIES_COLLECTION)
-            # Check if we have metadata about hash in collection
             points_count = info.points_count or 0
             if points_count == 0:
                 return None
 
-            # Get first point to check stored hash
+            # Retrieve the manifest record by fixed ID
             points = self._client.scroll(
                 collection_name=CAPABILITIES_COLLECTION,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="_manifest_type",
+                            match=MatchValue(value="catalog_manifest"),
+                        )
+                    ]
+                ),
                 limit=1,
-                with_payload=["_catalog_hash"],
+                with_payload=["_manifest_data"],
             )[0]
 
             if points and points[0].payload:
-                return points[0].payload.get("_catalog_hash")
+                manifest_data = points[0].payload.get("_manifest_data")
+                if manifest_data:
+                    manifest = json.loads(manifest_data)
+                    return manifest.get("catalog_hash")
         except Exception:
             pass
         return None
+
+    def _save_manifest(
+        self,
+        catalog_hash: str,
+        tool_schemas: list[dict[str, Any]],
+        tool_domains: dict[str, str],
+    ) -> None:
+        """Save catalog manifest to dedicated fixed-ID point.
+
+        This ensures the manifest persists regardless of collection rebuilds.
+        """
+        manifest = {
+            "catalog_hash": catalog_hash,
+            "tool_count": len(tool_schemas),
+            "domains": list(set(tool_domains.values())),
+            "tools": [
+                {
+                    "name": s.get("function", {}).get("name", ""),
+                    "domain": tool_domains.get(s.get("function", {}).get("name", ""), "unknown"),
+                }
+                for s in tool_schemas
+            ],
+        }
+
+        # Use a zero vector with the fixed ID for the manifest
+        # The vector is a dummy since we never search by this point
+        zero_vector = [0.0] * EMBEDDING_DIM
+
+        self._client.upsert(
+            collection_name=CAPABILITIES_COLLECTION,
+            points=[
+                PointStruct(
+                    id=CATALOG_MANIFEST_POINT_ID,
+                    vector=zero_vector,
+                    payload={
+                        "_manifest_type": "catalog_manifest",
+                        "_manifest_data": json.dumps(manifest),
+                    },
+                )
+            ],
+        )
+        logger.debug("catalog_manifest_saved", hash=catalog_hash, tools=len(tool_schemas))
 
     async def build_from_catalog(
         self,
@@ -171,7 +232,6 @@ class ToolIndexManager:
         Returns:
             Number of tools indexed (0 if skipped due to no changes)
         """
-        import asyncio
 
         if not self._initialized:
             await self.initialize()
@@ -203,32 +263,75 @@ class ToolIndexManager:
             force=force_rebuild,
         )
 
-        # Clear existing data - delete collection and recreate
-        try:
-            self._client.delete_collection(CAPABILITIES_COLLECTION)
-            await self._ensure_collection()
-            self._vector_store = QdrantVectorStore(
-                client=self._client,
-                aclient=self._aclient,
-                collection_name=CAPABILITIES_COLLECTION,
-            )
-            self._index = VectorStoreIndex.from_vector_store(
-                vector_store=self._vector_store,
-            )
-            logger.debug("tools_and_skills_collection_recreated")
-        except Exception as e:
-            logger.warning("collection_clear_failed", error=str(e))
-
-        # Create nodes from schemas
-        nodes: list[TextNode] = []
-
+        # INCREMENTAL UPSERT: Build tool map of incoming tools
+        incoming_tools: dict[str, dict] = {}
         for schema in tool_schemas:
             func = schema.get("function", {})
             tool_name = func.get("name", "")
+            if tool_name:
+                incoming_tools[tool_name] = schema
+
+        # Get existing tool names from collection (if any)
+        existing_tool_names: set[str] = set()
+        try:
+            info = self._client.get_collection(CAPABILITIES_COLLECTION)
+            if info.points_count and info.points_count > 0:
+                # Scan for existing tool points (exclude manifest point)
+                all_points = self._client.scroll(
+                    collection_name=CAPABILITIES_COLLECTION,
+                    scroll_filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="tool_name",
+                                match=MatchValue(value=""),
+                            )
+                        ],
+                        must_not=[
+                            FieldCondition(
+                                key="_manifest_type",
+                                match=MatchValue(value="catalog_manifest"),
+                            )
+                        ],
+                    ),
+                    limit=1000,
+                    with_payload=["tool_name"],
+                )[0]
+                existing_tool_names: set[str] = set()
+                for p in all_points:
+                    tool_name = p.payload.get("tool_name")
+                    if tool_name:
+                        existing_tool_names.add(tool_name)
+        except Exception:
+            pass  # Collection empty or doesn't exist yet
+
+        # Determine tools to add, update, or remove
+        tools_to_add = set(incoming_tools.keys()) - existing_tool_names
+        tools_to_remove = existing_tool_names - set(incoming_tools.keys())
+
+        logger.info(
+            "incremental_index_plan",
+            existing_count=len(existing_tool_names),
+            incoming_count=len(incoming_tools),
+            to_add=len(tools_to_add),
+            to_update=0,  # All existing will be updated via upsert
+            to_remove=len(tools_to_remove),
+        )
+
+        # Remove deleted tools first (if any)
+        if tools_to_remove:
+            for tool_name in tools_to_remove:
+                await self.remove_tool(tool_name)
+            logger.info("removed_stale_tools", count=len(tools_to_remove))
+
+        # Create nodes for all incoming tools (upsert pattern)
+        nodes: list[TextNode] = []
+
+        for tool_name, schema in incoming_tools.items():
+            func = schema.get("function", {})
             description = func.get("description", "")
             parameters = func.get("parameters", {})
 
-            if not tool_name or not description:
+            if not description:
                 continue
 
             domain = tool_domains.get(tool_name, "unknown")
@@ -239,7 +342,7 @@ class ToolIndexManager:
             category = hierarchy_data.get("category", "")
             skill = hierarchy_data.get("skill", "")
 
-            # SOTA 2026 Template for embedding (Perplexity research)
+            # SOTA 2026 Template for embedding
             param_hints = self._extract_param_hints(parameters)
             embed_text = self._build_sota_embed_text(
                 tool_name=tool_name,
@@ -250,45 +353,66 @@ class ToolIndexManager:
                 param_hints=param_hints,
             )
 
-            # Create node with unified metadata schema + catalog hash for change detection
             node = TextNode(
                 text=embed_text,
                 metadata={
                     "tool_name": tool_name,
-                    "name": tool_name,          # For legacy ProceduralMemory compat
-                    "tenant_id": "default",     # For multi-tenant compat
-                    "status": "ACTIVE",         # For active status filtering
+                    "name": tool_name,
+                    "tenant_id": "default",
+                    "status": "ACTIVE",
                     "domain": domain,
-                    "category": category,  # NEW: sub-domain category
-                    "skill": skill,  # NEW: skill type
+                    "category": category,
+                    "skill": skill,
                     "description": description,
                     "type": CAPABILITY_TYPE_TOOL,
                     "subtype": CAPABILITY_SUBTYPE_STATIC,
                     "priority_boost": PRIORITY_BOOST_STATIC_TOOL,
                     "enabled": True,
                     "schema_json": json.dumps(schema),
-                    "_catalog_hash": current_hash,  # Store hash for change detection
+                    "_catalog_hash": current_hash,
                 },
                 excluded_embed_metadata_keys=["schema_json", "_catalog_hash"],
                 excluded_llm_metadata_keys=["schema_json", "_catalog_hash"],
             )
             nodes.append(node)
 
-        # Direct bulletproof insertion: manually embed and use vector_store.add
+        # Generate embeddings and upsert to Qdrant directly
         if nodes:
             from me4brain.embeddings.bge_m3 import get_embedding_service
-            
-            # Generate embeddings asynchronously using the service loop
+
+            # Generate embeddings asynchronously
             service = get_embedding_service()
             texts = [node.text for node in nodes]
             embeddings = await service.embed_documents_async(texts)
-            
-            # Assign embeddings to nodes explicitly
-            for node, emb in zip(nodes, embeddings):
-                node.embedding = emb
-            
-            # Add directly to vector store, bypassing LlamaIndex abstraction
-            await asyncio.to_thread(self._vector_store.add, nodes)
+
+            # Prepare points for Qdrant upsert
+            points = []
+            for node, embedding in zip(nodes, embeddings, strict=True):
+                payload = {**node.metadata}
+                # Remove excluded keys from payload
+                for key in ["schema_json", "_catalog_hash"]:
+                    payload.pop(key, None)
+
+                # Extract tool_name from payload for stable ID
+                point_id = payload.get("tool_name", payload.get("name", ""))
+
+                points.append(
+                    PointStruct(
+                        id=point_id,
+                        vector=embedding,
+                        payload=payload,
+                    )
+                )
+
+            # Upsert to Qdrant (replaces existing points with same ID)
+            self._client.upsert(
+                collection_name=CAPABILITIES_COLLECTION,
+                points=points,
+            )
+
+        # Save catalog manifest to dedicated fixed-ID point
+        self._save_manifest(current_hash, tool_schemas, tool_domains)
+
         logger.info(
             "tool_index_built",
             tools_indexed=len(nodes),
@@ -306,7 +430,6 @@ class ToolIndexManager:
         hints = []
         for name, info in parameters.get("properties", {}).items():
             param_type = info.get("type", "string")
-            desc = info.get("description", "")[:50]  # Truncate long descriptions
             hints.append(f"{name}({param_type})")
 
         return ", ".join(hints[:5])  # Limit to 5 params
@@ -385,7 +508,7 @@ NOT suitable for: {not_suitable}"""
 
         return not_suitable_map.get(category, f"other {domain} sub-categories")
 
-    def _extract_use_when_phrases(self, description: str, tool_name: str) -> str:
+    def _extract_use_when_phrases(self, description: str, _tool_name: str) -> str:
         """Extract natural language intent phrases from description.
 
         Converts tool description to user-intent phrases for better query matching.
@@ -463,44 +586,39 @@ NOT suitable for: {not_suitable}"""
             param_hints=param_hints,
         )
 
-        node = TextNode(
-            text=embed_text,
-            metadata={
-                "tool_name": tool_name,
-                "domain": domain,
-                "category": category,
-                "skill": skill,
-                "description": description,
-                "schema_json": json.dumps(schema),
-                # Unified collection metadata
-                "type": CAPABILITY_TYPE_TOOL,
-                "subtype": CAPABILITY_SUBTYPE_STATIC,
-                "priority_boost": PRIORITY_BOOST_STATIC_TOOL,
-            },
-            excluded_embed_metadata_keys=["schema_json"],
-            excluded_llm_metadata_keys=["schema_json"],
+        # Generate embedding for the tool (sync method, run in executor)
+        from me4brain.embeddings.bge_m3 import get_embedding_service
+
+        service = get_embedding_service()
+        loop = asyncio.get_event_loop()
+        embedding = await loop.run_in_executor(None, service.embed_query, embed_text)
+
+        # Prepare payload (clean metadata)
+        payload = {
+            "tool_name": tool_name,
+            "name": tool_name,
+            "domain": domain,
+            "category": category,
+            "skill": skill,
+            "description": description,
+            "type": CAPABILITY_TYPE_TOOL,
+            "subtype": CAPABILITY_SUBTYPE_STATIC,
+            "priority_boost": PRIORITY_BOOST_STATIC_TOOL,
+            "enabled": True,
+            "schema_json": json.dumps(schema),
+        }
+
+        # Upsert to Qdrant directly (handles both insert and update)
+        self._client.upsert(
+            collection_name=CAPABILITIES_COLLECTION,
+            points=[
+                PointStruct(
+                    id=tool_name,  # Use tool_name as stable ID for upsert
+                    vector=embedding,
+                    payload=payload,
+                )
+            ],
         )
-        # Note: UUID auto-generated by LlamaIndex for Qdrant compatibility
-
-        # Delete existing if present, then insert
-        try:
-            self._client.delete(
-                collection_name=CAPABILITIES_COLLECTION,
-                points_selector=FilterSelector(
-                    filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="tool_name",
-                                match=MatchValue(value=tool_name),
-                            )
-                        ]
-                    )
-                ),
-            )
-        except Exception:
-            pass  # Ignore if not exists
-
-        self._index.insert_nodes([node])
 
         logger.info("tool_added_to_index", tool=tool_name, domain=domain)
 

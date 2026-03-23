@@ -6,6 +6,7 @@ Tutti i tool sono 100% gratuiti e senza limiti:
 """
 
 from typing import Any
+
 import httpx
 import structlog
 

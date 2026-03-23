@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -144,7 +144,7 @@ class ContextAwareRewriter:
 
     def __init__(
         self,
-        llm_client: "NanoGPTClient",
+        llm_client: NanoGPTClient,
         model: str = REWRITER_MODEL,
     ) -> None:
         """Inizializza il Context-Aware Rewriter.
@@ -365,7 +365,7 @@ class ContextAwareRewriter:
 _rewriter_instance: ContextAwareRewriter | None = None
 
 
-def get_context_rewriter(llm_client: "NanoGPTClient | None" = None) -> ContextAwareRewriter:
+def get_context_rewriter(llm_client: NanoGPTClient | None = None) -> ContextAwareRewriter:
     """Ottiene l'istanza singleton del Context-Aware Rewriter.
 
     Args:
@@ -377,8 +377,6 @@ def get_context_rewriter(llm_client: "NanoGPTClient | None" = None) -> ContextAw
     global _rewriter_instance
     if _rewriter_instance is None:
         if llm_client is None:
-            from me4brain.llm.provider_factory import get_reasoning_client
-
             # CRITICAL FIX: get_reasoning_client() is async and must be awaited
             # Since this function is sync, we must raise an error instead
             raise RuntimeError(

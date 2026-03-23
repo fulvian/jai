@@ -11,16 +11,17 @@ Supporta fallback intelligente e caching decisioni.
 
 from __future__ import annotations
 
-import structlog
 import re
 import time
 from dataclasses import dataclass
+
+import structlog
+
 from me4brain.llm.base import LLMProvider
 from me4brain.llm.config import get_llm_config
 from me4brain.llm.health import get_llm_health_checker
 from me4brain.llm.nanogpt import get_llm_client
 from me4brain.llm.ollama import get_ollama_client
-from me4brain.llm.fallback import FallbackProvider
 
 logger = structlog.get_logger(__name__)
 
@@ -126,6 +127,10 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
             client = get_client_for_provider(provider_id, actual_model)
             return client, actual_model
 
+    # In local-only, blocca modelli cloud espliciti
+    if config.llm_local_only and "/" in model_id:
+        raise ValueError(f"Cloud model '{model_id}' blocked because llm_local_only=true")
+
     # Modello semplice - priorizza Ollama rispetto a NanoGPT
     # Per MLX models, usa ancora LM Studio via NanoGPT
     if model_id.endswith("-mlx") or model_id.startswith("mlx-"):
@@ -147,7 +152,7 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
     return get_llm_client(), model_id
 
 
-async def get_reasoning_client() -> LLMProvider:
+def get_reasoning_client() -> LLMProvider:
     """Restituisce il client per ragionamento, sintesi e task complessi.
 
     Implementa Ollama-First con fallback intelligente:
@@ -158,43 +163,20 @@ async def get_reasoning_client() -> LLMProvider:
     Health checks automatici determinano il provider migliore disponibile.
     """
     config = get_llm_config()
-    health_checker = get_llm_health_checker()
-
     if config.llm_local_only or config.use_local_tool_calling:
-        # Determina miglior provider locale disponibile
-        best_provider = await health_checker.get_best_provider()
-
-        if best_provider == "ollama":
-            logger.debug(
-                "provider_factory_reasoning_ollama_selected",
-                provider="ollama",
-                model=config.ollama_model,
-                strategy="ollama_first",
-            )
-            return get_ollama_client()
-
-        elif best_provider == "lmstudio":
-            logger.warning(
-                "provider_factory_reasoning_lmstudio_selected",
-                provider="lmstudio",
-                reason="Ollama offline",
-            )
-            return get_llm_client()  # NanoGPT routes MLX to LM Studio
-
-        else:  # nanogpt
-            logger.warning(
-                "provider_factory_reasoning_nanogpt_fallback",
-                provider="nanogpt",
-                reason="Both local providers offline",
-            )
-            return get_llm_client()
+        logger.debug(
+            "provider_factory_reasoning_local",
+            provider="ollama",
+            model=config.ollama_model,
+        )
+        return get_ollama_client()
 
     # Non-local mode: use cloud
     logger.debug("provider_factory_reasoning_cloud", provider="nanogpt", model=config.model_primary)
     return get_llm_client()
 
 
-async def get_tool_calling_client() -> LLMProvider:
+def get_tool_calling_client() -> LLMProvider:
     """Restituisce il client per tool selection e argument extraction.
 
     Implementa Ollama-First strategy:
@@ -203,62 +185,22 @@ async def get_tool_calling_client() -> LLMProvider:
     3. NanoGPT (cloud, always available) - LAST RESORT
     """
     config = get_llm_config()
-    health_checker = get_llm_health_checker()
-
     if config.llm_local_only:
-        best_provider = await health_checker.get_best_provider()
-
-        if best_provider == "ollama":
-            logger.debug(
-                "provider_factory_tool_calling_ollama",
-                provider="ollama",
-                model=config.ollama_model,
-            )
-            return get_ollama_client()
-
-        elif best_provider == "lmstudio":
-            logger.warning(
-                "provider_factory_tool_calling_lmstudio",
-                provider="lmstudio",
-                reason="Ollama offline",
-            )
-            return get_llm_client()
-
-        else:  # nanogpt
-            logger.warning(
-                "provider_factory_tool_calling_nanogpt",
-                provider="nanogpt",
-                reason="Both local providers offline",
-            )
-            return get_llm_client()
+        logger.debug(
+            "provider_factory_tool_calling_local_only",
+            provider="ollama",
+            model=config.ollama_model,
+        )
+        return get_ollama_client()
 
     # Non-local mode with local tool calling enabled
     if config.use_local_tool_calling:
-        best_provider = await health_checker.get_best_provider()
-
-        if best_provider in ("ollama", "lmstudio"):
-            logger.debug(
-                "provider_factory_tool_calling_local",
-                provider=best_provider,
-            )
-            return get_ollama_client() if best_provider == "ollama" else get_llm_client()
-
-        if not config.llm_allow_cloud_fallback:
-            logger.warning(
-                "provider_factory_tool_calling_no_cloud_fallback",
-                provider="ollama_only",
-            )
-            return get_ollama_client()
-
-        local_client = get_ollama_client()
-        cloud_client = get_llm_client()
-        logger.debug("provider_factory_tool_calling", strategy="fallback_ollama_first")
-        return FallbackProvider(
-            primary=local_client,
-            fallback=cloud_client,
-            name="tool_calling",
-            fallback_model=config.model_fallback,
+        logger.debug(
+            "provider_factory_tool_calling_local",
+            provider="ollama",
+            model=config.ollama_model,
         )
+        return get_ollama_client()
 
     logger.debug(
         "provider_factory_tool_calling_cloud", provider="nanogpt", model=config.model_agentic

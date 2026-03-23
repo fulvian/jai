@@ -8,7 +8,6 @@ import hmac
 import json
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
 
 import aiohttp
 import structlog
@@ -39,7 +38,7 @@ class WebhookDispatcher:
 
     def __init__(
         self,
-        redis: Optional[Redis] = None,
+        redis: Redis | None = None,
         timeout: int = 30,
     ):
         """
@@ -165,7 +164,7 @@ class WebhookDispatcher:
                                 attempt=attempt,
                             )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 delivery.error = "Timeout"
                 logger.warning(
                     "webhook_timeout",
@@ -272,9 +271,7 @@ class WebhookDispatcher:
 
             try:
                 failed = json.loads(data)
-                config_data = await self.redis.get(
-                    f"{self.CONFIG_PREFIX}:{failed['config_id']}"
-                )
+                config_data = await self.redis.get(f"{self.CONFIG_PREFIX}:{failed['config_id']}")
 
                 if not config_data:
                     continue
@@ -301,7 +298,7 @@ class WebhookDispatcher:
 
 
 # Singleton
-_webhook_dispatcher: Optional[WebhookDispatcher] = None
+_webhook_dispatcher: WebhookDispatcher | None = None
 
 
 def get_webhook_dispatcher() -> WebhookDispatcher:

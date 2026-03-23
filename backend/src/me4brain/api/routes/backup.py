@@ -10,7 +10,8 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from me4brain.api.middleware.auth import AuthenticatedUser, get_current_user_dev as get_current_user
+from me4brain.api.middleware.auth import AuthenticatedUser
+from me4brain.api.middleware.auth import get_current_user_dev as get_current_user
 from me4brain.config import get_settings
 
 logger = structlog.get_logger(__name__)

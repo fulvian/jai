@@ -16,6 +16,7 @@ Tools:
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC
 from functools import partial
 from typing import Any
 
@@ -306,11 +307,14 @@ async def drive_get_content(file_id: str) -> dict[str, Any]:
         elif "presentation" in mime_type and "google-apps" in mime_type:
             export_mime = "text/plain"
         # Office files - need to download and parse
-        elif "wordprocessingml" in mime_type or ".document" in mime_type:
-            is_office_file = True
-        elif "spreadsheetml" in mime_type or "ms-excel" in mime_type:
-            is_office_file = True
-        elif "presentationml" in mime_type or "ms-powerpoint" in mime_type:
+        elif (
+            "wordprocessingml" in mime_type
+            or ".document" in mime_type
+            or "spreadsheetml" in mime_type
+            or "ms-excel" in mime_type
+            or "presentationml" in mime_type
+            or "ms-powerpoint" in mime_type
+        ):
             is_office_file = True
         elif mime_type == "application/pdf" or file_name.endswith(".pdf"):
             is_pdf = True
@@ -327,7 +331,6 @@ async def drive_get_content(file_id: str) -> dict[str, Any]:
 
         elif is_office_file or is_pdf:
             # Download file and extract text
-            import io
 
             file_bytes = await _run_sync(lambda: drive.files().get_media(fileId=file_id).execute())
             if isinstance(file_bytes, bytes):
@@ -783,7 +786,7 @@ async def gmail_forward(
         forward_body = ""
         if additional_text:
             forward_body = f"{additional_text}\n\n"
-        forward_body += f"---------- Forwarded message ---------\n"
+        forward_body += "---------- Forwarded message ---------\n"
         forward_body += f"From: {original_from}\n"
         forward_body += f"Date: {original_date}\n"
         forward_body += f"Subject: {original_subject}\n\n"
@@ -2057,9 +2060,9 @@ async def meet_create(
         dict con link meeting
     """
     try:
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
-        UTC = timezone.utc
+        UTC = UTC
 
         service = _get_workspace_service()
         calendar = await _run_sync(partial(service._get_google_service, "calendar", "v3"))

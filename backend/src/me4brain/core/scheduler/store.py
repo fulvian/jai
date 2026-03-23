@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -84,7 +82,7 @@ class JobStore:
 
         return job
 
-    async def get(self, job_id: str) -> Optional[ScheduledJob]:
+    async def get(self, job_id: str) -> ScheduledJob | None:
         """
         Recupera job per ID.
 
@@ -104,7 +102,7 @@ class JobStore:
 
     async def list(
         self,
-        tenant_id: Optional[str] = None,
+        tenant_id: str | None = None,
         enabled_only: bool = False,
     ) -> list[ScheduledJob]:
         """
@@ -225,7 +223,7 @@ class JobStore:
         self,
         job_id: str,
         success: bool,
-        next_run: Optional[datetime] = None,
+        next_run: datetime | None = None,
     ) -> None:
         """
         Registra esecuzione job.
@@ -263,10 +261,10 @@ class JobStore:
 
 
 # Singleton globale
-_job_store: Optional[JobStore] = None
+_job_store: JobStore | None = None
 
 
-def get_job_store() -> Optional[JobStore]:
+def get_job_store() -> JobStore | None:
     """Ottiene job store globale."""
     return _job_store
 

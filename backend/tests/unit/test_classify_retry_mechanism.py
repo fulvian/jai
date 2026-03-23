@@ -1,12 +1,12 @@
 """Test the retry mechanism in domain classification (Phase 1.3.2)."""
 
-import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from me4brain.engine.hybrid_router.domain_classifier import (
-    DomainClassifier,
     MAX_CLASSIFICATION_RETRIES,
+    DomainClassifier,
 )
 from me4brain.engine.hybrid_router.types import HybridRouterConfig
 
@@ -28,7 +28,7 @@ async def test_classify_retries_on_timeout_then_succeeds():
     )
 
     llm_client.generate_response.side_effect = [
-        asyncio.TimeoutError("timeout"),  # First call times out
+        TimeoutError("timeout"),  # First call times out
         success_response,  # Second call succeeds
     ]
 
@@ -36,14 +36,14 @@ async def test_classify_retries_on_timeout_then_succeeds():
         # Make first call raise TimeoutError, second call return response
         async def side_effect(coro, timeout):
             if mock_wait_for.call_count == 1:
-                raise asyncio.TimeoutError("timeout")
+                raise TimeoutError("timeout")
             return success_response
 
         mock_wait_for.side_effect = side_effect
-        
+
         # Reset call count
         mock_wait_for.reset_mock()
-        
+
         # Call multiple times to verify retry works
         result = await classifier.classify("Quali sono le partite NBA stasera?")
 
@@ -62,12 +62,12 @@ async def test_classify_falls_back_after_max_retries():
 
     # All attempts timeout
     async def timeout_coro(*args, **kwargs):
-        raise asyncio.TimeoutError("persistent timeout")
+        raise TimeoutError("persistent timeout")
 
     llm_client.generate_response = timeout_coro
 
     with patch("asyncio.wait_for") as mock_wait_for:
-        mock_wait_for.side_effect = asyncio.TimeoutError("timeout")
+        mock_wait_for.side_effect = TimeoutError("timeout")
 
         result = await classifier.classify("NBA query with timeout")
 
@@ -106,6 +106,7 @@ async def test_classify_retries_on_json_parse_error():
     llm_client.generate_response = generate_response_side_effect
 
     with patch("asyncio.wait_for") as mock_wait_for:
+
         async def side_effect(coro, timeout):
             return await coro
 
@@ -139,16 +140,17 @@ async def test_classify_with_trace_retries():
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            raise asyncio.TimeoutError("timeout")
+            raise TimeoutError("timeout")
         return success_response
 
     llm_client.generate_response = generate_response_side_effect
 
     with patch("asyncio.wait_for") as mock_wait_for:
+
         async def side_effect(coro, timeout):
             try:
                 return await coro
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if mock_wait_for.call_count <= 1:
                     raise
                 return success_response
@@ -180,14 +182,13 @@ async def test_classify_with_trace_fallback_after_retries():
     llm_client.generate_response = AsyncMock(return_value=bad_response)
 
     with patch("asyncio.wait_for") as mock_wait_for:
+
         async def side_effect(coro, timeout):
             return await coro
 
         mock_wait_for.side_effect = side_effect
 
-        classification, trace = await classifier.classify_with_trace(
-            "NBA query that fails"
-        )
+        classification, trace = await classifier.classify_with_trace("NBA query that fails")
 
     # Assert: should have fallen back
     assert not trace.success

@@ -114,7 +114,6 @@ class FinanceCryptoHandler(DomainHandler):
             "market",
             "mercato",
             "trading",
-            "trading",
             "borsa",
             "exchange",
             "rally",
@@ -511,8 +510,9 @@ class FinanceCryptoHandler(DomainHandler):
         IMPORTANTE: Valida che l'entity sia un ticker reale prima di usarlo.
         Pattern ticker US: 1-5 lettere uppercase, opzionalmente con .MI per Italia.
         """
-        from me4brain.core.nlp_utils import get_entity_by_type
         import re
+
+        from me4brain.core.nlp_utils import get_entity_by_type
 
         # Pattern per ticker validi: 1-5 lettere uppercase, opzionalmente .MI/.PA/etc
         TICKER_PATTERN = re.compile(

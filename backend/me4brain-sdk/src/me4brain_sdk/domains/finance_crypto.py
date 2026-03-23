@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Finance/Crypto Domain - Stock prices, crypto, portfolio analysis."""
 
 from typing import Any

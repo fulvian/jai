@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from me4brain.core.router import QueryType, RoutingDecision, SemanticRouter, RouterResult
+
+import pytest
+
+from me4brain.core.router import QueryType, RoutingDecision, SemanticRouter
 
 
 @pytest.fixture

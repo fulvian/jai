@@ -14,12 +14,13 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Awaitable
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import structlog
 
+from me4brain.engine.context_rewriter import ContextAwareRewriter, get_context_rewriter
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.query_decomposer import QueryDecomposer
 from me4brain.engine.hybrid_router.tool_retriever import (
@@ -28,15 +29,14 @@ from me4brain.engine.hybrid_router.tool_retriever import (
 )
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
+    DomainComplexity,
     HybridRouterConfig,
     RetrievedTool,
     SubQuery,
-    ToolRetrievalResult,
 )
+from me4brain.engine.intent_analyzer import IntentAnalyzer, get_intent_analyzer
 from me4brain.engine.types import ToolTask
 from me4brain.llm.nanogpt import NanoGPTClient
-from me4brain.engine.intent_analyzer import IntentAnalyzer, get_intent_analyzer
-from me4brain.engine.context_rewriter import ContextAwareRewriter, get_context_rewriter
 
 if TYPE_CHECKING:
     from me4brain.engine.hybrid_router.llama_tool_retriever import (
@@ -45,6 +45,11 @@ if TYPE_CHECKING:
     from me4brain.engine.hybrid_router.tool_index import ToolIndexManager
 
 logger = structlog.get_logger(__name__)
+
+# Placeholder domains - these have no real tool implementations
+# Queries that ONLY match these domains should be redirected to web_search
+# or blocked entirely since they have no functional tools
+PLACEHOLDER_DOMAINS: frozenset[str] = frozenset({"shopping", "productivity"})
 
 
 class HybridToolRouter:
@@ -65,7 +70,7 @@ class HybridToolRouter:
         self,
         llm_client: NanoGPTClient,
         config: HybridRouterConfig | None = None,
-        tool_index: "ToolIndexManager | None" = None,
+        tool_index: ToolIndexManager | None = None,
     ) -> None:
         self._llm = llm_client
         self._config = config or HybridRouterConfig()
@@ -74,7 +79,7 @@ class HybridToolRouter:
         # These are initialized via initialize()
         self._classifier: DomainClassifier | None = None
         self._decomposer: QueryDecomposer | None = None
-        self._retriever: "ToolRetriever | LlamaIndexToolRetriever | None" = None
+        self._retriever: ToolRetriever | LlamaIndexToolRetriever | None = None
         self._embedding_manager: ToolEmbeddingManager | None = None
         self._available_domains: list[str] = []
         self._initialized = False
@@ -199,8 +204,6 @@ class HybridToolRouter:
         )
 
         # NEW: Initialize Intent Analyzer and Context Rewriter (Stage 0)
-        from me4brain.engine.context_rewriter import get_context_rewriter
-        from me4brain.engine.intent_analyzer import get_intent_analyzer
 
         # Use provided llm_client or get default if not provided
         if llm_client is None:
@@ -318,6 +321,23 @@ class HybridToolRouter:
             stage1_duration_ms=int(stage1_time * 1000),
         )
 
+        # Wave 0.4: Disable placeholder domains (shopping/productivity)
+        # These domains have no real tools - redirect to web_search instead
+        detected_domain_names = classification.domain_names
+        if detected_domain_names and all(d in PLACEHOLDER_DOMAINS for d in detected_domain_names):
+            logger.info(
+                "placeholder_domains_redirected_to_websearch",
+                detected_domains=detected_domain_names,
+                query_preview=query[:50],
+            )
+            # Redirect to web_search since placeholder domains have no actual tools
+            # This modifies the classification in-place to use web_search
+            classification = DomainClassification(
+                domains=[DomainComplexity(name="web_search", complexity="medium")],
+                confidence=classification.confidence,
+                query_summary="Shopping/productivity queries redirected to web_search",
+            )
+
         # Stage 1b: Query decomposition for multi-intent
         query_for_routing = rewritten_query
         sub_queries: list[SubQuery] = []
@@ -334,6 +354,8 @@ class HybridToolRouter:
         ):
             start_time = time.time()
             sub_queries = await self._decomposer.decompose(query_for_routing, classification)
+            if not isinstance(sub_queries, list):
+                sub_queries = []
             stage1b_time = time.time() - start_time
             logger.info(
                 "hybrid_route_stage1b_complete",
@@ -350,9 +372,10 @@ class HybridToolRouter:
             # No domains at all - use global top-K
             retrieval = await self._retriever.retrieve_global_topk(query_for_routing, k=25)
         elif (
-            sub_queries
+            isinstance(sub_queries, list)
+            and len(sub_queries) > 0
             and self._use_llamaindex
-            and hasattr(self._retriever, "retrieve_multi_intent")
+            and callable(getattr(self._retriever, "retrieve_multi_intent", None))
         ):
             multi_intent_retriever = self._retriever
             if multi_intent_retriever is None:
@@ -500,6 +523,74 @@ class HybridToolRouter:
         query_lower = query.lower()
         return any(marker in query_lower for marker in markers)
 
+    def _validate_tool_args(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+        schema: dict[str, Any],
+    ) -> tuple[bool, str]:
+        """Validate tool arguments against schema with strict mode.
+
+        Args:
+            tool_name: Name of the tool for error messages
+            arguments: Parsed arguments from LLM
+            schema: JSON Schema from tool definition
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        params = schema.get("function", {}).get("parameters", {})
+
+        # 1. Check for additionalProperties: false
+        if params.get("additionalProperties") is False:
+            allowed = set(params.get("properties", {}).keys())
+            incoming = set(arguments.keys())
+            extra = incoming - allowed
+            if extra:
+                error_msg = f"Unknown parameters for {tool_name}: {extra}"
+                logger.warning("invalid_tool_args_extra_params", tool=tool_name, extra=list(extra))
+                return False, error_msg
+
+        # 2. Type validation for provided arguments
+        properties = params.get("properties", {})
+        for key, value in arguments.items():
+            if key in properties:
+                expected_type = properties[key].get("type")
+                if expected_type:
+                    # Basic type checking
+                    type_map = {
+                        "string": str,
+                        "number": (int, float),
+                        "integer": int,
+                        "boolean": bool,
+                        "array": list,
+                        "object": dict,
+                    }
+                    expected_python_type = type_map.get(expected_type)
+                    if expected_python_type and not isinstance(value, expected_python_type):
+                        # Allow int for number since JSON numbers are flexible
+                        if expected_type == "number" and isinstance(value, int):
+                            continue
+                        error_msg = f"Invalid type for {tool_name}.{key}: expected {expected_type}, got {type(value).__name__}"
+                        logger.warning(
+                            "invalid_tool_arg_type",
+                            tool=tool_name,
+                            param=key,
+                            expected=expected_type,
+                            actual=type(value).__name__,
+                        )
+                        return False, error_msg
+
+        # 3. Required parameters check
+        required = params.get("required", [])
+        for req_param in required:
+            if req_param not in arguments:
+                error_msg = f"Missing required parameter for {tool_name}: {req_param}"
+                logger.warning("missing_required_param", tool=tool_name, param=req_param)
+                return False, error_msg
+
+        return True, ""
+
     async def _execute_tool_selection(
         self,
         query: str,
@@ -596,6 +687,9 @@ class HybridToolRouter:
                 message = response.choices[0].message
                 tool_calls = message.tool_calls or []
 
+            # Build schema lookup for validation
+            schema_lookup: dict[str, dict[str, Any]] = {t.tool_name: t.schema for t in tools}
+
             tasks = []
             for tc in tool_calls[:max_tools]:
                 try:
@@ -656,9 +750,33 @@ class HybridToolRouter:
                         k.strip('"').strip("'").strip("\\"): v for k, v in arguments.items()
                     }
 
+                # ✅ Wave 1.3: Strict schema validation
+                tool_name = tc.function.name
+                schema = schema_lookup.get(tool_name)
+                if schema is not None:
+                    is_valid, error_msg = self._validate_tool_args(
+                        tool_name=tool_name,
+                        arguments=arguments,
+                        schema=schema,
+                    )
+                    if not is_valid:
+                        logger.warning(
+                            "tool_argument_validation_failed",
+                            tool=tool_name,
+                            error=error_msg,
+                            arguments=arguments,
+                        )
+                        # Keep arguments but log warning - don't block execution
+                        # This prevents silent failures while allowing execution to proceed
+                else:
+                    logger.debug(
+                        "tool_schema_not_found_for_validation",
+                        tool=tool_name,
+                    )
+
                 tasks.append(
                     ToolTask(
-                        tool_name=tc.function.name,
+                        tool_name=tool_name,
                         arguments=arguments,
                         call_id=tc.id,
                     )

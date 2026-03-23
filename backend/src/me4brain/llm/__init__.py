@@ -11,8 +11,8 @@ from me4brain.llm.models import (
     ReasoningLevel,
     Tool,
     ToolCall,
-    ToolFunction,
     ToolCallFunction,
+    ToolFunction,
 )
 from me4brain.llm.nanogpt import NanoGPTClient, get_llm_client
 from me4brain.llm.ollama import OllamaClient, get_ollama_client

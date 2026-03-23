@@ -1,9 +1,9 @@
 """Execution Monitor - Hook nel Tool Calling Engine per tracciare esecuzioni."""
 
 import time
-from contextlib import contextmanager
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any
 
 import structlog
 
@@ -22,7 +22,7 @@ class ExecutionMonitor:
 
     def __init__(
         self,
-        on_trace_complete: Optional[Callable[[ExecutionTrace], None]] = None,
+        on_trace_complete: Callable[[ExecutionTrace], None] | None = None,
         min_tools_for_crystallization: int = 2,
     ):
         """
@@ -81,7 +81,7 @@ class ExecutionMonitor:
         tool_name: str,
         result: Any,
         success: bool,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Hook called at the end of a tool execution for a specific session."""
         if session_id not in self._traces:
@@ -99,8 +99,8 @@ class ExecutionMonitor:
                 break
 
     def finalize_trace(
-        self, session_id: str, final_output: Optional[str] = None, overall_success: bool = True
-    ) -> Optional[ExecutionTrace]:
+        self, session_id: str, final_output: str | None = None, overall_success: bool = True
+    ) -> ExecutionTrace | None:
         """
         Completa trace e invia a crystallizer.
 
@@ -149,7 +149,7 @@ class ExecutionMonitor:
             self._start_times.pop(session_id, None)
             logger.info("execution_trace_aborted", session_id=session_id, reason=reason)
 
-    def get_trace(self, session_id: str) -> Optional[ExecutionTrace]:
+    def get_trace(self, session_id: str) -> ExecutionTrace | None:
         """Get the current trace for a session."""
         return self._traces.get(session_id)
 

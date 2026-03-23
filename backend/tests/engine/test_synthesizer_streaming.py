@@ -6,11 +6,12 @@ Tests the three thinking detection strategies:
 3. No-tag fallback (treat everything as content)
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from me4brain.engine.synthesizer import ResponseSynthesizer
-from me4brain.engine.types import ToolResult, StreamChunk
-from me4brain.llm.models import LLMRequest, Message, MessageRole
+from me4brain.engine.types import StreamChunk, ToolResult
 
 
 def _get_type(event) -> str | None:
@@ -406,7 +407,7 @@ class TestSynthesizeStreamingErrorHandling:
 
         async def mock_stream_timeout(*args, **kwargs):
             await asyncio.sleep(1)
-            raise asyncio.TimeoutError()
+            raise TimeoutError()
             yield  # Make it an async generator
 
         mock_llm_client.stream_response = mock_stream_timeout

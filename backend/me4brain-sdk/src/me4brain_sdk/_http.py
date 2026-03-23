@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """HTTP client with retry logic, connection pooling, and error handling."""
 
 from typing import Any, AsyncIterator

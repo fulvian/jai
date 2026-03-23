@@ -11,8 +11,10 @@ Tests cover:
 Target: 85%+ code coverage for provider_factory.py, model_discovery.py, model_profiles.py
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+
 from me4brain.llm.provider_factory import resolve_model_client
 
 
@@ -171,105 +173,83 @@ class TestProviderDiscovery:
 class TestFallbackChain:
     """Tests for Ollama-First fallback strategy."""
 
-    @pytest.mark.asyncio
-    async def test_reasoning_client_ollama_first(self):
-        """Test get_reasoning_client prioritizes Ollama."""
+    def test_reasoning_client_ollama_first(self):
+        """Test get_reasoning_client returns Ollama when llm_local_only=True."""
         with patch("me4brain.llm.provider_factory.get_llm_config") as mock_config:
-            with patch("me4brain.llm.provider_factory.get_llm_health_checker") as mock_health:
-                with patch("me4brain.llm.provider_factory.get_ollama_client") as mock_ollama:
-                    config = Mock()
-                    config.llm_local_only = True
-                    config.use_local_tool_calling = False
-                    mock_config.return_value = config
+            with patch("me4brain.llm.provider_factory.get_ollama_client") as mock_ollama:
+                config = Mock()
+                config.llm_local_only = True
+                config.use_local_tool_calling = False
+                mock_config.return_value = config
 
-                    health = Mock()
-                    health.get_best_provider = AsyncMock(return_value="ollama")
-                    mock_health.return_value = health
+                mock_client = Mock()
+                mock_ollama.return_value = mock_client
 
-                    mock_client = Mock()
-                    mock_ollama.return_value = mock_client
+                from me4brain.llm.provider_factory import get_reasoning_client
 
-                    from me4brain.llm.provider_factory import get_reasoning_client
+                client = get_reasoning_client()
 
-                    client = await get_reasoning_client()
+                assert client == mock_client
+                mock_ollama.assert_called_once()
 
-                    assert client == mock_client
-                    mock_ollama.assert_called_once()
-                    await health.get_best_provider()  # Verify was called
-
-    @pytest.mark.asyncio
-    async def test_reasoning_client_lm_studio_fallback(self):
-        """Test fallback to LM Studio when Ollama offline."""
+    def test_reasoning_client_cloud_when_not_local_only(self):
+        """Test get_reasoning_client returns cloud client when llm_local_only=False."""
         with patch("me4brain.llm.provider_factory.get_llm_config") as mock_config:
-            with patch("me4brain.llm.provider_factory.get_llm_health_checker") as mock_health:
-                with patch("me4brain.llm.provider_factory.get_llm_client") as mock_cloud:
-                    config = Mock()
-                    config.llm_local_only = True
-                    config.use_local_tool_calling = False
-                    mock_config.return_value = config
+            with patch("me4brain.llm.provider_factory.get_llm_client") as mock_cloud:
+                config = Mock()
+                config.llm_local_only = False
+                config.use_local_tool_calling = False
+                config.model_primary = "test-model"
+                mock_config.return_value = config
 
-                    health = Mock()
-                    health.get_best_provider = AsyncMock(return_value="lmstudio")
-                    mock_health.return_value = health
+                mock_client = Mock()
+                mock_cloud.return_value = mock_client
 
-                    mock_client = Mock()
-                    mock_cloud.return_value = mock_client
+                from me4brain.llm.provider_factory import get_reasoning_client
 
-                    from me4brain.llm.provider_factory import get_reasoning_client
+                client = get_reasoning_client()
 
-                    client = await get_reasoning_client()
+                assert client == mock_client
+                mock_cloud.assert_called_once()
 
-                    assert client == mock_client
-                    mock_cloud.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_reasoning_client_nanogpt_final_fallback(self):
-        """Test final fallback to NanoGPT when all local providers down."""
+    def test_tool_calling_client_ollama_when_local_only(self):
+        """Test get_tool_calling_client returns Ollama when llm_local_only=True."""
         with patch("me4brain.llm.provider_factory.get_llm_config") as mock_config:
-            with patch("me4brain.llm.provider_factory.get_llm_health_checker") as mock_health:
-                with patch("me4brain.llm.provider_factory.get_llm_client") as mock_cloud:
-                    config = Mock()
-                    config.llm_local_only = True
-                    config.use_local_tool_calling = False
-                    mock_config.return_value = config
+            with patch("me4brain.llm.provider_factory.get_ollama_client") as mock_ollama:
+                config = Mock()
+                config.llm_local_only = True
+                config.use_local_tool_calling = True
+                mock_config.return_value = config
 
-                    health = Mock()
-                    health.get_best_provider = AsyncMock(return_value="nanogpt")
-                    mock_health.return_value = health
+                mock_client = Mock()
+                mock_ollama.return_value = mock_client
 
-                    mock_client = Mock()
-                    mock_cloud.return_value = mock_client
+                from me4brain.llm.provider_factory import get_tool_calling_client
 
-                    from me4brain.llm.provider_factory import get_reasoning_client
+                client = get_tool_calling_client()
 
-                    client = await get_reasoning_client()
+                assert client == mock_client
+                mock_ollama.assert_called_once()
 
-                    assert client == mock_client
-                    mock_cloud.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_tool_calling_client_ollama_first(self):
-        """Test get_tool_calling_client prioritizes Ollama."""
+    def test_tool_calling_client_cloud_when_not_local_only(self):
+        """Test get_tool_calling_client returns cloud client when llm_local_only=False."""
         with patch("me4brain.llm.provider_factory.get_llm_config") as mock_config:
-            with patch("me4brain.llm.provider_factory.get_llm_health_checker") as mock_health:
-                with patch("me4brain.llm.provider_factory.get_ollama_client") as mock_ollama:
-                    config = Mock()
-                    config.llm_local_only = True
-                    mock_config.return_value = config
+            with patch("me4brain.llm.provider_factory.get_llm_client") as mock_cloud:
+                config = Mock()
+                config.llm_local_only = False
+                config.use_local_tool_calling = False
+                config.model_agentic = "test-agentic"
+                mock_config.return_value = config
 
-                    health = Mock()
-                    health.get_best_provider = AsyncMock(return_value="ollama")
-                    mock_health.return_value = health
+                mock_client = Mock()
+                mock_cloud.return_value = mock_client
 
-                    mock_client = Mock()
-                    mock_ollama.return_value = mock_client
+                from me4brain.llm.provider_factory import get_tool_calling_client
 
-                    from me4brain.llm.provider_factory import get_tool_calling_client
+                client = get_tool_calling_client()
 
-                    client = await get_tool_calling_client()
-
-                    assert client == mock_client
-                    mock_ollama.assert_called_once()
+                assert client == mock_client
+                mock_cloud.assert_called_once()
 
 
 class TestModelDiscovery:
@@ -404,7 +384,7 @@ class TestConfigurationBased:
             # Mock router to test model selection
             # This would use _select_execution_model(tools_count, domains_count)
             # Complex: tools_count=6, domains_count=2
-            if 6 > config.complex_threshold_tools:
+            if config.complex_threshold_tools < 6:
                 selected = config.execution_model_complex
             else:
                 selected = config.execution_model_default

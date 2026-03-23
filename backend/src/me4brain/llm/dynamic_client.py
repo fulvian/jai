@@ -9,20 +9,20 @@ import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 import structlog
 
 from me4brain.llm.base import LLMProvider
 from me4brain.llm.models import (
+    Choice,
+    ChoiceDelta,
+    ChoiceMessage,
+    DeltaContent,
     LLMChunk,
     LLMRequest,
     LLMResponse,
-    Choice,
-    ChoiceMessage,
-    ChoiceDelta,
-    DeltaContent,
     Usage,
 )
 from me4brain.llm.provider_registry import ProviderType
@@ -42,7 +42,7 @@ class DynamicLLMClient(LLMProvider):
     def __init__(
         self,
         base_url: str,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         api_key_header: str = "Authorization",
         provider_type: ProviderType = ProviderType.OPENAI_COMPATIBLE,
         default_model: str = "default",
@@ -372,7 +372,7 @@ class DynamicLLMClient(LLMProvider):
         )
 
 
-def get_client_for_provider(provider_id: str, model_id: Optional[str] = None) -> DynamicLLMClient:
+def get_client_for_provider(provider_id: str, model_id: str | None = None) -> DynamicLLMClient:
     """Factory per ottenere un client per un provider specifico."""
     from me4brain.llm.provider_registry import get_provider_registry
 

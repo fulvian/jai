@@ -1,10 +1,10 @@
 # Phase 6: Semantic Cache Tests
 # Tests for semantic similarity-based caching
 
-import pytest
-import numpy as np
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Optional
+
+import numpy as np
+import pytest
 
 from me4brain.cache.semantic_cache import SemanticCache
 

@@ -1,6 +1,7 @@
 """Utility API Tools."""
 
 from typing import Any
+
 import httpx
 import structlog
 
@@ -53,7 +54,7 @@ async def execute_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, A
 
 def get_tool_definitions() -> list:
     """Generate ToolDefinition objects for all Utility tools."""
-    from me4brain.engine.types import ToolDefinition, ToolParameter
+    from me4brain.engine.types import ToolDefinition
 
     return [
         ToolDefinition(

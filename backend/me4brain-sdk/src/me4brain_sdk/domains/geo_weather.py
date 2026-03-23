@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Geo/Weather Domain - Weather forecasts, geocoding, location services."""
 
 from typing import Any

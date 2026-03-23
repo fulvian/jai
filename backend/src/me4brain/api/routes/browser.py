@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import structlog
 from fastapi import APIRouter, HTTPException
 
+from me4brain.core.browser.extractor import SkillExtractor
 from me4brain.core.browser.manager import get_browser_manager
 from me4brain.core.browser.recorder import SkillRecorder
-from me4brain.core.browser.extractor import SkillExtractor
 from me4brain.core.browser.types import (
     ActRequest,
     CreateSessionRequest,
@@ -234,7 +232,7 @@ async def screenshot(session_id: str, full_page: bool = False) -> dict:
 
 
 @router.post("/sessions/{session_id}/recording/start")
-async def start_recording(session_id: str, name: Optional[str] = None) -> dict:
+async def start_recording(session_id: str, name: str | None = None) -> dict:
     """Avvia recording azioni."""
     manager = _get_manager()
     wrapper = await manager.get_wrapper(session_id)

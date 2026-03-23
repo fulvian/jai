@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -109,7 +107,7 @@ class AgentMessenger:
     async def receive(
         self,
         agent_id: str,
-        consumer_name: Optional[str] = None,
+        consumer_name: str | None = None,
         count: int = 10,
         block_ms: int = 0,
     ) -> list[tuple[str, AgentMessage]]:
@@ -151,9 +149,7 @@ class AgentMessenger:
                     message = self._parse_message(data)
                     messages.append((redis_id, message))
                 except Exception as e:
-                    logger.warning(
-                        "parse_message_error", redis_id=redis_id, error=str(e)
-                    )
+                    logger.warning("parse_message_error", redis_id=redis_id, error=str(e))
 
         return messages
 
@@ -161,7 +157,7 @@ class AgentMessenger:
         self,
         agent_id: str,
         limit: int = 50,
-        before_id: Optional[str] = None,
+        before_id: str | None = None,
     ) -> list[AgentMessage]:
         """
         Storico messaggi per agente.
@@ -244,10 +240,10 @@ class AgentMessenger:
 
 
 # Singleton
-_agent_messenger: Optional[AgentMessenger] = None
+_agent_messenger: AgentMessenger | None = None
 
 
-def get_agent_messenger() -> Optional[AgentMessenger]:
+def get_agent_messenger() -> AgentMessenger | None:
     """Ottiene messenger globale."""
     return _agent_messenger
 

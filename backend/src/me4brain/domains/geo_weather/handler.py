@@ -192,11 +192,13 @@ class GeoWeatherHandler(DomainHandler):
 
         # Normalizza la query per la ricerca
         query_lower = query.lower()
-        
+
         # Cerca nomi di città direttamente nella query
         for city_lower, city_english in italian_cities.items():
             if city_lower in query_lower:
-                logger.debug("city_extracted_direct_query", city=city_english, query_fragment=city_lower)
+                logger.debug(
+                    "city_extracted_direct_query", city=city_english, query_fragment=city_lower
+                )
                 return city_english
 
         # 3. Fallback generico

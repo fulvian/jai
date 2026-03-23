@@ -8,16 +8,16 @@ Handles different skill types:
 """
 
 import asyncio
-import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 import structlog
 
-from me4brain.skills.types import SkillDefinition, SkillStatus
 from me4brain.secrets import get_secrets_manager
+from me4brain.skills.types import SkillDefinition
 
 logger = structlog.get_logger(__name__)
 
@@ -214,7 +214,6 @@ class SkillExecutor:
         options: dict[str, Any] | None,
     ) -> SkillExecutionResult:
         """Execute screenshot capture."""
-        import tempfile
         from pathlib import Path
 
         # Determine output path

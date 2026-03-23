@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from me4brain.embeddings.bge_m3 import BGEM3Service
 
 

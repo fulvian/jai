@@ -7,7 +7,7 @@ Tracks:
 - Degradation level transitions
 """
 
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Gauge, Histogram
 
 # Classification method tracking
 CLASSIFICATION_TOTAL = Counter(

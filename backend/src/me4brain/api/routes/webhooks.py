@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import structlog
 from fastapi import APIRouter, HTTPException, Request
 
@@ -60,7 +58,7 @@ async def create_webhook_config(request: CreateWebhookRequest) -> WebhookRespons
 
 @router.get("/configs", response_model=list[WebhookResponse])
 async def list_webhook_configs(
-    tenant_id: Optional[str] = None,
+    tenant_id: str | None = None,
     enabled_only: bool = False,
 ) -> list[WebhookResponse]:
     """

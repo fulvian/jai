@@ -601,7 +601,7 @@ class ParallelExecutor:
                         call_id=task.call_id,
                     )
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     last_error = f"Timeout after {self._timeout}s"
                     logger.warning(
                         "executor_tool_timeout",

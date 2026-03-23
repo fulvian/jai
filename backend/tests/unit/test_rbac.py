@@ -9,7 +9,6 @@ import pytest
 from me4brain.auth.permissions import (
     Permission,
     Role,
-    ROLE_PERMISSIONS,
     get_permissions_for_role,
     has_permission,
 )

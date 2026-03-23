@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import os
 
-import pytest
-
 from me4brain.security.encryption import (
     EncryptionError,
     FieldEncryptor,

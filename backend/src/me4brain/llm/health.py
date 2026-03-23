@@ -10,7 +10,6 @@ Supporta fallback automatico quando provider primario è offline.
 
 import asyncio
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 import structlog
@@ -25,8 +24,8 @@ class HealthCheckResult:
     provider: str
     healthy: bool
     latency_ms: float
-    error: Optional[str] = None
-    model_loaded: Optional[str] = None
+    error: str | None = None
+    model_loaded: str | None = None
 
 
 class LLMHealthChecker:
@@ -107,7 +106,7 @@ class LLMHealthChecker:
                         error=f"HTTP {response.status_code}",
                     )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             latency_ms = (asyncio.get_event_loop().time() - start) * 1000
             logger.warning("ollama_health_timeout", latency_ms=latency_ms)
             return HealthCheckResult(
@@ -181,7 +180,7 @@ class LLMHealthChecker:
                         error=f"HTTP {response.status_code}",
                     )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             latency_ms = (asyncio.get_event_loop().time() - start) * 1000
             logger.warning("lmstudio_health_timeout", latency_ms=latency_ms)
             return HealthCheckResult(
@@ -244,7 +243,7 @@ class LLMHealthChecker:
                         error=f"HTTP {response.status_code}",
                     )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             latency_ms = (asyncio.get_event_loop().time() - start) * 1000
             logger.warning("nanogpt_health_timeout", latency_ms=latency_ms)
             return HealthCheckResult(
@@ -320,7 +319,7 @@ class LLMHealthChecker:
 
 
 # Singleton instance
-_health_checker: Optional[LLMHealthChecker] = None
+_health_checker: LLMHealthChecker | None = None
 
 
 def get_llm_health_checker() -> LLMHealthChecker:

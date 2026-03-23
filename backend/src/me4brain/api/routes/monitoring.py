@@ -7,9 +7,9 @@ from typing import Any
 import psutil
 from fastapi import APIRouter, Response
 
+from me4brain.core.monitoring.alerts import get_alert_manager
 from me4brain.core.monitoring.health import get_health_checker
 from me4brain.core.monitoring.metrics import get_metrics
-from me4brain.core.monitoring.alerts import get_alert_manager
 from me4brain.core.monitoring.types import (
     AlertsResponse,
     HealthReport,
@@ -225,7 +225,6 @@ async def get_context_tracker_status() -> dict[str, Any]:
 @router.get("/v1/monitoring/compressor-stats")
 async def get_compressor_stats() -> dict[str, Any]:
     """Statistiche del context compressor."""
-    from me4brain.engine.context_compressor import AdaptiveContextCompressor
 
     return {
         "note": "Per-session stats. Create a new instance for each query session.",

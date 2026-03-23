@@ -11,14 +11,12 @@ generating the right number of sub-queries based on general principles
 from __future__ import annotations
 
 import asyncio
-import json
-import re
 from typing import TYPE_CHECKING
 
 import structlog
 
 if TYPE_CHECKING:
-    from me4brain.llm.nanogpt import NanoGPTClient, LLMRequest
+    from me4brain.llm.nanogpt import NanoGPTClient
 
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
@@ -168,7 +166,7 @@ class QueryDecomposer:
 
     def __init__(
         self,
-        llm_client: "NanoGPTClient",
+        llm_client: NanoGPTClient,
         available_domains: list[str],
         config: HybridRouterConfig | None = None,
     ) -> None:
@@ -245,7 +243,7 @@ class QueryDecomposer:
                     ),
                     timeout=240.0,  # 240 second timeout for decomposition (development)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "query_decomposition_timeout",
                     timeout_seconds=240,
@@ -285,38 +283,61 @@ class QueryDecomposer:
         classification: DomainClassification,
     ) -> list[SubQuery]:
         """Heuristic fallback decomposition when LLM fails.
-        
+
         This provides deterministic decomposition for common patterns
         when the LLM is unavailable or fails.
-        
+
         Args:
             query: Original user query
             classification: Domain classification result
-            
+
         Returns:
             List of SubQuery objects based on heuristic rules
         """
         query_lower = query.lower()
         sub_queries: list[SubQuery] = []
-        
+
         # Get primary domain
-        primary_domain = classification.domain_names[0] if classification.domain_names else "web_search"
-        
+        primary_domain = (
+            classification.domain_names[0] if classification.domain_names else "web_search"
+        )
+
         # NBA/Basketball betting pattern detection
         nba_betting_indicators = [
-            "scommess", "betting", "pronostic", "odds", "quota", "value bet",
-            "spread", "over/under", "moneyline", "punti", "analisi", "sistema"
+            "scommess",
+            "betting",
+            "pronostic",
+            "odds",
+            "quota",
+            "value bet",
+            "spread",
+            "over/under",
+            "moneyline",
+            "punti",
+            "analisi",
+            "sistema",
         ]
         nba_game_indicators = [
-            "partit", "game", "nba", "basket", "lakers", "celtics", "warriors",
-            "bulls", "heat", "knicks", "stasera", "tonight", "oggi", "today"
+            "partit",
+            "game",
+            "nba",
+            "basket",
+            "lakers",
+            "celtics",
+            "warriors",
+            "bulls",
+            "heat",
+            "knicks",
+            "stasera",
+            "tonight",
+            "oggi",
+            "today",
         ]
-        
-        is_nba_betting = (
-            any(ind in query_lower for ind in nba_betting_indicators) and
-            any(ind in query_lower for ind in nba_game_indicators)
+
+        is_nba_betting = any(ind in query_lower for ind in nba_betting_indicators) and any(
+            ind in query_lower for ind in nba_game_indicators
         )
-        
+
         if is_nba_betting and primary_domain == "sports_nba":
             # Decompose NBA betting queries into game data + context data
             sub_queries = [
@@ -337,43 +358,57 @@ class QueryDecomposer:
                 sub_query_count=len(sub_queries),
             )
             return sub_queries
-        
+
         # Multi-intent detection via conjunctions
         conjunctions = [" e ", " poi ", " inoltre ", " and ", " then ", " also "]
         has_conjunction = any(c in query_lower for c in conjunctions)
-        
+
         if has_conjunction and len(query.split()) > 8:
             # Split by conjunction for multi-intent queries
             parts = query
             for conj in conjunctions:
                 parts = parts.replace(conj, "|||")
-            
+
             sub_parts = [p.strip() for p in parts.split("|||") if p.strip()]
-            
+
             if len(sub_parts) >= 2:
                 for part in sub_parts:
                     # Determine domain for each part
                     part_domain = primary_domain
-                    sub_queries.append(SubQuery(
-                        text=part,
-                        domain=part_domain,
-                        intent="heuristic_split",
-                    ))
-                
+                    sub_queries.append(
+                        SubQuery(
+                            text=part,
+                            domain=part_domain,
+                            intent="heuristic_split",
+                        )
+                    )
+
                 logger.info(
                     "heuristic_decomposition_split",
                     query_preview=query[:50],
                     sub_query_count=len(sub_queries),
                 )
                 return sub_queries
-        
+
         # Analytical/deep exploration pattern
         depth_indicators = [
-            "analiz", "report", "riassun", "sintetiz", "incrocia", 
-            "cross", "approfond", "investiga", "raccoglie", "recupera tutt",
-            "cerca tutt", "summarize", "gather", "collect", "compile"
+            "analiz",
+            "report",
+            "riassun",
+            "sintetiz",
+            "incrocia",
+            "cross",
+            "approfond",
+            "investiga",
+            "raccoglie",
+            "recupera tutt",
+            "cerca tutt",
+            "summarize",
+            "gather",
+            "collect",
+            "compile",
         ]
-        
+
         if any(ind in query_lower for ind in depth_indicators):
             # Create gather + analyze subqueries
             sub_queries = [
@@ -389,7 +424,7 @@ class QueryDecomposer:
                 sub_query_count=len(sub_queries),
             )
             return sub_queries
-        
+
         # Default: return original query as single subquery (simple case)
         return [
             SubQuery(

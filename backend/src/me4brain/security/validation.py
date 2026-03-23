@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -158,8 +158,8 @@ def normalize_whitespace(text: str) -> str:
 def validate_length(
     value: str,
     field_name: str,
-    min_length: Optional[int] = None,
-    max_length: Optional[int] = None,
+    min_length: int | None = None,
+    max_length: int | None = None,
 ) -> str:
     """Validate string length.
 
@@ -353,7 +353,7 @@ class ConversationRequest(ValidatedModel):
     """Validated conversation creation request."""
 
     title: str = Field(..., min_length=1, max_length=512)
-    description: Optional[str] = Field(None, max_length=2048)
+    description: str | None = Field(None, max_length=2048)
     user_id: str = Field(..., min_length=1, max_length=128)
 
     @field_validator("title", "description", mode="before")
@@ -371,7 +371,7 @@ class MessageContent(ValidatedModel):
 
     content: str = Field(..., min_length=1, max_length=32000)
     role: str = Field(...)
-    name: Optional[str] = Field(None, max_length=256)
+    name: str | None = Field(None, max_length=256)
 
     @field_validator("content", mode="before")
     @classmethod
@@ -396,7 +396,7 @@ class APIKeyCreateRequest(ValidatedModel):
 
     name: str = Field(..., min_length=1, max_length=128)
     scopes: list[str] = Field(default_factory=list)
-    expires_in_days: Optional[int] = Field(None, ge=1, le=365)
+    expires_in_days: int | None = Field(None, ge=1, le=365)
 
     @field_validator("name", mode="before")
     @classmethod
@@ -425,7 +425,7 @@ class APIKeyCreateRequest(ValidatedModel):
 
 def get_client_identifier(
     request: Any,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> str:
     """Get a unique identifier for a client for rate limiting.
 

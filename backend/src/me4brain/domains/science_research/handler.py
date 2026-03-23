@@ -244,6 +244,7 @@ class ScienceResearchHandler(DomainHandler):
     ) -> list[DomainExecutionResult]:
         """Cerca su ArXiv e OpenAlex in parallelo."""
         import asyncio
+
         from me4brain.domains.science_research.tools import science_api
 
         search_term = self._extract_search_term(query)
@@ -289,8 +290,9 @@ class ScienceResearchHandler(DomainHandler):
         )
 
     async def _execute_doi(self, query: str, analysis: dict[str, Any]) -> DomainExecutionResult:
-        from me4brain.domains.science_research.tools import science_api
         import re
+
+        from me4brain.domains.science_research.tools import science_api
 
         doi_match = re.search(r"10\.\d{4,}/[^\s]+", query)
         doi = doi_match.group(0) if doi_match else query
@@ -375,7 +377,7 @@ class ScienceResearchHandler(DomainHandler):
         """
         try:
             # Import web_search domain dynamically to avoid circular imports
-            from me4brain.domains.web_search.tools import web_api
+            from me4brain.domains.web_search.tools import search_api
 
             # Build targeted search query
             search_query = self._build_author_search_query(query)
@@ -386,7 +388,7 @@ class ScienceResearchHandler(DomainHandler):
                 web_search_query=search_query[:50],
             )
 
-            data = await web_api.duckduckgo_search(query=search_query)
+            data = await search_api.duckduckgo_instant(query=search_query)
 
             if data and not data.get("error"):
                 return [
@@ -445,11 +447,12 @@ class ScienceResearchHandler(DomainHandler):
         filtered = [w for w in words if w not in stopwords and len(w) > 2]
 
         # Build search query with relevant keywords
-        if "intervista" in query.lower() or "interview" in query.lower():
+        query_lower = query.lower()
+        if "intervista" in query_lower or "interviste" in query_lower or "interview" in query_lower:
             search_query = f"{' '.join(filtered)} interview"
-        elif "talk" in query.lower():
+        elif "talk" in query_lower:
             search_query = f"{' '.join(filtered)} talk conference"
-        elif "startup" in query.lower() or "progetto" in query.lower():
+        elif "startup" in query_lower or "progetto" in query_lower:
             search_query = f"{' '.join(filtered)} startup project"
         else:
             search_query = " ".join(filtered)

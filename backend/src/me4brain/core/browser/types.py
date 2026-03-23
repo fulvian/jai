@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -55,13 +55,13 @@ class BrowserConfig(BaseModel):
     slow_mo_ms: int = 0  # Rallenta per debug
 
     # Proxy
-    proxy_server: Optional[str] = None
-    proxy_username: Optional[str] = None
-    proxy_password: Optional[str] = None
+    proxy_server: str | None = None
+    proxy_username: str | None = None
+    proxy_password: str | None = None
 
     # Stealth
     stealth_mode: bool = True
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
 
     # Resource limits
     max_memory_mb: int = 512
@@ -72,7 +72,7 @@ class StagehandConfig(BaseModel):
     """Configurazione Stagehand AI."""
 
     model_name: str = "gpt-4o"  # LLM per decisioni
-    api_key: Optional[str] = None  # Default da env
+    api_key: str | None = None  # Default da env
     enable_caching: bool = True
     verbose: bool = False
     dom_settle_timeout_ms: int = 3000
@@ -89,17 +89,17 @@ class BrowserSession(BaseModel):
     config: BrowserConfig = Field(default_factory=BrowserConfig)
 
     # Current state
-    current_url: Optional[str] = None
-    current_title: Optional[str] = None
+    current_url: str | None = None
+    current_title: str | None = None
     page_count: int = 0
 
     # Recording
     is_recording: bool = False
-    recording_id: Optional[str] = None
+    recording_id: str | None = None
 
     # Metadata
     created_at: datetime = Field(default_factory=datetime.now)
-    last_action_at: Optional[datetime] = None
+    last_action_at: datetime | None = None
     action_count: int = 0
     error_count: int = 0
 
@@ -118,17 +118,17 @@ class BrowserAction(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
     # Target
-    target: Optional[str] = None  # Selector, URL, or instruction
-    value: Optional[str] = None  # Input value
+    target: str | None = None  # Selector, URL, or instruction
+    value: str | None = None  # Input value
 
     # Result
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: int = 0
 
     # Stagehand
-    instruction: Optional[str] = None  # Natural language
-    extracted_data: Optional[dict] = None
+    instruction: str | None = None  # Natural language
+    extracted_data: dict | None = None
 
 
 class BrowserActionResult(BaseModel):
@@ -139,13 +139,13 @@ class BrowserActionResult(BaseModel):
     duration_ms: int
 
     # Response data
-    data: Optional[dict] = None
-    screenshot_path: Optional[str] = None
-    error: Optional[str] = None
+    data: dict | None = None
+    screenshot_path: str | None = None
+    error: str | None = None
 
     # Page state after action
-    url: Optional[str] = None
-    title: Optional[str] = None
+    url: str | None = None
+    title: str | None = None
 
 
 # --- Recording & Skills ---
@@ -163,12 +163,12 @@ class RecordingState(BaseModel):
 
     # Timing
     started_at: datetime = Field(default_factory=datetime.now)
-    stopped_at: Optional[datetime] = None
+    stopped_at: datetime | None = None
     total_duration_ms: int = 0
 
     # Metadata
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 
 class BrowserSkill(BaseModel):
@@ -183,8 +183,8 @@ class BrowserSkill(BaseModel):
     parameters: list[dict] = Field(default_factory=list)  # Variabili estraibili
 
     # Source
-    recording_id: Optional[str] = None
-    source_url: Optional[str] = None
+    recording_id: str | None = None
+    source_url: str | None = None
 
     # Stats
     created_at: datetime = Field(default_factory=datetime.now)
@@ -205,9 +205,9 @@ class BrowserSkill(BaseModel):
 class CreateSessionRequest(BaseModel):
     """Request per creare sessione browser."""
 
-    config: Optional[BrowserConfig] = None
-    start_url: Optional[str] = None
-    name: Optional[str] = None
+    config: BrowserConfig | None = None
+    start_url: str | None = None
+    name: str | None = None
 
 
 class NavigateRequest(BaseModel):
@@ -228,7 +228,7 @@ class ExtractRequest(BaseModel):
     """Request per estrazione dati."""
 
     instruction: str
-    output_schema: Optional[dict] = None  # JSON Schema per output strutturato
+    output_schema: dict | None = None  # JSON Schema per output strutturato
 
 
 class SessionResponse(BaseModel):
@@ -236,13 +236,13 @@ class SessionResponse(BaseModel):
 
     id: str
     status: str
-    url: Optional[str]
-    title: Optional[str]
+    url: str | None
+    title: str | None
     action_count: int
     is_recording: bool
 
     @classmethod
-    def from_session(cls, session: BrowserSession) -> "SessionResponse":
+    def from_session(cls, session: BrowserSession) -> SessionResponse:
         return cls(
             id=session.id,
             status=session.status.value,

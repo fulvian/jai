@@ -4,8 +4,9 @@ Test per il modulo core/checkpointer.py che gestisce
 la persistenza dello stato LangGraph su PostgreSQL.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestCheckpointer:

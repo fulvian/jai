@@ -250,6 +250,8 @@ class WorkingMemory:
         feedback_key = self._feedback_key(tenant_id, user_id, session_id)
 
         raw = await r.hgetall(feedback_key)
+        if not isinstance(raw, dict):
+            return {}
         result: dict[str, dict[str, Any]] = {}
 
         for k, v in raw.items():

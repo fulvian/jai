@@ -1,7 +1,8 @@
 """Unit tests for distributed tracing module."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestTracingSetup:
@@ -10,10 +11,9 @@ class TestTracingSetup:
     @pytest.mark.asyncio
     async def test_setup_tracing_disabled(self):
         """Test tracing setup when disabled."""
-        from me4brain.observability.tracing import setup_tracing, is_trace_initialized
-
         # Reset global state
         import me4brain.observability.tracing as tracing_module
+        from me4brain.observability.tracing import is_trace_initialized, setup_tracing
 
         tracing_module._trace_initialized = False
         tracing_module._tracer = None
@@ -26,10 +26,9 @@ class TestTracingSetup:
     @pytest.mark.asyncio
     async def test_setup_tracing_with_import_error(self):
         """Test tracing handles missing opentelemetry gracefully."""
-        from me4brain.observability.tracing import setup_tracing, is_trace_initialized
-
         # Reset global state
         import me4brain.observability.tracing as tracing_module
+        from me4brain.observability.tracing import is_trace_initialized, setup_tracing
 
         tracing_module._trace_initialized = False
         tracing_module._tracer = None
@@ -47,10 +46,9 @@ class TestTracingContext:
 
     def test_tracing_context_no_tracer(self):
         """Test TracingContext when no tracer is initialized."""
-        from me4brain.observability.tracing import TracingContext
-
         # Reset tracer
         import me4brain.observability.tracing as tracing_module
+        from me4brain.observability.tracing import TracingContext
 
         tracing_module._tracer = None
 

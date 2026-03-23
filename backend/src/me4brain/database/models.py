@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -20,7 +19,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from me4brain.database.connection import Base
@@ -62,14 +61,14 @@ class ConversationModel(Base):
         nullable=False,
         default=False,
     )
-    metadata_json: Mapped[Optional[dict]] = mapped_column(
+    metadata_json: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,
         default=None,
     )
 
     # Relationships
-    messages: Mapped[list["MessageModel"]] = relationship(
+    messages: Mapped[list[MessageModel]] = relationship(
         "MessageModel",
         back_populates="conversation",
         cascade="all, delete-orphan",
@@ -108,14 +107,14 @@ class MessageModel(Base):
         nullable=False,
         server_default=func.now(),
     )
-    metadata_json: Mapped[Optional[dict]] = mapped_column(
+    metadata_json: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,
         default=None,
     )
 
     # Relationships
-    conversation: Mapped["ConversationModel"] = relationship(
+    conversation: Mapped[ConversationModel] = relationship(
         "ConversationModel",
         back_populates="messages",
     )
@@ -137,17 +136,17 @@ class ConversationSummaryModel(Base):
         ForeignKey("conversations.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    summary: Mapped[Optional[str]] = mapped_column(
+    summary: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    generated_at: Mapped[Optional[datetime]] = mapped_column(
+    generated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     # Relationships
-    conversation: Mapped["ConversationModel"] = relationship(
+    conversation: Mapped[ConversationModel] = relationship(
         "ConversationModel",
         back_populates="summary",
     )

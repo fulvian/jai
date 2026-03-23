@@ -1,8 +1,9 @@
 """Productivity Domain Handler - Tasks, Calendar, Notes, and Communication."""
 
-from datetime import UTC, datetime
 from typing import Any
+
 import structlog
+
 from me4brain.core.interfaces import (
     DomainCapability,
     DomainExecutionResult,

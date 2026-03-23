@@ -8,11 +8,13 @@ Provides:
 """
 
 from me4brain.auth.permissions import (
+    ROLE_PERMISSIONS,
     Permission,
     Role,
-    ROLE_PERMISSIONS,
     get_permissions_for_role,
     has_permission,
+)
+from me4brain.auth.permissions import (
     require_permission as require_permission_decorator,
 )
 from me4brain.auth.rbac import (

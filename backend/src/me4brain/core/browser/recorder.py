@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 
@@ -39,7 +38,7 @@ class SkillRecorder:
             session: Sessione browser associata
         """
         self.session = session
-        self._state: Optional[RecordingState] = None
+        self._state: RecordingState | None = None
         self._is_active = False
 
     @property
@@ -48,11 +47,11 @@ class SkillRecorder:
         return self._is_active
 
     @property
-    def state(self) -> Optional[RecordingState]:
+    def state(self) -> RecordingState | None:
         """Ottiene stato recording."""
         return self._state
 
-    def start(self, name: Optional[str] = None) -> RecordingState:
+    def start(self, name: str | None = None) -> RecordingState:
         """
         Avvia recording.
 
@@ -93,12 +92,12 @@ class SkillRecorder:
     def record_action(
         self,
         action_type: ActionType,
-        target: Optional[str] = None,
-        value: Optional[str] = None,
-        instruction: Optional[str] = None,
+        target: str | None = None,
+        value: str | None = None,
+        instruction: str | None = None,
         success: bool = True,
         duration_ms: int = 0,
-        extracted_data: Optional[dict] = None,
+        extracted_data: dict | None = None,
     ) -> BrowserAction:
         """
         Registra singola azione.
@@ -191,8 +190,8 @@ class SkillRecorder:
 
     def to_skill(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> BrowserSkill:
         """
         Converte recording in skill.
@@ -219,7 +218,9 @@ class SkillRecorder:
         # Genera descrizione da azioni
         if not description:
             action_types = [a.type.value for a in self._state.actions[:5]]
-            description = f"Skill with {len(self._state.actions)} actions: {', '.join(action_types)}"
+            description = (
+                f"Skill with {len(self._state.actions)} actions: {', '.join(action_types)}"
+            )
 
         # Estrai possibili parametri (URL, valori input)
         parameters = self._extract_parameters()

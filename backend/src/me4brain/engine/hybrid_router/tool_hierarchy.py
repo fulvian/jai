@@ -5,9 +5,7 @@ Mappa ogni tool a: domain > category > skill per retrieval più preciso.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any
 
 import structlog
 import yaml
@@ -15,7 +13,9 @@ import yaml
 logger = structlog.get_logger(__name__)
 
 # Percorso al file di configurazione
-HIERARCHY_FILE = Path(__file__).parent.parent.parent.parent.parent / "config" / "tool_hierarchy.yaml"
+HIERARCHY_FILE = (
+    Path(__file__).parent.parent.parent.parent.parent / "config" / "tool_hierarchy.yaml"
+)
 
 
 class ToolHierarchy:

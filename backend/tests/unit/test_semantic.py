@@ -1,8 +1,10 @@
 """Unit tests for SemanticMemory with mocked Neo4j driver."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from me4brain.memory.semantic import SemanticMemory, Entity, Relation
+
+import pytest
+
+from me4brain.memory.semantic import Entity, Relation, SemanticMemory
 
 
 @pytest.fixture

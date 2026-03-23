@@ -4,13 +4,15 @@ Tests decomposition logic, fallback heuristics, and sub-query generation.
 This directly addresses Criticality 3 (decomposer fallback broken) and Phase B3.
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
 from me4brain.engine.hybrid_router.query_decomposer import QueryDecomposer
 from me4brain.engine.hybrid_router.types import (
-    HybridRouterConfig,
     DomainClassification,
     DomainComplexity,
+    HybridRouterConfig,
     SubQuery,
 )
 from me4brain.llm.nanogpt import NanoGPTClient
@@ -24,8 +26,13 @@ class TestHeuristicFallbackDecomposition:
         """Create decomposer with mocked LLM."""
         mock_llm = AsyncMock(spec=NanoGPTClient)
         available_domains = [
-            "sports_nba", "web_search", "finance_crypto", "google_workspace",
-            "productivity", "travel", "food"
+            "sports_nba",
+            "web_search",
+            "finance_crypto",
+            "google_workspace",
+            "productivity",
+            "travel",
+            "food",
         ]
         config = HybridRouterConfig()
         return QueryDecomposer(mock_llm, available_domains, config)
@@ -35,14 +42,13 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="high")],
             confidence=0.95,
-            query_summary="NBA betting analysis"
+            query_summary="NBA betting analysis",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "scommesse nba stasera lakers celtics analisi quote",
-            classification
+            "scommesse nba stasera lakers celtics analisi quote", classification
         )
-        
+
         # Should have at least 2 sub-queries for NBA betting
         assert len(result) >= 2
         assert all(isinstance(sq, SubQuery) for sq in result)
@@ -55,14 +61,13 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="web_search", complexity="medium")],
             confidence=0.8,
-            query_summary="Multi-part query"
+            query_summary="Multi-part query",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "find restaurants in Paris and hotels in London",
-            classification
+            "find restaurants in Paris and hotels in London", classification
         )
-        
+
         # Should split on 'and' into 2 queries
         assert len(result) >= 1
 
@@ -71,14 +76,13 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="web_search", complexity="medium")],
             confidence=0.8,
-            query_summary="Sequential queries"
+            query_summary="Sequential queries",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "cerca file progetto X poi invia email a Mario",
-            classification
+            "cerca file progetto X poi invia email a Mario", classification
         )
-        
+
         # Should handle 'poi' as conjunction
         assert len(result) >= 1
 
@@ -87,14 +91,11 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.9,
-            query_summary="Simple NBA query"
+            query_summary="Simple NBA query",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "lakers game tonight",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("lakers game tonight", classification)
+
         # Single simple query should have 1 sub-query
         assert len(result) >= 1
 
@@ -103,14 +104,13 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="finance_crypto", complexity="high")],
             confidence=0.85,
-            query_summary="Analytical query"
+            query_summary="Analytical query",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "analizza bitcoin e ethereum performance, crea report",
-            classification
+            "analizza bitcoin e ethereum performance, crea report", classification
         )
-        
+
         # Should generate multiple sub-queries for analysis
         assert len(result) >= 1
         assert all(sq.domain == "finance_crypto" for sq in result)
@@ -120,14 +120,13 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="web_search", complexity="low")],
             confidence=0.7,
-            query_summary="Generic query"
+            query_summary="Generic query",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "random query xyz abc",
-            classification
+            "random query xyz abc", classification
         )
-        
+
         # Should return at least 1 SubQuery (never raw)
         assert len(result) >= 1
         assert all(isinstance(sq, SubQuery) for sq in result)
@@ -137,14 +136,11 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="medium")],
             confidence=0.8,
-            query_summary="NBA query"
+            query_summary="NBA query",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "nba stats analysis",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("nba stats analysis", classification)
+
         # All sub-queries should match classification domain
         for sq in result:
             assert sq.domain == "sports_nba"
@@ -154,17 +150,21 @@ class TestHeuristicFallbackDecomposition:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.9,
-            query_summary="NBA"
+            query_summary="NBA",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "nba game",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("nba game", classification)
+
         # All domains should be in available list
-        available = ["sports_nba", "web_search", "finance_crypto", "google_workspace",
-                    "productivity", "travel", "food"]
+        available = [
+            "sports_nba",
+            "web_search",
+            "finance_crypto",
+            "google_workspace",
+            "productivity",
+            "travel",
+            "food",
+        ]
         for sq in result:
             assert sq.domain in available
 
@@ -183,18 +183,15 @@ class TestSubQueryStructure:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.9,
-            query_summary="NBA"
+            query_summary="NBA",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "nba game",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("nba game", classification)
+
         for sq in result:
-            assert hasattr(sq, 'text')
-            assert hasattr(sq, 'domain')
-            assert hasattr(sq, 'intent')
+            assert hasattr(sq, "text")
+            assert hasattr(sq, "domain")
+            assert hasattr(sq, "intent")
             assert isinstance(sq.text, str)
             assert len(sq.text) > 0
             assert isinstance(sq.domain, str)
@@ -205,14 +202,11 @@ class TestSubQueryStructure:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.9,
-            query_summary="NBA"
+            query_summary="NBA",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "lakers vs celtics",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("lakers vs celtics", classification)
+
         # Text should be meaningful
         for sq in result:
             assert len(sq.text) > 2
@@ -223,20 +217,29 @@ class TestSubQueryStructure:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="high")],
             confidence=0.95,
-            query_summary="NBA betting"
+            query_summary="NBA betting",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "scommesse nba lakers",
-            classification
+            "scommesse nba lakers", classification
         )
-        
+
         # Intent should be descriptive
         for sq in result:
-            assert sq.intent in [
-                "direct", "nba_games_data", "nba_context_data", "gathering",
-                "analysis", "synthesis", "search", "none"
-            ] or len(sq.intent) > 0
+            assert (
+                sq.intent
+                in [
+                    "direct",
+                    "nba_games_data",
+                    "nba_context_data",
+                    "gathering",
+                    "analysis",
+                    "synthesis",
+                    "search",
+                    "none",
+                ]
+                or len(sq.intent) > 0
+            )
 
 
 class TestDecompositionEdgeCases:
@@ -253,14 +256,11 @@ class TestDecompositionEdgeCases:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.5,
-            query_summary=""
+            query_summary="",
         )
-        
-        result = decomposer._heuristic_fallback_decomposition(
-            "",
-            classification
-        )
-        
+
+        result = decomposer._heuristic_fallback_decomposition("", classification)
+
         # Should return something, even for empty
         assert len(result) >= 0
 
@@ -269,15 +269,12 @@ class TestDecompositionEdgeCases:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="high")],
             confidence=0.9,
-            query_summary="Long query"
+            query_summary="Long query",
         )
-        
+
         long_query = "nba " * 500  # Very long
-        result = decomposer._heuristic_fallback_decomposition(
-            long_query,
-            classification
-        )
-        
+        result = decomposer._heuristic_fallback_decomposition(long_query, classification)
+
         # Should handle gracefully
         assert len(result) >= 1
 
@@ -286,14 +283,13 @@ class TestDecompositionEdgeCases:
         classification = DomainClassification(
             domains=[DomainComplexity(name="sports_nba", complexity="low")],
             confidence=0.8,
-            query_summary="Special chars"
+            query_summary="Special chars",
         )
-        
+
         result = decomposer._heuristic_fallback_decomposition(
-            "nba!!!??? scommesse@@@",
-            classification
+            "nba!!!??? scommesse@@@", classification
         )
-        
+
         # Should not crash
         assert len(result) >= 1
 

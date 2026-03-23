@@ -2,6 +2,7 @@
 # Tests for query normalization and cache key generation
 
 import pytest
+
 from me4brain.cache.query_normalizer import QueryNormalizer, generate_cache_key
 
 

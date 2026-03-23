@@ -3,13 +3,14 @@
 Sostituisce il ToolRetriever manuale con:
 - Stage 1: Coarse retrieval via Qdrant vector search + domain filtering
 - Stage 2: Fine-grained reranking con LLM
+- Rescue Policy: Automatic fallback when retrieval returns zero/insufficient results
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any
+from enum import Enum
 
 import structlog
 from llama_index.core.postprocessor import LLMRerank
@@ -32,6 +33,15 @@ from me4brain.engine.hybrid_router.types import (
 from me4brain.llm.llamaindex_adapter import get_llamaindex_llm
 
 logger = structlog.get_logger(__name__)
+
+
+class RescuePolicy(Enum):
+    """Rescue policies for zero/low-result retrieval scenarios."""
+
+    NONE = "none"
+    DOMAIN_EXPAND = "domain_expand"  # Try broader/more general domains
+    LEXICAL_BOOST = "lexical_boost"  # Use keyword-based fallback
+    GLOBAL_PASS = "global_pass"  # Remove all domain filters
 
 
 class LlamaIndexToolRetriever:
@@ -150,7 +160,7 @@ class LlamaIndexToolRetriever:
                         asyncio.to_thread(_run_reranking),
                         timeout=600.0,  # 600 second timeout (development)
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(
                         "reranking_timeout",
                         timeout_seconds=600,
@@ -181,6 +191,34 @@ class LlamaIndexToolRetriever:
             tools_after_limit=len(final_tools),
             total_payload_bytes=total_bytes,
         )
+
+        # RESCUE POLICY: If no tools retrieved, trigger rescue sequence
+        if len(final_tools) == 0:
+            logger.warning(
+                "zero_tools_retrieved_triggering_rescue",
+                query_preview=query[:50],
+                domains_searched=domain_names,
+            )
+
+            rescue_result = await self._apply_rescue(
+                query=query,
+                classification=classification,
+                original_domains=domain_names,
+            )
+
+            if rescue_result and not rescue_result.is_empty:
+                logger.info(
+                    "rescue_succeeded",
+                    policy=rescue_result.rescue_policy,
+                    tools_found=len(rescue_result.tools),
+                    query_preview=query[:50],
+                )
+                return rescue_result
+            else:
+                logger.warning(
+                    "rescue_failed_all_policies_exhausted",
+                    query_preview=query[:50],
+                )
 
         return ToolRetrievalResult(
             tools=final_tools,
@@ -363,15 +401,15 @@ class LlamaIndexToolRetriever:
 
         # Rerank if available
         if self._reranker and len(nodes) > 0:
-            try:
+            import contextlib
+
+            with contextlib.suppress(Exception):
                 nodes = self._reranker.postprocess_nodes(nodes, query_str=query)
-            except Exception:
-                pass  # Use unreranked
 
         all_tools = self._nodes_to_tools(nodes)
         final_tools, total_bytes = self._fit_to_payload_limit(all_tools)
 
-        domains_found = list(set(t.domain for t in final_tools))
+        domains_found = list({t.domain for t in final_tools})
 
         logger.info(
             "global_topk_retrieval_complete",
@@ -391,7 +429,7 @@ class LlamaIndexToolRetriever:
     async def retrieve_multi_intent(
         self,
         sub_queries: list[SubQuery],
-        classification: DomainClassification,
+        _classification: DomainClassification,
         original_query: str = "",
     ) -> ToolRetrievalResult:
         """Retrieve tools for multiple sub-queries and merge with RRF.
@@ -494,7 +532,7 @@ class LlamaIndexToolRetriever:
                 )
 
                 # Create pseudo-nodes for reranking
-                from llama_index.core.schema import TextNode, NodeWithScore
+                from llama_index.core.schema import NodeWithScore, TextNode
 
                 nodes = [
                     NodeWithScore(
@@ -582,3 +620,82 @@ class LlamaIndexToolRetriever:
         sorted_names = sorted(rrf_scores.keys(), key=lambda n: rrf_scores[n], reverse=True)
 
         return [tool_by_name[name] for name in sorted_names]
+
+    async def _apply_rescue(
+        self,
+        query: str,
+        _classification: DomainClassification,
+        original_domains: list[str],
+    ) -> ToolRetrievalResult:
+        """Apply rescue policies in sequence until successful.
+
+        Rescue policies:
+        1. DOMAIN_EXPAND: Try broader domains (web_search as fallback for most queries)
+        2. GLOBAL_PASS: Remove all domain filters and retrieve globally
+
+        Args:
+            query: User query
+            classification: Original domain classification
+            original_domains: Domains that were originally searched
+
+        Returns:
+            ToolRetrievalResult with rescued tools, or empty result if all policies fail
+        """
+        index = self._tool_index.index
+        if index is None:
+            logger.error("tool_index_not_initialized_for_rescue")
+            return ToolRetrievalResult(
+                tools=[],
+                domains_searched=original_domains,
+                rescue_applied=True,
+                rescue_policy=RescuePolicy.NONE.value,
+                rescue_trigger_reason="index_not_initialized",
+            )
+
+        # Policy 1: Domain expansion - try web_search as universal fallback
+        logger.info("rescue_attempting_domain_expand", query=query[:50])
+        expanded_domains = list(set(original_domains + ["web_search"]))
+
+        try:
+            domain_filter = self._build_domain_filter(expanded_domains)
+            retriever = VectorIndexRetriever(
+                index=index,
+                similarity_top_k=self._config.coarse_top_k,
+                filters=domain_filter,
+            )
+            nodes = await retriever.aretrieve(query)
+            tools = self._nodes_to_tools(nodes)
+
+            if len(tools) > 0:
+                final_tools, total_bytes = self._fit_to_payload_limit(tools)
+                logger.info(
+                    "rescue_domain_expand_succeeded",
+                    tools_found=len(final_tools),
+                    domains_searched=expanded_domains,
+                )
+                return ToolRetrievalResult(
+                    tools=final_tools,
+                    total_payload_bytes=total_bytes,
+                    domains_searched=expanded_domains,
+                    rescue_applied=True,
+                    rescue_policy=RescuePolicy.DOMAIN_EXPAND.value,
+                    rescue_trigger_reason="zero_tools_in_classified_domain",
+                )
+        except Exception as e:
+            logger.warning("rescue_domain_expand_failed", error=str(e))
+        # Policy 2: Global pass - remove all domain filters
+        logger.info("rescue_attempting_global_pass", query=query[:50])
+        try:
+            return await self.retrieve_global_topk(query, k=25)
+        except Exception as e:
+            logger.warning("rescue_global_pass_failed", error=str(e))
+
+        # All policies exhausted
+        logger.warning("rescue_all_policies_exhausted", query=query[:50])
+        return ToolRetrievalResult(
+            tools=[],
+            domains_searched=original_domains,
+            rescue_applied=True,
+            rescue_policy=RescuePolicy.NONE.value,
+            rescue_trigger_reason="all_rescue_policies_failed",
+        )

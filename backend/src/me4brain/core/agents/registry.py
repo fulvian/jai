@@ -43,9 +43,7 @@ class AgentRegistry:
         """Genera chiave Redis per agente."""
         return f"{self.PREFIX}:{agent_id}"
 
-    async def register(
-        self, request: RegisterAgentRequest, agent_id: str
-    ) -> AgentProfile:
+    async def register(self, request: RegisterAgentRequest, agent_id: str) -> AgentProfile:
         """
         Registra nuovo agente.
 
@@ -149,9 +147,7 @@ class AgentRegistry:
         """
         # Usa indice capability se specificato
         if capability:
-            agent_ids = await self.redis.smembers(
-                f"{self.CAPABILITY_INDEX}:{capability}"
-            )
+            agent_ids = await self.redis.smembers(f"{self.CAPABILITY_INDEX}:{capability}")
         else:
             agent_ids = await self.redis.smembers(self.INDEX_KEY)
 

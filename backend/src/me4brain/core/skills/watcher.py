@@ -1,8 +1,8 @@
 """Skill Watcher - File system watcher per hot-reload skill senza restart."""
 
 import asyncio
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 import structlog
 
@@ -24,9 +24,9 @@ class SkillFileHandler(FileSystemEventHandler if WATCHDOG_AVAILABLE else object)
 
     def __init__(
         self,
-        on_created: Optional[Callable[[Path], None]] = None,
-        on_modified: Optional[Callable[[Path], None]] = None,
-        on_deleted: Optional[Callable[[Path], None]] = None,
+        on_created: Callable[[Path], None] | None = None,
+        on_modified: Callable[[Path], None] | None = None,
+        on_deleted: Callable[[Path], None] | None = None,
     ):
         self.on_created = on_created
         self.on_modified = on_modified
@@ -91,8 +91,8 @@ class SkillWatcher:
         self.on_change = on_change
         self.poll_interval = poll_interval
         self._running = False
-        self._observer: Optional["Observer"] = None
-        self._poll_task: Optional[asyncio.Task] = None
+        self._observer: Observer | None = None
+        self._poll_task: asyncio.Task | None = None
         self._file_mtimes: dict[Path, float] = {}
 
     async def start(self) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -53,11 +53,11 @@ class WebhookConfig(BaseModel):
 
     # State
     enabled: bool = True
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
 
     # Stats
     created_at: datetime = Field(default_factory=datetime.now)
-    last_triggered: Optional[datetime] = None
+    last_triggered: datetime | None = None
     trigger_count: int = 0
     success_count: int = 0
     failure_count: int = 0
@@ -73,11 +73,11 @@ class WebhookEvent(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
     # Security
-    signature: Optional[str] = None  # HMAC-SHA256
+    signature: str | None = None  # HMAC-SHA256
 
     # Metadata
-    tenant_id: Optional[str] = None
-    correlation_id: Optional[str] = None
+    tenant_id: str | None = None
+    correlation_id: str | None = None
 
 
 class WebhookDelivery(BaseModel):
@@ -89,19 +89,19 @@ class WebhookDelivery(BaseModel):
 
     # Timing
     attempted_at: datetime
-    completed_at: Optional[datetime] = None
-    duration_ms: Optional[float] = None
+    completed_at: datetime | None = None
+    duration_ms: float | None = None
 
     # Result
     status: Literal["pending", "success", "failed", "retrying"]
-    status_code: Optional[int] = None
-    response_body: Optional[str] = None
-    error: Optional[str] = None
+    status_code: int | None = None
+    response_body: str | None = None
+    error: str | None = None
 
     # Retry
     attempt: int = 1
     max_attempts: int = 3
-    next_retry: Optional[datetime] = None
+    next_retry: datetime | None = None
 
 
 class CreateWebhookRequest(BaseModel):
@@ -110,7 +110,7 @@ class CreateWebhookRequest(BaseModel):
     name: str
     url: str
     events: list[str]
-    secret: Optional[str] = None  # Auto-generato se non fornito
+    secret: str | None = None  # Auto-generato se non fornito
     retry_policy: RetryPolicy = Field(default_factory=RetryPolicy)
     headers: dict[str, str] = Field(default_factory=dict)
 
@@ -127,7 +127,7 @@ class WebhookResponse(BaseModel):
     success_rate: float
 
     @classmethod
-    def from_config(cls, config: WebhookConfig) -> "WebhookResponse":
+    def from_config(cls, config: WebhookConfig) -> WebhookResponse:
         total = config.trigger_count
         success_rate = config.success_count / total if total > 0 else 1.0
         return cls(
@@ -146,5 +146,5 @@ class IncomingWebhookPayload(BaseModel):
 
     event_type: str
     data: dict
-    timestamp: Optional[datetime] = None
-    source: Optional[str] = None
+    timestamp: datetime | None = None
+    source: str | None = None

@@ -1,8 +1,9 @@
-import pytest
-import asyncio
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
-from me4brain.core.sleep_mode import SleepMode, ConsolidationConfig
+
+import pytest
+
+from me4brain.core.sleep_mode import SleepMode
 
 
 @pytest.fixture

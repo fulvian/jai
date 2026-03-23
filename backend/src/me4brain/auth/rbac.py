@@ -10,12 +10,13 @@ Provides comprehensive role-based access control including:
 
 from __future__ import annotations
 
-import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
-from me4brain.auth.permissions import Permission, Role, has_permission, get_permissions_for_role
+import structlog
+
+from me4brain.auth.permissions import Permission, Role, get_permissions_for_role, has_permission
 
 if TYPE_CHECKING:
     pass
@@ -37,7 +38,7 @@ class User:
     is_active: bool = True
     is_verified: bool = False
     created_at: datetime = field(default_factory=datetime.utcnow)
-    last_login_at: Optional[datetime] = None
+    last_login_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def has_permission(self, permission: Permission) -> bool:
@@ -138,7 +139,7 @@ class ServiceAccount(User):
 class AuthorizationError(Exception):
     """Exception raised when authorization fails."""
 
-    def __init__(self, message: str, required_permission: Optional[Permission] = None):
+    def __init__(self, message: str, required_permission: Permission | None = None):
         super().__init__(message)
         self.required_permission = required_permission
 
@@ -154,9 +155,9 @@ class RBACChecker:
 
     def check_permission(
         self,
-        user: Optional[User],
+        user: User | None,
         permission: Permission,
-        resource_owner_id: Optional[str] = None,
+        resource_owner_id: str | None = None,
     ) -> bool:
         """Check if user has permission for an action.
 
@@ -200,9 +201,9 @@ class RBACChecker:
 
     def require_permission(
         self,
-        user: Optional[User],
+        user: User | None,
         permission: Permission,
-        resource_owner_id: Optional[str] = None,
+        resource_owner_id: str | None = None,
     ) -> None:
         """Require a permission or raise AuthorizationError.
 
@@ -251,7 +252,7 @@ class RBACChecker:
 
 
 # Global RBAC checker instance
-_rbac_checker: Optional[RBACChecker] = None
+_rbac_checker: RBACChecker | None = None
 
 
 def get_rbac_checker() -> RBACChecker:
@@ -267,9 +268,9 @@ def get_rbac_checker() -> RBACChecker:
 
 
 def check_permission(
-    user: Optional[User],
+    user: User | None,
     permission: Permission,
-    resource_owner_id: Optional[str] = None,
+    resource_owner_id: str | None = None,
 ) -> bool:
     """Convenience function to check permission.
 
@@ -285,9 +286,9 @@ def check_permission(
 
 
 def require_permission(
-    user: Optional[User],
+    user: User | None,
     permission: Permission,
-    resource_owner_id: Optional[str] = None,
+    resource_owner_id: str | None = None,
 ) -> None:
     """Convenience function to require permission.
 

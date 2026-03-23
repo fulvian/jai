@@ -1,9 +1,9 @@
 # Phase 7: Conversation Summarizer Tests
 # Tests for ConversationSummarizer
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime
+
+import pytest
 
 from me4brain.engine.conversation_summarizer import ConversationSummarizer
 from me4brain.models.conversation import Message, MessageRole

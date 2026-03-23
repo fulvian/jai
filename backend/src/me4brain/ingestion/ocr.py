@@ -10,7 +10,6 @@ Strategia:
 import base64
 import io
 from pathlib import Path
-from typing import Optional
 
 import pypdf
 from pdf2image import convert_from_bytes
@@ -68,7 +67,7 @@ class HybridOCRService:
         # 2. Path Vision (Immagini o PDF Scansionati)
         return await self._analyze_with_vision(file_path, mime_type)
 
-    def _extract_native_pdf(self, file_path: Path) -> tuple[Optional[str], int]:
+    def _extract_native_pdf(self, file_path: Path) -> tuple[str | None, int]:
         """Estrae testo da PDF usando pypdf locale."""
         try:
             reader = pypdf.PdfReader(file_path)

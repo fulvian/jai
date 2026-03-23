@@ -1,10 +1,10 @@
 """Unit tests per Scheduler System (M2)."""
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
-from zoneinfo import ZoneInfo
 
 from me4brain.core.scheduler.cron import ScheduleParser
 from me4brain.core.scheduler.types import (

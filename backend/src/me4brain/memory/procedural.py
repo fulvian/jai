@@ -77,7 +77,9 @@ class ProceduralMemory:
     """
 
     COLLECTION_NAME = "muscle_memory"
-    TOOLS_COLLECTION = CAPABILITIES_COLLECTION  # Collection unificata per ricerca vettoriale capabilities
+    TOOLS_COLLECTION = (
+        CAPABILITIES_COLLECTION  # Collection unificata per ricerca vettoriale capabilities
+    )
     VECTOR_SIZE = 1024
 
     def __init__(
@@ -415,6 +417,7 @@ class ProceduralMemory:
         Usato quando Qdrant non ha risultati o non è disponibile.
         """
         import numpy as np
+
         from me4brain.embeddings import get_embedding_service
 
         semantic = self.get_semantic()

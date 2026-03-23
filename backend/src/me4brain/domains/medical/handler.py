@@ -303,8 +303,9 @@ class MedicalHandler(DomainHandler):
         analysis: dict[str, Any],
     ) -> DomainExecutionResult:
         """Esegue query iCite."""
-        from me4brain.domains.medical.tools import medical_api
         import re
+
+        from me4brain.domains.medical.tools import medical_api
 
         # Estrai PMID dalla query
         pmid_match = re.search(r"\b(\d{6,8})\b", query)

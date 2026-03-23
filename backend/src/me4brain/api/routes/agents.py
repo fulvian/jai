@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, HTTPException
@@ -66,8 +65,8 @@ async def register_agent(request: RegisterAgentRequest) -> AgentResponse:
 
 @router.get("", response_model=list[AgentResponse])
 async def list_agents(
-    capability: Optional[str] = None,
-    status: Optional[str] = None,
+    capability: str | None = None,
+    status: str | None = None,
 ) -> list[AgentResponse]:
     """
     Lista agenti registrati.

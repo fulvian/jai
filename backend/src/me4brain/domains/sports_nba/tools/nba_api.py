@@ -13,11 +13,12 @@ Tools:
 - odds_api_odds: Quote scommesse NBA
 """
 
-import os
 import asyncio
-import time
+import os
 import random
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -46,10 +47,11 @@ try:
 except ImportError:
     pass
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-# Carica .env all'import del modulo
-load_dotenv()
+# Carica .env all'import del modulo (from project root)
+_project_root = Path(__file__).parent.parent.parent
+load_dotenv(_project_root / ".env")
 
 logger = structlog.get_logger(__name__)
 

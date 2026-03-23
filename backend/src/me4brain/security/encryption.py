@@ -10,8 +10,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+from typing import Any
+
 import structlog
-from typing import Any, Optional
 
 logger = structlog.get_logger(__name__)
 
@@ -29,7 +30,7 @@ class FieldEncryptor:
     sensitive fields like API keys, PII, etc.
     """
 
-    def __init__(self, key: Optional[str] = None):
+    def __init__(self, key: str | None = None):
         """Initialize the encryptor.
 
         Args:
@@ -169,7 +170,7 @@ class FieldEncryptor:
 
 
 # Global encryptor instance
-_encryptor: Optional[FieldEncryptor] = None
+_encryptor: FieldEncryptor | None = None
 
 
 def get_encryptor() -> FieldEncryptor:

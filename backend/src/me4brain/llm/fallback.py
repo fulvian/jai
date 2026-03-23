@@ -7,6 +7,7 @@ Se il provider primario (locale) fallisce o restituisce una risposta invalida
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+
 import structlog
 
 from me4brain.llm.base import LLMProvider
@@ -35,6 +36,7 @@ class FallbackProvider(LLMProvider):
         if self.fallback_model is None:
             # Se non è specificato un modello di fallback, usa il modello dalla config
             from me4brain.llm.config import get_llm_config
+
             config = get_llm_config()
             fallback_model = config.model_fallback
         else:
@@ -56,18 +58,14 @@ class FallbackProvider(LLMProvider):
                     logger.warning(
                         "fallback_triggered_empty_response",
                         provider_name=self.name,
-                        content_len=len(content)
+                        content_len=len(content),
                     )
                     fallback_request = self._get_fallback_request(request)
                     return await self.fallback.generate_response(fallback_request)
 
             return response
         except Exception as e:
-            logger.warning(
-                "fallback_triggered_on_error",
-                provider_name=self.name,
-                error=str(e)
-            )
+            logger.warning("fallback_triggered_on_error", provider_name=self.name, error=str(e))
             fallback_request = self._get_fallback_request(request)
             return await self.fallback.generate_response(fallback_request)
 
@@ -78,11 +76,7 @@ class FallbackProvider(LLMProvider):
             async for chunk in self.primary.stream_response(request):
                 yield chunk
         except Exception as e:
-            logger.warning(
-                "stream_fallback_triggered",
-                provider_name=self.name,
-                error=str(e)
-            )
+            logger.warning("stream_fallback_triggered", provider_name=self.name, error=str(e))
             fallback_request = self._get_fallback_request(request)
             async for chunk in self.fallback.stream_response(fallback_request):
                 yield chunk

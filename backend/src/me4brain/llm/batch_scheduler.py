@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import structlog
 
 if TYPE_CHECKING:
     from me4brain.llm.base import LLMProvider
-    from me4brain.llm.models import LLMRequest, LLMResponse, LLMChunk
+    from me4brain.llm.models import LLMChunk, LLMRequest, LLMResponse
 
 logger = structlog.get_logger(__name__)
 
@@ -43,7 +43,7 @@ class LLMBatchScheduler:
 
     def __init__(
         self,
-        provider: Optional[LLMProvider] = None,
+        provider: LLMProvider | None = None,
         max_concurrent: int = 5,
     ):
         self._provider = provider
@@ -143,7 +143,7 @@ class LLMBatchScheduler:
         )
 
 
-_batch_scheduler: Optional[LLMBatchScheduler] = None
+_batch_scheduler: LLMBatchScheduler | None = None
 
 
 def get_batch_scheduler() -> LLMBatchScheduler:

@@ -1,14 +1,5 @@
 """Utility Tools Package."""
 
-from me4brain.domains.utility.tools.utility_api import (
-    AVAILABLE_TOOLS,
-    execute_tool,
-    get_executors as get_api_executors,
-    get_headers,
-    get_ip,
-    get_tool_definitions as get_api_tool_definitions,
-)
-
 from me4brain.domains.utility.tools.browser import (
     BROWSER_TOOLS,
     browser_act,
@@ -17,17 +8,36 @@ from me4brain.domains.utility.tools.browser import (
     browser_navigate,
     browser_open,
     browser_screenshot,
+)
+from me4brain.domains.utility.tools.browser import (
     get_executors as get_browser_executors,
+)
+from me4brain.domains.utility.tools.browser import (
     get_tool_definitions as get_browser_tool_definitions,
 )
-
 from me4brain.domains.utility.tools.proactive import (
     AGENT_TOOLS,
     create_autonomous_agent,
-    list_agents,
     delete_agent,
+    list_agents,
+)
+from me4brain.domains.utility.tools.proactive import (
     get_executors as get_proactive_executors,
+)
+from me4brain.domains.utility.tools.proactive import (
     get_tool_definitions as get_proactive_tool_definitions,
+)
+from me4brain.domains.utility.tools.utility_api import (
+    AVAILABLE_TOOLS,
+    execute_tool,
+    get_headers,
+    get_ip,
+)
+from me4brain.domains.utility.tools.utility_api import (
+    get_executors as get_api_executors,
+)
+from me4brain.domains.utility.tools.utility_api import (
+    get_tool_definitions as get_api_tool_definitions,
 )
 
 

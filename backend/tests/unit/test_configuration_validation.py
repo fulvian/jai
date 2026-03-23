@@ -4,12 +4,9 @@ Tests for validating LLM model availability at startup and ensuring
 configured models exist in providers (Ollama/LM Studio).
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from dataclasses import dataclass
 
-from me4brain.llm.config import LLMConfig
-from me4brain.llm.health import HealthCheckResult
+import pytest
 
 
 @dataclass

@@ -11,10 +11,10 @@ Tests cover:
 Target: 85%+ code coverage for nba_api.py odds_api_odds() function
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
+
 import httpx
-from datetime import datetime
+import pytest
 
 
 class TestOddsAPIConfiguration:

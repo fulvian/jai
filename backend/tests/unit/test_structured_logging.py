@@ -5,14 +5,15 @@ and monitoring throughout the classification pipeline.
 """
 
 import json
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 import structlog
 
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.types import HybridRouterConfig
+from me4brain.llm.models import Choice, ChoiceMessage, LLMResponse
 from me4brain.llm.nanogpt import NanoGPTClient
-from me4brain.llm.models import LLMResponse, Choice, ChoiceMessage
 
 
 @pytest.fixture

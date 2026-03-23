@@ -1,11 +1,11 @@
 # Phase 6: Cache Manager Tests
 # These tests define the expected behavior of the caching layer
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Optional
+from unittest.mock import AsyncMock, patch
 
-from me4brain.cache.cache_manager import CacheManager, CachedResponse
+import pytest
+
+from me4brain.cache.cache_manager import CachedResponse, CacheManager
 
 
 class TestCacheManager:

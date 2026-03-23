@@ -7,9 +7,7 @@ This module provides:
 """
 
 import asyncio
-import logging
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 import structlog
 
@@ -23,8 +21,8 @@ class BatchRequest:
     """Single request in a batch."""
 
     query: str
-    context: Optional[str] = None
-    future: Optional[asyncio.Future] = None
+    context: str | None = None
+    future: asyncio.Future | None = None
 
 
 @dataclass
@@ -33,7 +31,7 @@ class BatchResult:
 
     query: str
     analysis: IntentAnalysis
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class IntentBatchProcessor:
@@ -61,7 +59,7 @@ class IntentBatchProcessor:
         self._queue: list[BatchRequest] = []
         self._lock = asyncio.Lock()
         self._batch_event = asyncio.Event()
-        self._processor_task: Optional[asyncio.Task] = None
+        self._processor_task: asyncio.Task | None = None
 
     async def start(self) -> None:
         """Start batch processor background task."""
@@ -82,7 +80,7 @@ class IntentBatchProcessor:
     async def analyze(
         self,
         query: str,
-        context: Optional[str] = None,
+        context: str | None = None,
     ) -> IntentAnalysis:
         """Analyze query using batch processing.
 
@@ -112,7 +110,7 @@ class IntentBatchProcessor:
         try:
             result = await asyncio.wait_for(future, timeout=self._batch_timeout * 2)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "batch_processing_timeout",
                 query_preview=query[:50],
@@ -130,7 +128,7 @@ class IntentBatchProcessor:
                         self._batch_event.wait(),
                         timeout=self._batch_timeout,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
 
                 # Get current batch
@@ -167,10 +165,7 @@ class IntentBatchProcessor:
         )
 
         # Process all queries in parallel
-        tasks = [
-            self._analyzer.analyze(req.query, req.context)
-            for req in batch
-        ]
+        tasks = [self._analyzer.analyze(req.query, req.context) for req in batch]
 
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -208,7 +203,7 @@ class IntentBatchProcessor:
 
 
 # Global batch processor instance
-_batch_processor: Optional[IntentBatchProcessor] = None
+_batch_processor: IntentBatchProcessor | None = None
 
 
 def get_batch_processor(

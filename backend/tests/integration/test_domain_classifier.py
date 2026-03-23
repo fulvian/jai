@@ -4,8 +4,10 @@ Tests the domain classifier which routes queries to specific domains (NBA, weath
 using LLM-based classification with fallback patterns.
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.types import HybridRouterConfig
 

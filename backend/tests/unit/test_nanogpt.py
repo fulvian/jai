@@ -1,10 +1,9 @@
 """Unit tests per NanoGPT client."""
 
-import json
 from unittest.mock import patch
 
-import pytest
 import httpx
+import pytest
 import respx
 from httpx import ConnectError, Response
 

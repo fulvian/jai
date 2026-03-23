@@ -4,18 +4,17 @@ Central registry for managing skill lifecycle, dependencies,
 and integration with ProceduralMemory.
 """
 
-import asyncio
 from datetime import datetime
 from typing import Any
 
 import structlog
 
+from me4brain.skills.loader import SkillLoader
 from me4brain.skills.types import (
     SkillDefinition,
     SkillSource,
     SkillStatus,
 )
-from me4brain.skills.loader import SkillLoader
 
 logger = structlog.get_logger(__name__)
 

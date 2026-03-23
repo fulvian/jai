@@ -15,11 +15,11 @@ Architecture:
 """
 
 import json
-from datetime import UTC, datetime, timedelta
-from typing import Any, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
-from collections import defaultdict
-from statistics import median, stdev
+from datetime import UTC, datetime
+from statistics import median
+from typing import Any
 
 import structlog
 

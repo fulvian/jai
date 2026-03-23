@@ -1,7 +1,8 @@
 """Test Conflict Resolution Module."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
 
 from me4brain.core.conflict import (
     ConflictResolver,
@@ -24,7 +25,7 @@ class TestConflictResolver:
             source_type="episodic",
             content="Informazione recente",
             score=0.8,
-            timestamp=datetime.now(timezone.utc) - timedelta(hours=1),
+            timestamp=datetime.now(UTC) - timedelta(hours=1),
         )
 
     @pytest.fixture
@@ -34,7 +35,7 @@ class TestConflictResolver:
             source_type="semantic",
             content="Informazione vecchia",
             score=0.9,
-            timestamp=datetime.now(timezone.utc) - timedelta(days=7),
+            timestamp=datetime.now(UTC) - timedelta(days=7),
         )
 
     def test_detect_conflict_both_present(
@@ -133,7 +134,7 @@ class TestConflictResolver:
         resolver: ConflictResolver,
     ) -> None:
         """Test calcolo età in ore."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         timestamp = now - timedelta(hours=5)
 
         age = resolver._get_age_hours(timestamp, now)
@@ -144,6 +145,6 @@ class TestConflictResolver:
         resolver: ConflictResolver,
     ) -> None:
         """Test età con timestamp None (molto vecchio)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         age = resolver._get_age_hours(None, now)
         assert age > 100000  # Molto grande

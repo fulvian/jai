@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { Me4BrAInClient } from '@persan/me4brain-client';
 import type { SessionConfig, ChatTurn } from '@persan/shared';
 import { sessionManager } from '../services/session_manager_instance.js';
+import { queryExecutor } from '../services/query_executor.js';
 
 // Types for route params
 interface SessionParams {
@@ -104,6 +105,12 @@ async function streamQueryToResponse(
     }
 
     activeSSESessions.add(sessionId);
+
+    // Session Persistence: Mark in-progress in Redis for cross-instance tracking
+    const sseRequestId = `sse-${sessionId}-${Date.now()}`;
+    queryExecutor.markInProgress(sessionId, sseRequestId).catch((e) => {
+        console.warn(`[SSE] Failed to mark in-progress:`, e);
+    });
 
     // Set SSE headers
     reply.raw.writeHead(200, {
@@ -247,6 +254,11 @@ async function streamQueryToResponse(
             }
         }
 
+        // Session Persistence: Clear in-progress marker
+        queryExecutor.clearInProgress(sessionId).catch((e) => {
+            console.warn(`[SSE] Failed to clear in-progress:`, e);
+        });
+
         reply.raw.write('data: [DONE]\n\n');
         reply.raw.end();
     }
@@ -326,13 +338,80 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
             // FIX: Check both WS (queryExecutor) and SSE (activeSSESessions) streaming states
             const isActiveWS = queryExecutor.isSessionActive(id);
             const isActiveSSE = activeSSESessions.has(id);
-            const isActive = isActiveWS || isActiveSSE;
+            // Also check Redis-based in-progress (for cross-instance persistence)
+            const inProgressInfo = await queryExecutor.getInProgressInfo(id);
+            const isActive = isActiveWS || isActiveSSE || !!inProgressInfo;
+
+            // Check for partial turn in session
+            const session = await sessionManager.getSession(id);
+            const partialTurn = session?.turns.find((t) => t.isPartial) ?? null;
+
             return reply.send({
                 session_id: id,
                 isActive,
                 activeWS: isActiveWS,
                 activeSSE: isActiveSSE,
+                hasPartialResponse: !!partialTurn,
+                inProgressInfo: inProgressInfo ?? null,
             });
+        }
+    );
+
+    /**
+     * GET /api/chat/sessions/:id/recovery - Recupera stato e contenuto per riconnessione
+     * 
+     * Usato quando il frontend si riconnette dopo un disconnect:
+     * - Browser tab chiusa e riaperta
+     * - Network disconnesso e riconnesso
+     * - Page refresh durante query
+     * 
+     * Ritorna:
+     * - hasInProgressQuery: boolean
+     * - bufferedMessages: WSMessage[] (se disponibile)
+     * - partialTurn: ChatTurn | null (se disponibile)
+     * - requestId: string (se in-progress)
+     */
+    app.get<{ Params: SessionParams }>(
+        '/api/chat/sessions/:id/recovery',
+        async (request: FastifyRequest<{ Params: SessionParams }>, reply: FastifyReply) => {
+            const { id } = request.params;
+            const { queryExecutor } = await import('../services/query_executor.js');
+
+            // 1. Check if session has in-progress query (Redis-based)
+            const inProgressInfo = await queryExecutor.getInProgressInfo(id);
+            const isActiveWS = queryExecutor.isSessionActive(id);
+            const isActiveSSE = activeSSESessions.has(id);
+            const hasInProgressQuery = !!(inProgressInfo || isActiveWS || isActiveSSE);
+
+            // 2. Get buffered messages from Redis (if any)
+            let bufferedMessages: ReturnType<typeof queryExecutor.getBuffer> extends Promise<infer T> ? T : never = [];
+            if (inProgressInfo?.requestId) {
+                bufferedMessages = await queryExecutor.getBuffer(id, inProgressInfo.requestId);
+            } else {
+                // Try to get any buffered messages for this session
+                bufferedMessages = await queryExecutor.getBuffer(id);
+            }
+
+            // 3. Get partial turn from session if exists
+            const session = await sessionManager.getSession(id);
+            const partialTurn = session?.turns.find((t) => t.isPartial) ?? null;
+
+            // 4. Build recovery response
+            const recoveryResponse = {
+                session_id: id,
+                hasInProgressQuery,
+                inProgressInfo: inProgressInfo ?? null,
+                bufferedMessages,
+                partialTurn,
+                // Frontend can use these to decide how to resume:
+                resumeType: hasInProgressQuery 
+                    ? (bufferedMessages.length > 0 ? 'buffered' : partialTurn ? 'partial' : 'in-progress')
+                    : null,
+            };
+
+            console.log(`[Recovery] Session ${id}: hasInProgress=${hasInProgressQuery}, buffered=${bufferedMessages.length}, partial=${!!partialTurn}`);
+
+            return reply.send(recoveryResponse);
         }
     );
 

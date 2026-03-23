@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from contextvars import ContextVar, Token
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import structlog
 
@@ -28,9 +28,7 @@ class TenantAccessDeniedError(Exception):
     """Raised quando accesso cross-tenant tentato."""
 
     def __init__(self, requested: str, current: str):
-        super().__init__(
-            f"Access denied: requested tenant {requested}, current {current}"
-        )
+        super().__init__(f"Access denied: requested tenant {requested}, current {current}")
         self.requested = requested
         self.current = current
 
@@ -39,9 +37,7 @@ class TenantAccessDeniedError(Exception):
 
 
 _tenant_id: ContextVar[str] = ContextVar("tenant_id", default="")
-_tenant_config: ContextVar[Optional["TenantConfig"]] = ContextVar(
-    "tenant_config", default=None
-)
+_tenant_config: ContextVar[TenantConfig | None] = ContextVar("tenant_config", default=None)
 _user_id: ContextVar[str] = ContextVar("user_id", default="")
 
 
@@ -64,7 +60,7 @@ def get_tenant_id() -> str:
     return tid
 
 
-def get_tenant_id_or_none() -> Optional[str]:
+def get_tenant_id_or_none() -> str | None:
     """
     Ottiene tenant ID o None se non impostato.
 
@@ -75,7 +71,7 @@ def get_tenant_id_or_none() -> Optional[str]:
     return tid if tid else None
 
 
-def get_tenant_config() -> Optional["TenantConfig"]:
+def get_tenant_config() -> TenantConfig | None:
     """
     Ottiene config tenant corrente.
 
@@ -85,7 +81,7 @@ def get_tenant_config() -> Optional["TenantConfig"]:
     return _tenant_config.get()
 
 
-def get_user_id() -> Optional[str]:
+def get_user_id() -> str | None:
     """
     Ottiene user ID corrente.
 
@@ -101,8 +97,8 @@ def get_user_id() -> Optional[str]:
 
 def set_tenant(
     tenant_id: str,
-    config: Optional["TenantConfig"] = None,
-    user_id: Optional[str] = None,
+    config: TenantConfig | None = None,
+    user_id: str | None = None,
 ) -> Token:
     """
     Imposta tenant nel context asincrono.
@@ -146,8 +142,8 @@ def reset_tenant(token: Token) -> None:
 @contextlib.contextmanager
 def tenant_context(
     tenant_id: str,
-    config: Optional["TenantConfig"] = None,
-    user_id: Optional[str] = None,
+    config: TenantConfig | None = None,
+    user_id: str | None = None,
 ):
     """
     Context manager per operazioni tenant-scoped.
@@ -196,7 +192,7 @@ def validate_tenant_access(requested_tenant: str) -> None:
         raise TenantAccessDeniedError(requested_tenant, current)
 
 
-def resolve_tenant_id(explicit_tenant: Optional[str] = None) -> str:
+def resolve_tenant_id(explicit_tenant: str | None = None) -> str:
     """
     Risolve tenant ID: usa quello esplicito o dal context.
 

@@ -8,10 +8,10 @@ Integrates skills with Me4BrAIn components:
 This is the bridge between the skills system and the rest of Me4BrAIn.
 """
 
-import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 import structlog
 

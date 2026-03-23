@@ -11,8 +11,8 @@ from typing import Any
 from uuid import uuid4
 
 import structlog
-from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession
-from neo4j.exceptions import ServiceUnavailable, AuthError
+from neo4j import AsyncDriver, AsyncGraphDatabase, AsyncSession
+from neo4j.exceptions import AuthError, ServiceUnavailable
 from pydantic import BaseModel, Field
 
 from me4brain.config import get_settings

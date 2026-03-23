@@ -4,10 +4,10 @@ Tests per SportsBookingHandler e tools Playtomic.
 Mocka le API esterne per test affidabili e veloci.
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ============================================================================
 # Helper Functions
@@ -259,9 +259,10 @@ class TestPlaytomicAuth:
         assert decrypted == original
 
     def test_is_authenticated_no_tokens(self):
-        from me4brain.domains.sports_booking.tools.playtomic_auth import PlaytomicAuth
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
+
+        from me4brain.domains.sports_booking.tools.playtomic_auth import PlaytomicAuth
 
         with tempfile.TemporaryDirectory() as tmpdir:
             auth = PlaytomicAuth(token_file=Path(tmpdir) / "tokens.json")

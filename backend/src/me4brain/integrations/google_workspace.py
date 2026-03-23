@@ -11,20 +11,18 @@ Based on consultos/app/services/drive.py pattern.
 """
 
 import io
-import time
 import random
+import time
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
 import structlog
-from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 from googleapiclient.errors import HttpError
-
-from me4brain.config import get_settings
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 logger = structlog.get_logger(__name__)
 
@@ -133,10 +131,10 @@ class GoogleWorkspaceService:
         if creds.valid:
             # Pre-emptive refresh se sta per scadere
             if creds.expiry:
-                from datetime import datetime, timedelta, timezone
+                from datetime import datetime
 
-                now = datetime.now(timezone.utc)
-                expires_in = (creds.expiry.replace(tzinfo=timezone.utc) - now).total_seconds()
+                now = datetime.now(UTC)
+                expires_in = (creds.expiry.replace(tzinfo=UTC) - now).total_seconds()
 
                 if expires_in < PREEMPTIVE_REFRESH_SECONDS and creds.refresh_token:
                     logger.info(
@@ -388,7 +386,6 @@ class GoogleWorkspaceService:
             "alcune",
             "alcuni",
             "nella",
-            "nella",
             "della",
             "dello",
             "degli",
@@ -608,7 +605,6 @@ class GoogleWorkspaceService:
         Returns:
             List of attachments with name, mimeType, size, and data (base64)
         """
-        import base64
 
         message = await self.gmail_get_message(message_id)
         attachments = []

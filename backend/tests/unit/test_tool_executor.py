@@ -1,10 +1,10 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 import respx
-import httpx
-from unittest.mock import AsyncMock, MagicMock, patch
-from me4brain.retrieval.tool_executor import ToolExecutor, ExecutionRequest
-from me4brain.memory.procedural import Tool, ToolExecution
+
 from me4brain.memory.semantic import Entity
+from me4brain.retrieval.tool_executor import ExecutionRequest, ToolExecutor
 
 
 @pytest.fixture

@@ -28,6 +28,9 @@ export class QueryExecutor {
         windowSize: 10, // Track last 10 chunks
         anomalyThreshold: 8, // 8/10 similar = anomaly
     };
+    // Session Persistence: In-progress tracking for browser tab close / network disconnect
+    private inProgressPrefix = 'persan:inprogress:';
+    private inProgressTTL = 300; // 5 minutes TTL for in-progress tracking
 
     constructor() {
         this.me4brain = new Me4BrAInClient({
@@ -145,6 +148,9 @@ export class QueryExecutor {
         let toolsUsed: string[] = []; // FIX F2: Accumulate tool names
         let attempts = 0;
         const maxAttempts = 2; // Riprova una volta in caso di fallimento immediato
+
+        // Session Persistence: Mark as in-progress in Redis (for cross-instance tracking)
+        await this.markInProgress(sessionId, requestId);
 
         // 0. Invia thinking indicator immediato
         const thinkingMsg: WSMessage = {
@@ -277,6 +283,8 @@ export class QueryExecutor {
                         // Uscita con successo
                         // FIX Issue #7: Clean up active session tracking
                         this.activeSessionRequests.delete(sessionId);
+                        // Session Persistence: Clear in-progress marker
+                        await this.clearInProgress(sessionId);
                         // Clean up anomaly detector
                         this.anomalyDetector.thinkingPatterns.delete(sessionId);
                         this.anomalyDetector.contentPatterns.delete(sessionId);
@@ -314,6 +322,8 @@ export class QueryExecutor {
                         } catch { /* non-critical */ }
                     }
                     connectionRegistry.sendToSession(sessionId, errorMsg);
+                    // Session Persistence: Clear in-progress marker on error
+                    await this.clearInProgress(sessionId);
                     // Clean up anomaly detector
                     this.anomalyDetector.thinkingPatterns.delete(sessionId);
                     this.anomalyDetector.contentPatterns.delete(sessionId);
@@ -325,6 +335,8 @@ export class QueryExecutor {
         }
         // FIX Issue #7: Clean up on all-attempts-failed
         this.activeSessionRequests.delete(sessionId);
+        // Session Persistence: Clear in-progress marker
+        await this.clearInProgress(sessionId);
         // Clean up anomaly detector
         this.anomalyDetector.thinkingPatterns.delete(sessionId);
         this.anomalyDetector.contentPatterns.delete(sessionId);
@@ -425,6 +437,64 @@ export class QueryExecutor {
             statuses[id] = this.activeSessionRequests.has(id);
         }
         return statuses;
+    }
+
+    // ── In-Progress Tracking (Session Persistence) ───────────────────────
+
+    /**
+     * Mark a session as in-progress with Redis for cross-instance persistence.
+     * This allows the frontend to detect in-progress queries on reconnect.
+     */
+    async markInProgress(sessionId: string, requestId: string): Promise<void> {
+        if (!this.redisAvailable || !this.redis) return;
+
+        const key = `${this.inProgressPrefix}${sessionId}`;
+        const payload = JSON.stringify({
+            requestId,
+            startedAt: Date.now(),
+            type: 'websocket', // Distinguish from SSE
+        });
+
+        try {
+            await this.redis.setex(key, this.inProgressTTL, payload);
+            console.log(`[QueryExecutor] Marked session ${sessionId} as in-progress (requestId: ${requestId})`);
+        } catch (error) {
+            console.warn(`[QueryExecutor] Failed to mark in-progress:`, error);
+        }
+    }
+
+    /**
+     * Clear in-progress marker when query completes or errors.
+     */
+    async clearInProgress(sessionId: string): Promise<void> {
+        if (!this.redisAvailable || !this.redis) return;
+
+        const key = `${this.inProgressPrefix}${sessionId}`;
+
+        try {
+            await this.redis.del(key);
+            console.log(`[QueryExecutor] Cleared in-progress for session ${sessionId}`);
+        } catch (error) {
+            console.warn(`[QueryExecutor] Failed to clear in-progress:`, error);
+        }
+    }
+
+    /**
+     * Get in-progress info for a session (used by recovery endpoint).
+     */
+    async getInProgressInfo(sessionId: string): Promise<{ requestId: string; startedAt: number; type: string } | null> {
+        if (!this.redisAvailable || !this.redis) return null;
+
+        const key = `${this.inProgressPrefix}${sessionId}`;
+
+        try {
+            const data = await this.redis.get(key);
+            if (!data) return null;
+            return JSON.parse(data);
+        } catch (error) {
+            console.warn(`[QueryExecutor] Failed to get in-progress info:`, error);
+            return null;
+        }
     }
 
 }

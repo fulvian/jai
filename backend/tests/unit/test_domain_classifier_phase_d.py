@@ -4,11 +4,13 @@ Tests keyword variants, ambiguity, fallback semantics, and betting patterns.
 This directly addresses Criticality 2 (incomplete keyword detection).
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
+
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
-from me4brain.engine.hybrid_router.types import HybridRouterConfig, DomainClassification
+from me4brain.engine.hybrid_router.types import HybridRouterConfig
 from me4brain.llm.nanogpt import NanoGPTClient
-from unittest.mock import AsyncMock, MagicMock
 
 
 class TestKeywordVariants:

@@ -7,7 +7,7 @@ handling context preparation, and integrating with the domain classifier.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Protocol
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +33,7 @@ class LLMClientProtocol(Protocol):
 class DomainClassifierProtocol(Protocol):
     """Protocol for domain classifier callable."""
 
-    async def __call__(self, query: str) -> Optional[str]:
+    async def __call__(self, query: str) -> str | None:
         """Classify a query and return domain."""
         ...
 
@@ -49,7 +49,7 @@ class ConversationManager:
     def __init__(
         self,
         session: AsyncSession,
-        llm_client: Optional[LLMClientProtocol] = None,
+        llm_client: LLMClientProtocol | None = None,
     ):
         """Initialize conversation manager.
 
@@ -64,7 +64,7 @@ class ConversationManager:
         self,
         user_id: str,
         title: str = "New Conversation",
-        metadata: Optional[dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> Conversation:
         """Create a new conversation.
 
@@ -86,8 +86,8 @@ class ConversationManager:
         self,
         conversation_id: str,
         content: str,
-        metadata: Optional[dict[str, str]] = None,
-    ) -> Optional[Message]:
+        metadata: dict[str, str] | None = None,
+    ) -> Message | None:
         """Add a user message to a conversation.
 
         Args:
@@ -109,8 +109,8 @@ class ConversationManager:
         self,
         conversation_id: str,
         content: str,
-        metadata: Optional[dict[str, str]] = None,
-    ) -> Optional[Message]:
+        metadata: dict[str, str] | None = None,
+    ) -> Message | None:
         """Add an assistant message to a conversation.
 
         Args:
@@ -132,7 +132,7 @@ class ConversationManager:
         self,
         conversation_id: str,
         max_tokens: int = 2000,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get conversation context for LLM.
 
         This prepares the conversation history in a format suitable
@@ -150,8 +150,8 @@ class ConversationManager:
     async def get_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[Conversation]:
+        user_id: str | None = None,
+    ) -> Conversation | None:
         """Get a conversation by ID.
 
         Args:
@@ -194,8 +194,8 @@ class ConversationManager:
         self,
         conversation_id: str,
         title: str,
-        user_id: Optional[str] = None,
-    ) -> Optional[Conversation]:
+        user_id: str | None = None,
+    ) -> Conversation | None:
         """Update a conversation's title.
 
         Args:
@@ -212,7 +212,7 @@ class ConversationManager:
     async def archive_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ) -> bool:
         """Archive a conversation.
 
@@ -228,7 +228,7 @@ class ConversationManager:
     async def delete_conversation(
         self,
         conversation_id: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
     ) -> bool:
         """Delete a conversation.
 
@@ -246,7 +246,7 @@ class ConversationManager:
         conversation_id: str,
         limit: int = 50,
         offset: int = 0,
-    ) -> Optional[list[Message]]:
+    ) -> list[Message] | None:
         """Get messages for a conversation.
 
         Args:
@@ -264,9 +264,9 @@ class ConversationManager:
         self,
         conversation_id: str,
         query: str,
-        domain_classifier: Optional[DomainClassifierProtocol] = None,
+        domain_classifier: DomainClassifierProtocol | None = None,
         max_context_tokens: int = 1500,
-    ) -> tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Classify a query using conversation context.
 
         If a conversation_id is provided, enriches the query with
@@ -302,12 +302,12 @@ class ConversationManager:
 
 
 # Singleton instance
-_conversation_manager: Optional[ConversationManager] = None
+_conversation_manager: ConversationManager | None = None
 
 
 def get_conversation_manager(
     session: AsyncSession,
-    llm_client: Optional[LLMClientProtocol] = None,
+    llm_client: LLMClientProtocol | None = None,
 ) -> ConversationManager:
     """Get a ConversationManager instance.
 

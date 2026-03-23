@@ -9,7 +9,7 @@ Provides functionality to:
 
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,7 +52,7 @@ Title:"""
     def __init__(
         self,
         session: AsyncSession,
-        llm_client: Optional[LLMClientProtocol] = None,
+        llm_client: LLMClientProtocol | None = None,
     ):
         """Initialize summarizer.
 
@@ -74,7 +74,7 @@ Title:"""
     async def _format_messages_for_summary(
         self,
         conversation_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Format messages for summarization prompt.
 
         Args:
@@ -101,7 +101,7 @@ Title:"""
         self,
         conversation_id: str,
         force: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a summary for a conversation.
 
         Only generates a summary if:
@@ -131,14 +131,14 @@ Title:"""
             prompt = self.SUMMARY_PROMPT.format(messages=messages_text)
             summary = await self._llm_client.generate(prompt)
             return summary.strip()
-        except Exception as e:
+        except Exception:
             # Log error but don't fail
             return None
 
     async def generate_title(
         self,
         conversation_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a title from conversation content.
 
         Uses the first user message to generate a title.
@@ -196,7 +196,7 @@ Title:"""
     async def auto_summarize_if_needed(
         self,
         conversation_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Automatically summarize if conditions are met.
 
         Args:
@@ -211,12 +211,12 @@ Title:"""
 
 
 # Singleton instance
-_summarizer: Optional[ConversationSummarizer] = None
+_summarizer: ConversationSummarizer | None = None
 
 
 def get_conversation_summarizer(
     session: AsyncSession,
-    llm_client: Optional[LLMClientProtocol] = None,
+    llm_client: LLMClientProtocol | None = None,
 ) -> ConversationSummarizer:
     """Get a ConversationSummarizer instance.
 

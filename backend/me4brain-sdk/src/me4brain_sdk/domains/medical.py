@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Medical Domain - HIPAA-aware healthcare tools."""
 
 from typing import Any

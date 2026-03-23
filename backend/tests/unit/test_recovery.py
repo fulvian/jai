@@ -5,16 +5,16 @@ import asyncio
 import pytest
 
 from me4brain.utils.recovery import (
-    categorize_error,
-    calculate_delay,
     CircuitBreaker,
     ErrorCategory,
     RecoveryHooks,
     RetryConfig,
+    calculate_delay,
+    categorize_error,
     retry_with_backoff,
-    with_retry,
     with_circuit_breaker,
     with_fallback,
+    with_retry,
 )
 
 

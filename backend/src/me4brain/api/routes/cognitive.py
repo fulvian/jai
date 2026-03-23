@@ -153,7 +153,7 @@ async def plan(
     # Costruisci prompt per planning
     constraints_text = ""
     if plan_request.constraints:
-        constraints_text = f"\n\nConstraints to consider:\n" + "\n".join(
+        constraints_text = "\n\nConstraints to consider:\n" + "\n".join(
             f"- {c}" for c in plan_request.constraints
         )
 

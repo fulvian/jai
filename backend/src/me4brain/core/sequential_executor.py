@@ -311,7 +311,7 @@ class SequentialDAGExecutor:
                 execution_time_ms=elapsed,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             elapsed = (time.perf_counter() - start) * 1000
             return StepResult(
                 step_id=step.id,

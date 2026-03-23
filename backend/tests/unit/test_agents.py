@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
+from me4brain.core.agents.context import SharedContext
+from me4brain.core.agents.messenger import AgentMessenger
+from me4brain.core.agents.registry import AgentRegistry
+from me4brain.core.agents.supervisor import SupervisorAgent
 from me4brain.core.agents.types import (
     AgentMessage,
     AgentProfile,
@@ -16,14 +19,7 @@ from me4brain.core.agents.types import (
     HandoffRequest,
     MessageFlag,
     RegisterAgentRequest,
-    SendMessageRequest,
-    TaskContext,
 )
-from me4brain.core.agents.registry import AgentRegistry
-from me4brain.core.agents.messenger import AgentMessenger
-from me4brain.core.agents.supervisor import SupervisorAgent
-from me4brain.core.agents.context import SharedContext
-
 
 # --- Types Tests ---
 

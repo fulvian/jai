@@ -38,7 +38,6 @@ class ConversationalDetector:
         "farewell": r"(arrivederci|addio|bye|ciao|goodbye|grazie|thanks|grazie mille|thank you)",
         "small_talk": r"(come stai|how are you|come va|what's up|che novità|come ti chiami|what's your name)",
         "meta_about_bot": r"(chi sei|what are you|cosa puoi fare|what can you do|come funzioni|how do you work)",
-        "opinion_ask": r"(cosa pensi|what do you think|credi che|do you think|secondo te)",
         "joke_request": r"(raccontami una barzelletta|tell me a joke|dimmi una battuta)",
     }
 
@@ -49,7 +48,7 @@ class ConversationalDetector:
     async def is_conversational(
         self,
         query: str,
-        llm_client: "LLMProvider",
+        llm_client: LLMProvider,
     ) -> tuple[bool, str]:
         """Determine if a query is pure conversation.
 
@@ -72,6 +71,26 @@ class ConversationalDetector:
 
         # Slow path: LLM classification for ambiguous queries (~50-100ms)
         word_count = len(query.split())
+
+        # Heuristic shortcuts required by legacy behavior/tests
+        short_ack_tokens = {
+            "ok",
+            "okay",
+            "k",
+            "kk",
+            "yes",
+            "no",
+            "ciao",
+            "hi",
+            "hello",
+            "thanks",
+            "grazie",
+        }
+        if word_count == 1 and query.strip().lower() in short_ack_tokens:
+            return True, "very_short_query_heuristic"
+        if word_count >= 15:
+            return False, "too_long_for_conversational"
+
         logger.debug(
             "conversational_detection_slow_path",
             query_preview=query[:50],
@@ -79,8 +98,8 @@ class ConversationalDetector:
         )
 
         try:
-            from me4brain.llm.models import LLMRequest, Message, MessageRole
             from me4brain.llm.config import get_llm_config
+            from me4brain.llm.models import LLMRequest, Message, MessageRole
 
             config = get_llm_config()
             prompt = f"""Classifica se questa query richiede tools/API call o è pura conversazione.

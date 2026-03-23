@@ -153,7 +153,7 @@ class ModularOrchestrator:
                     results_count=len(results) if results else 0,
                 )
                 return self._convert_to_legacy_format(results)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("specified_domain_execution_timeout", domain=domain)
                 return [{"success": False, "error": f"Timeout executing {domain}"}]
             except Exception as e:

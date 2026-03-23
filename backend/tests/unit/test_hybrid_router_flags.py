@@ -1,7 +1,8 @@
 """Hybrid router runtime flag tests."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from me4brain.engine.hybrid_router.router import HybridToolRouter
 from me4brain.engine.hybrid_router.types import HybridRouterConfig

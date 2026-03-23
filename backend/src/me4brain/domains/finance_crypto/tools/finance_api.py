@@ -9,15 +9,19 @@ Wrapper async per le API finanziarie:
 Tutte le API sono pubbliche (no auth richiesta).
 """
 
+import os
+import re
+from datetime import UTC
+from pathlib import Path
 from typing import Any
 
 import httpx
 import structlog
-import re
 from dotenv import load_dotenv
-import os
 
-load_dotenv()
+# Load .env from project root (backend/)
+_project_root = Path(__file__).parent.parent.parent
+load_dotenv(_project_root / ".env")
 
 logger = structlog.get_logger(__name__)
 
@@ -653,9 +657,9 @@ async def hot_scanner(include_social: bool = True) -> dict[str, Any]:
                     pass
 
             # Build summary
-            from datetime import datetime, timezone
+            from datetime import datetime
 
-            results["timestamp"] = datetime.now(timezone.utc).isoformat()
+            results["timestamp"] = datetime.now(UTC).isoformat()
 
             crypto_names = [c["name"] for c in results["crypto_trending"][:5]]
             results["summary"] = (
@@ -848,7 +852,6 @@ async def yahooquery_stock_analysis(
         dict con analisi completa: price, financials, key_stats, recommendation,
         technical_indicators, e trading_levels (stop-loss, take-profit)
     """
-    import pandas as pd
 
     try:
         from yahooquery import Ticker
@@ -2345,7 +2348,7 @@ def _parse_alpha_vantage_response(data: dict, indicator: str, symbol: str) -> di
     """Parse risposta Alpha Vantage e aggiungi interpretazione."""
     # Trova la chiave dei dati tecnici
     ta_key = None
-    for key in data.keys():
+    for key in data:
         if "Technical Analysis" in key:
             ta_key = key
             break
@@ -4849,7 +4852,6 @@ async def yahooquery_historical(
     """
     try:
         import pandas as pd
-
         from yahooquery import Ticker
 
         # Normalize to list

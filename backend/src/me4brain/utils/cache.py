@@ -2,8 +2,9 @@
 
 import hashlib
 import json
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, ParamSpec
+from typing import ParamSpec, TypeVar
 
 import structlog
 
@@ -16,7 +17,7 @@ T = TypeVar("T")
 def cached(
     ttl: int = 900,
     key_prefix: str = "cache",
-    exclude_args: Optional[list[str]] = None,
+    exclude_args: list[str] | None = None,
 ):
     """
     Decorator per cache responses in Redis.
@@ -44,9 +45,7 @@ def cached(
                 return await func(*args, **kwargs)
 
             # Genera cache key
-            cache_key = _generate_cache_key(
-                key_prefix, func.__name__, args, kwargs, exclude_args
-            )
+            cache_key = _generate_cache_key(key_prefix, func.__name__, args, kwargs, exclude_args)
 
             # Prova a recuperare dalla cache
             cached_value = await cache_manager.get(cache_key)
@@ -73,7 +72,7 @@ def _generate_cache_key(
     func_name: str,
     args: tuple,
     kwargs: dict,
-    exclude_args: Optional[list[str]] = None,
+    exclude_args: list[str] | None = None,
 ) -> str:
     """Genera chiave cache unica."""
     exclude = exclude_args or []

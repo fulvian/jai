@@ -22,20 +22,24 @@ from me4brain.domains.sports_nba.tools.betting_analyzer import (
     get_tool_definitions as get_betting_definitions,
 )
 
+
 # Merge definitions and executors
 def get_tool_definitions():
     return get_nba_api_definitions() + get_betting_definitions()
+
 
 def get_executors():
     execs = get_nba_api_executors().copy()
     execs.update(get_betting_executors())
     return execs
 
+
 def execute_tool(tool_name: str, args: dict):
     execs = get_executors()
     if tool_name in execs:
         return execs[tool_name](**args)
     return {"error": f"Tool {tool_name} not found in Sports NBA domain"}
+
 
 AVAILABLE_TOOLS = get_executors()
 

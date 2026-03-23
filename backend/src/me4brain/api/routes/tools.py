@@ -8,7 +8,6 @@ Espone i tool di Me4BrAIn tramite API REST per integrazioni esterne:
 - Categories: Categorie disponibili
 """
 
-from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -387,7 +386,7 @@ async def get_tool(
 ) -> ToolDetailResponse:
     """Dettagli di un singolo tool - cerca in Qdrant."""
     from qdrant_client import QdrantClient
-    from qdrant_client.models import Filter, FieldCondition, MatchValue
+    from qdrant_client.models import FieldCondition, Filter, MatchValue
 
     settings = get_settings()
 

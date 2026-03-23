@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any
 
 import structlog
 from arq import cron
@@ -12,7 +12,7 @@ from arq.connections import RedisSettings
 from me4brain.core.scheduler.cron import ScheduleParser
 from me4brain.core.scheduler.delivery import DeliveryService, get_delivery_service
 from me4brain.core.scheduler.store import JobStore, get_job_store
-from me4brain.core.scheduler.types import ScheduledJob, ScheduleType
+from me4brain.core.scheduler.types import ScheduleType
 
 logger = structlog.get_logger(__name__)
 
@@ -97,7 +97,7 @@ async def execute_scheduled_job(
         success = False
 
     # Calcola next_run
-    next_run: Optional[datetime] = None
+    next_run: datetime | None = None
     if job.schedule.type != ScheduleType.AT:
         # Per cron e every, calcola prossimo run
         next_run = parser.next_run(job)

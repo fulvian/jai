@@ -17,7 +17,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -76,7 +76,7 @@ class AdaptiveContextCompressor:
         self,
         context_window: int = 32768,
         output_reserve: int = 4096,
-        llm_provider: Optional[LLMProvider] = None,
+        llm_provider: LLMProvider | None = None,
         fast_model: str = "qwen3.5-4b-mlx",
     ):
         self.context_window = context_window
@@ -106,7 +106,7 @@ class AdaptiveContextCompressor:
             return CompressionLevel.AGGRESSIVE
 
     def extract_anchors(
-        self, context: str, exec_context: Optional[ExecutionContext] = None
+        self, context: str, exec_context: ExecutionContext | None = None
     ) -> AnchorData:
         """Estrae ancore dal contesto (dati critici da preservare).
 
@@ -448,7 +448,7 @@ class ContextWindowTracker:
         self._component_tokens = {}
 
 
-_context_tracker: Optional[ContextWindowTracker] = None
+_context_tracker: ContextWindowTracker | None = None
 
 
 def get_context_tracker(model_context_window: int = 32768) -> ContextWindowTracker:

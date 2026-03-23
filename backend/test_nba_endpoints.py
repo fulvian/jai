@@ -1,6 +1,7 @@
 import sys
 import time
 
+
 def test_endpoints():
     from nba_api.stats.endpoints import teamestimatedmetrics, leaguestandings
     from me4brain.domains.sports_nba.tools.nba_api import _get_nba_stats_headers
@@ -30,6 +31,7 @@ def test_endpoints():
     except Exception as e:
         duration = time.time() - start_time
         print(f"Failed leaguestandings: {str(e)} in {duration:.2f}s", flush=True)
+
 
 if __name__ == "__main__":
     test_endpoints()

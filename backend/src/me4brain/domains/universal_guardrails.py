@@ -7,12 +7,10 @@ Configures adaptive guardrails for:
 - All error scenarios and edge cases
 """
 
-from dataclasses import dataclass
-from typing import Dict, Optional
 from me4brain.domains.adaptive_guardrails import AdaptiveGuardrailsConfig, GuardrailsMetrics
 
 # Global registry di configurazioni per tutti i domini e rotte
-_UNIVERSAL_GUARDRAILS_REGISTRY: Dict[str, AdaptiveGuardrailsConfig] = {}
+_UNIVERSAL_GUARDRAILS_REGISTRY: dict[str, AdaptiveGuardrailsConfig] = {}
 
 
 def get_universal_config(domain_or_route: str) -> AdaptiveGuardrailsConfig:
@@ -222,8 +220,8 @@ def reset_universal_registry() -> None:
 
 def configure_guardrails_for_domain(
     domain: str,
-    max_response_bytes: Optional[int] = None,
-    max_items_per_page: Optional[int] = None,
+    max_response_bytes: int | None = None,
+    max_items_per_page: int | None = None,
     enable_adaptive: bool = True,
 ) -> AdaptiveGuardrailsConfig:
     """Configure guardrails for a specific domain at runtime."""

@@ -3,10 +3,8 @@
 Persiste le skill approvate nel formato SKILL.md compatibile con ClawHub.
 """
 
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import structlog
 
@@ -18,7 +16,7 @@ logger = structlog.get_logger(__name__)
 DEFAULT_SKILLS_DIR = Path.home() / ".me4brain" / "skills" / "crystallized"
 
 
-def ensure_skills_dir(path: Optional[Path] = None) -> Path:
+def ensure_skills_dir(path: Path | None = None) -> Path:
     """Crea directory skills se non esiste."""
     skills_dir = path or DEFAULT_SKILLS_DIR
     skills_dir.mkdir(parents=True, exist_ok=True)
@@ -96,7 +94,7 @@ def persist_skill_to_disk(
     tool_chain: list[str],
     input_query: str,
     risk_level: str = "SAFE",
-    skills_dir: Optional[Path] = None,
+    skills_dir: Path | None = None,
 ) -> Path:
     """Salva skill come file SKILL.md.
 
@@ -134,7 +132,7 @@ def persist_skill_to_disk(
     return skill_file
 
 
-def delete_skill_from_disk(skill_id: str, skills_dir: Optional[Path] = None) -> bool:
+def delete_skill_from_disk(skill_id: str, skills_dir: Path | None = None) -> bool:
     """Elimina skill da disco.
 
     Args:
@@ -157,7 +155,7 @@ def delete_skill_from_disk(skill_id: str, skills_dir: Optional[Path] = None) -> 
     return False
 
 
-def list_persisted_skills(skills_dir: Optional[Path] = None) -> list[Path]:
+def list_persisted_skills(skills_dir: Path | None = None) -> list[Path]:
     """Lista tutte le skill persistite.
 
     Args:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Optional
 
 import structlog
 
@@ -72,16 +71,14 @@ class SkillExtractor:
         analysis["redundant_actions"] = self._find_redundant(recording.actions)
 
         # Suggerimenti ottimizzazione
-        analysis["optimization_suggestions"] = self._generate_suggestions(
-            recording, analysis
-        )
+        analysis["optimization_suggestions"] = self._generate_suggestions(recording, analysis)
 
         return analysis
 
     def extract_skill(
         self,
         recording: RecordingState,
-        name: Optional[str] = None,
+        name: str | None = None,
         optimize: bool = True,
     ) -> BrowserSkill:
         """
@@ -187,9 +184,7 @@ class SkillExtractor:
         redundant_indices = set(self._find_redundant(actions))
         return [a for i, a in enumerate(actions) if i not in redundant_indices]
 
-    def _generalize_selectors(
-        self, actions: list[BrowserAction]
-    ) -> list[BrowserAction]:
+    def _generalize_selectors(self, actions: list[BrowserAction]) -> list[BrowserAction]:
         """Generalizza selectors per robustezza."""
         generalized = []
 
@@ -220,9 +215,7 @@ class SkillExtractor:
 
         for action in actions:
             # URL parameter
-            if action.type == ActionType.NAVIGATE and "{dynamic_id}" in (
-                action.target or ""
-            ):
+            if action.type == ActionType.NAVIGATE and "{dynamic_id}" in (action.target or ""):
                 if "url" not in seen_types:
                     params.append(
                         {
@@ -236,14 +229,12 @@ class SkillExtractor:
 
             # Input parameters
             if action.type == ActionType.TYPE and action.value:
-                param_name = (
-                    f"input_{len([p for p in params if 'input_' in p['name']])}"
-                )
+                param_name = f"input_{len([p for p in params if 'input_' in p['name']])}"
                 params.append(
                     {
                         "name": param_name,
                         "type": "string",
-                        "description": f"Input value for action",
+                        "description": "Input value for action",
                         "required": False,
                         "default": action.value,
                     }
@@ -292,7 +283,7 @@ class SkillExtractor:
 
         return desc
 
-    def _find_source_url(self, actions: list[BrowserAction]) -> Optional[str]:
+    def _find_source_url(self, actions: list[BrowserAction]) -> str | None:
         """Trova URL sorgente."""
         for action in actions:
             if action.type == ActionType.NAVIGATE and action.target:
@@ -310,16 +301,12 @@ class SkillExtractor:
         # Troppe screenshot
         screenshots = analysis["action_types"].get("screenshot", 0)
         if screenshots > 3:
-            suggestions.append(
-                f"Consider reducing {screenshots} screenshots to key points only"
-            )
+            suggestions.append(f"Consider reducing {screenshots} screenshots to key points only")
 
         # Molti wait
         waits = analysis["action_types"].get("wait", 0)
         if waits > 2:
-            suggestions.append(
-                "Multiple explicit waits detected - consider using auto-wait"
-            )
+            suggestions.append("Multiple explicit waits detected - consider using auto-wait")
 
         # Azioni ridondanti
         if analysis["redundant_actions"]:
@@ -329,8 +316,6 @@ class SkillExtractor:
 
         # Molti parametri
         if len(analysis["potential_parameters"]) > 5:
-            suggestions.append(
-                "Many variable values detected - consider parameterizing for reuse"
-            )
+            suggestions.append("Many variable values detected - consider parameterizing for reuse")
 
         return suggestions

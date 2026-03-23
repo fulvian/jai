@@ -10,8 +10,8 @@ Questo modulo è il cuore del sistema di sicurezza che differenzia
 PersAn da OpenClaw, aggiungendo guardrail alle azioni autonome.
 """
 
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 import structlog
@@ -114,13 +114,13 @@ TOOL_PERMISSIONS: dict[str, PermissionLevel] = {
     # NOTIFY - Side effects a basso rischio
     # ==========================================================================
     # Creazione contenuti personali
-    "create_reminder": PermissionLevel.SAFE,
+    "create_reminder": PermissionLevel.NOTIFY,
     "apple_reminders_": PermissionLevel.SAFE,
-    "create_note": PermissionLevel.SAFE,
+    "create_note": PermissionLevel.NOTIFY,
     "apple_notes_": PermissionLevel.SAFE,
     "clipboard_write": PermissionLevel.SAFE,
     # Calendar - Crea eventi
-    "calendar_create": PermissionLevel.SAFE,
+    "calendar_create": PermissionLevel.NOTIFY,
     "calendar_quick_add": PermissionLevel.SAFE,
     # Memory - Store
     "memory_store": PermissionLevel.SAFE,
@@ -132,7 +132,7 @@ TOOL_PERMISSIONS: dict[str, PermissionLevel] = {
     # NOTIFY - Side effects ma non pericolosi (log only, no block)
     # ==========================================================================
     # Google Gmail - Write (most are SAFE now, only send to external = CONFIRM)
-    "google_gmail_send": PermissionLevel.SAFE,  # Era CONFIRM - allentato
+    "google_gmail_send": PermissionLevel.CONFIRM,
     "google_gmail_reply": PermissionLevel.SAFE,  # Reply a thread esistente = SAFE
     "google_gmail_forward": PermissionLevel.SAFE,  # Era CONFIRM
     # Google Drive - Write (create/modify = SAFE, delete/share = CONFIRM)
@@ -163,21 +163,24 @@ TOOL_PERMISSIONS: dict[str, PermissionLevel] = {
     "google_drive_share": PermissionLevel.CONFIRM,  # Condivisione esterna = rischio
     "google_calendar_delete_event": PermissionLevel.CONFIRM,
     # File system - Write (local files = più cautela)
-    "file_write": PermissionLevel.SAFE,  # Era CONFIRM - allentato
+    "file_write": PermissionLevel.CONFIRM,
     "file_delete": PermissionLevel.CONFIRM,  # Delete = sempre CONFIRM
-    "file_move": PermissionLevel.SAFE,  # Era CONFIRM
+    "file_move": PermissionLevel.CONFIRM,
     # Shell/System - SEMPRE CONFIRM (pericoloso)
     "execute_shell": PermissionLevel.CONFIRM,
     "run_command": PermissionLevel.CONFIRM,
     "run_script": PermissionLevel.CONFIRM,
     # Browser automation - SAFE per la maggior parte
-    "browser_open": PermissionLevel.SAFE,  # Era CONFIRM - allentato
-    "browser_act": PermissionLevel.SAFE,  # Era CONFIRM
+    "browser_open": PermissionLevel.CONFIRM,
+    "browser_act": PermissionLevel.CONFIRM,
     "browser_extract": PermissionLevel.SAFE,
     "browser_screenshot": PermissionLevel.SAFE,
-    "browser_click": PermissionLevel.SAFE,  # Era CONFIRM
-    "browser_type": PermissionLevel.SAFE,  # Era CONFIRM
-    "browser_navigate": PermissionLevel.SAFE,  # Era CONFIRM
+    "browser_click": PermissionLevel.CONFIRM,
+    "browser_type": PermissionLevel.CONFIRM,
+    "browser_navigate": PermissionLevel.CONFIRM,
+    "gmail_send": PermissionLevel.CONFIRM,
+    "gmail_send_": PermissionLevel.CONFIRM,
+    "gmail_delete": PermissionLevel.CONFIRM,
     "browser_close": PermissionLevel.SAFE,
     # Web scraping
     "web_scraper_download": PermissionLevel.SAFE,  # Era CONFIRM
@@ -294,9 +297,7 @@ class PermissionValidator:
 
         # Context-aware escalation
         if args:
-            escalated_level = self._check_context_escalation(
-                tool_name, args, base_level
-            )
+            escalated_level = self._check_context_escalation(tool_name, args, base_level)
             if escalated_level != base_level:
                 logger.info(
                     "permission_escalated",
@@ -313,9 +314,7 @@ class PermissionValidator:
 
         approval_message = None
         if requires_approval:
-            approval_message = self._generate_approval_message(
-                tool_name, args, base_level
-            )
+            approval_message = self._generate_approval_message(tool_name, args, base_level)
 
         result = PermissionResult(
             tool_name=tool_name,
@@ -442,7 +441,5 @@ def get_permission_validator(
     """
     global _permission_validator
     if _permission_validator is None:
-        _permission_validator = PermissionValidator(
-            custom_permissions=custom_permissions
-        )
+        _permission_validator = PermissionValidator(custom_permissions=custom_permissions)
     return _permission_validator

@@ -11,11 +11,11 @@ Note:
     tramite analisi del sito web e sono per uso personale.
 """
 
+from datetime import datetime
 from typing import Any
-import os
+
 import httpx
 import structlog
-from datetime import datetime
 
 logger = structlog.get_logger(__name__)
 

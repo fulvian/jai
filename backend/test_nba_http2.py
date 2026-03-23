@@ -1,6 +1,7 @@
 import asyncio
 import httpx
 
+
 async def main():
     print("Testing with HTTP/2 enabled...")
     headers = {
@@ -11,11 +12,15 @@ async def main():
     }
     try:
         async with httpx.AsyncClient(http2=True, timeout=10.0) as client:
-            resp = await client.get("https://stats.nba.com/stats/teamestimatedmetrics?LeagueID=00&Season=2025-26&SeasonType=Regular+Season", headers=headers)
+            resp = await client.get(
+                "https://stats.nba.com/stats/teamestimatedmetrics?LeagueID=00&Season=2025-26&SeasonType=Regular+Season",
+                headers=headers,
+            )
             print(f"Status: {resp.status_code}")
             print(f"Body length: {len(resp.text)}")
     except Exception as e:
         print(f"Failed: {type(e).__name__} - {str(e)}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 import structlog
 from prometheus_client import (
@@ -174,12 +173,8 @@ class MetricsCollector:
         finally:
             duration = time.time() - start
             self.requests_in_progress.labels(method=method).dec()
-            self.request_duration.labels(method=method, endpoint=endpoint).observe(
-                duration
-            )
-            self.requests_total.labels(
-                method=method, endpoint=endpoint, status_code=status
-            ).inc()
+            self.request_duration.labels(method=method, endpoint=endpoint).observe(duration)
+            self.requests_total.labels(method=method, endpoint=endpoint, status_code=status).inc()
 
     def record_request(
         self,
@@ -203,9 +198,7 @@ class MetricsCollector:
         model = usage.model
 
         self.llm_requests_total.labels(model=model, status="success").inc()
-        self.llm_tokens_total.labels(model=model, token_type="prompt").inc(
-            usage.prompt_tokens
-        )
+        self.llm_tokens_total.labels(model=model, token_type="prompt").inc(usage.prompt_tokens)
         self.llm_tokens_total.labels(model=model, token_type="completion").inc(
             usage.completion_tokens
         )
@@ -285,7 +278,7 @@ class MetricsCollector:
 
 
 # Singleton
-_metrics_collector: Optional[MetricsCollector] = None
+_metrics_collector: MetricsCollector | None = None
 
 
 def get_metrics() -> MetricsCollector:

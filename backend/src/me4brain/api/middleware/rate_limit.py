@@ -3,11 +3,11 @@
 Implementa rate limiting server-side usando slowapi con Redis backend.
 """
 
+import structlog
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-import structlog
 
 from me4brain.config import get_settings
 

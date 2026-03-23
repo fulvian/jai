@@ -11,11 +11,11 @@ from prometheus_client import REGISTRY
 
 # Import metrics to test
 from me4brain.engine.hybrid_router.metrics import (
-    CLASSIFICATION_TOTAL,
-    CLASSIFICATION_LATENCY,
-    LLM_ERRORS,
     CLASSIFICATION_CONFIDENCE,
+    CLASSIFICATION_LATENCY,
     CLASSIFICATION_RETRIES,
+    CLASSIFICATION_TOTAL,
+    LLM_ERRORS,
     QUERY_WITH_CONTEXT,
 )
 
@@ -112,8 +112,9 @@ class TestDiagnosticsEndpoint:
 
     async def test_recommendation_generator_ollama_healthy(self):
         """Test recommendation for healthy Ollama."""
-        from me4brain.api.routes.diagnostics import _generate_recommendation
         from unittest.mock import MagicMock
+
+        from me4brain.api.routes.diagnostics import _generate_recommendation
 
         # Mock healthy Ollama
         ollama = MagicMock()
@@ -132,8 +133,9 @@ class TestDiagnosticsEndpoint:
 
     async def test_recommendation_generator_ollama_down_lmstudio_up(self):
         """Test recommendation for LM Studio fallback."""
-        from me4brain.api.routes.diagnostics import _generate_recommendation
         from unittest.mock import MagicMock
+
+        from me4brain.api.routes.diagnostics import _generate_recommendation
 
         # Mock unavailable Ollama, healthy LM Studio
         ollama = MagicMock()
@@ -152,8 +154,9 @@ class TestDiagnosticsEndpoint:
 
     async def test_recommendation_generator_all_down(self):
         """Test recommendation when all LLMs are down."""
-        from me4brain.api.routes.diagnostics import _generate_recommendation
         from unittest.mock import MagicMock
+
+        from me4brain.api.routes.diagnostics import _generate_recommendation
 
         # Mock all providers down
         ollama = MagicMock()

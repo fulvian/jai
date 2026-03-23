@@ -15,15 +15,17 @@ Tests for:
 
 import json
 import time
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from me4brain.engine.unified_intent_analyzer import (
-    UnifiedIntentAnalyzer,
     IntentType,
     QueryComplexity,
+    UnifiedIntentAnalyzer,
 )
-from me4brain.llm.models import LLMResponse, Choice, ChoiceMessage, Usage
 from me4brain.llm.config import get_llm_config
+from me4brain.llm.models import Choice, ChoiceMessage, LLMResponse, Usage
 
 
 @pytest.fixture
@@ -61,7 +63,7 @@ class TestWeatherQueryPipeline:
     @pytest.mark.asyncio
     async def test_weather_query_full_pipeline(self, analyzer, mock_llm_client):
         """Test full pipeline: weather query → intent → tools → execution → synthesis.
-        
+
         Given a weather query, the system SHALL:
         1. Analyze intent as tool_required with geo_weather domain
         2. Identify weather tools needed
@@ -122,7 +124,7 @@ class TestConversationalQueryPipeline:
     @pytest.mark.asyncio
     async def test_conversational_query_full_pipeline(self, analyzer, mock_llm_client):
         """Test full pipeline: conversational query → intent → direct response.
-        
+
         Given a conversational query, the system SHALL:
         1. Analyze intent as conversational with empty domains
         2. Skip tool retrieval and execution
@@ -200,7 +202,7 @@ class TestMultiDomainQueryPipeline:
     @pytest.mark.asyncio
     async def test_multi_domain_query_full_pipeline(self, analyzer, mock_llm_client):
         """Test full pipeline: multi-domain query → intent → multiple tools → synthesis.
-        
+
         Given a multi-domain query, the system SHALL:
         1. Analyze intent as tool_required with multiple domains
         2. Identify tools for each domain
@@ -436,7 +438,7 @@ class TestPerformance:
     @pytest.mark.asyncio
     async def test_intent_analysis_latency(self, analyzer, mock_llm_client):
         """Test intent analysis latency is within acceptable bounds.
-        
+
         **Validates: Requirements NFR1.1 - Intent analysis SHALL complete within 200ms**
         """
         response_content = json.dumps(
@@ -462,7 +464,7 @@ class TestPerformance:
     @pytest.mark.asyncio
     async def test_concurrent_intent_analysis(self, analyzer, mock_llm_client):
         """Test concurrent intent analysis requests.
-        
+
         **Validates: Requirements NFR1.3 - Support at least 100 concurrent requests**
         """
         import asyncio
@@ -516,7 +518,7 @@ class TestCaching:
     @pytest.mark.asyncio
     async def test_identical_query_caching(self, analyzer, mock_llm_client):
         """Test caching of identical queries.
-        
+
         **Validates: Requirements NFR1.4 - Cache intent analysis results**
         """
         response_content = json.dumps(
@@ -585,7 +587,7 @@ class TestBackwardCompatibility:
     @pytest.mark.asyncio
     async def test_weather_query_backward_compatibility(self, analyzer, mock_llm_client):
         """Test weather queries still work as before.
-        
+
         **Validates: Requirements AC7.1 - Weather queries continue to work**
         """
         query = "Che tempo fa a Caltanissetta?"
@@ -610,7 +612,7 @@ class TestBackwardCompatibility:
     @pytest.mark.asyncio
     async def test_conversational_query_backward_compatibility(self, analyzer, mock_llm_client):
         """Test conversational queries still work as before.
-        
+
         **Validates: Requirements AC7.2 - Conversational queries continue to work**
         """
         query = "ciao"

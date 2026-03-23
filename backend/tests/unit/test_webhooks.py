@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from me4brain.core.webhooks.dispatcher import WebhookDispatcher
+from me4brain.core.webhooks.receiver import WebhookReceiver
 from me4brain.core.webhooks.types import (
-    CreateWebhookRequest,
     IncomingWebhookPayload,
     RetryPolicy,
     WebhookConfig,
@@ -20,9 +20,6 @@ from me4brain.core.webhooks.types import (
     WebhookEventType,
     WebhookResponse,
 )
-from me4brain.core.webhooks.receiver import WebhookReceiver
-from me4brain.core.webhooks.dispatcher import WebhookDispatcher
-
 
 # --- Types Tests ---
 
@@ -248,9 +245,7 @@ class TestWebhookDispatcher:
         )
 
         # Mock aiohttp - use proper async context managers
-        with patch(
-            "me4brain.core.webhooks.dispatcher.aiohttp.ClientSession"
-        ) as mock_session_cls:
+        with patch("me4brain.core.webhooks.dispatcher.aiohttp.ClientSession") as mock_session_cls:
             # Create mock response
             mock_response = MagicMock()
             mock_response.status = 200

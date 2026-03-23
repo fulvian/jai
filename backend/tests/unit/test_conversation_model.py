@@ -1,15 +1,14 @@
 # Phase 7: Conversation Model Tests
 # Tests for conversation Pydantic models
 
-import pytest
 from datetime import datetime
+
 from me4brain.models.conversation import (
     Conversation,
     ConversationCreate,
     ConversationSummary,
     ConversationUpdate,
     Message,
-    MessageCreate,
     MessageRole,
 )
 

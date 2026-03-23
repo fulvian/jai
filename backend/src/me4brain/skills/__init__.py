@@ -20,23 +20,23 @@ Integration Points:
     - SemanticMemory: Skill entities added to knowledge graph
 """
 
+from me4brain.skills.executor import SkillExecutionResult, SkillExecutor, create_skill_executor
+from me4brain.skills.integrator import (
+    IntegrationStats,
+    SkillIntegrator,
+    integrate_skills_with_engine,
+)
+from me4brain.skills.loader import SkillLoader, ensure_skill_directories
+from me4brain.skills.parser import SkillParseError, SkillParser
+from me4brain.skills.registry import SkillRegistry
 from me4brain.skills.types import (
-    SkillDefinition,
-    SkillMetadata,
-    SkillStatus,
-    SkillSource,
-    Requirement,
     CLIRequirement,
     EnvRequirement,
-)
-from me4brain.skills.parser import SkillParser, SkillParseError
-from me4brain.skills.loader import SkillLoader, ensure_skill_directories
-from me4brain.skills.registry import SkillRegistry
-from me4brain.skills.executor import SkillExecutor, SkillExecutionResult, create_skill_executor
-from me4brain.skills.integrator import (
-    SkillIntegrator,
-    IntegrationStats,
-    integrate_skills_with_engine,
+    Requirement,
+    SkillDefinition,
+    SkillMetadata,
+    SkillSource,
+    SkillStatus,
 )
 
 __all__ = [

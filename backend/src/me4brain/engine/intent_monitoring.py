@@ -21,30 +21,30 @@ class IntentMetrics:
     conversational_queries: int = 0
     tool_required_queries: int = 0
     failed_queries: int = 0
-    
+
     # Latency metrics (milliseconds)
     total_latency_ms: float = 0.0
     min_latency_ms: float = float("inf")
     max_latency_ms: float = 0.0
-    
+
     # Accuracy metrics
     correct_classifications: int = 0
     incorrect_classifications: int = 0
-    
+
     # Confidence metrics
     total_confidence: float = 0.0
     low_confidence_queries: int = 0  # confidence < 0.7
-    
+
     # Domain metrics
     domain_distribution: dict[str, int] = field(default_factory=dict)
-    
+
     # Complexity metrics
     complexity_distribution: dict[str, int] = field(default_factory=dict)
-    
+
     # Cache metrics
     cache_hits: int = 0
     cache_misses: int = 0
-    
+
     # Error metrics
     llm_api_failures: int = 0
     json_parse_failures: int = 0
@@ -275,19 +275,23 @@ class IntentMonitor:
 
         # High error rate alert
         if self.metrics.error_rate > 0.05:
-            alerts.append({
-                "alert_type": "high_error_rate",
-                "message": f"Error rate is {self.metrics.error_rate:.1%}",
-                "severity": "warning",
-            })
+            alerts.append(
+                {
+                    "alert_type": "high_error_rate",
+                    "message": f"Error rate is {self.metrics.error_rate:.1%}",
+                    "severity": "warning",
+                }
+            )
 
         # High latency alert
         if self.metrics.avg_latency_ms > 300:
-            alerts.append({
-                "alert_type": "high_latency",
-                "message": f"Average latency is {self.metrics.avg_latency_ms:.0f}ms",
-                "severity": "warning",
-            })
+            alerts.append(
+                {
+                    "alert_type": "high_latency",
+                    "message": f"Average latency is {self.metrics.avg_latency_ms:.0f}ms",
+                    "severity": "warning",
+                }
+            )
 
         # Low confidence alert
         low_confidence_rate = (
@@ -296,19 +300,23 @@ class IntentMonitor:
             else 0
         )
         if low_confidence_rate > 0.1:
-            alerts.append({
-                "alert_type": "low_confidence",
-                "message": f"Low confidence rate is {low_confidence_rate:.1%}",
-                "severity": "info",
-            })
+            alerts.append(
+                {
+                    "alert_type": "low_confidence",
+                    "message": f"Low confidence rate is {low_confidence_rate:.1%}",
+                    "severity": "info",
+                }
+            )
 
         # LLM API failures alert
         if self.metrics.llm_api_failures > 10:
-            alerts.append({
-                "alert_type": "llm_api_failures",
-                "message": f"LLM API failures: {self.metrics.llm_api_failures}",
-                "severity": "critical",
-            })
+            alerts.append(
+                {
+                    "alert_type": "llm_api_failures",
+                    "message": f"LLM API failures: {self.metrics.llm_api_failures}",
+                    "severity": "critical",
+                }
+            )
 
         return alerts
 

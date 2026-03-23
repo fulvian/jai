@@ -1,18 +1,19 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from me4brain.core.conflict import ConflictResolution
 from me4brain.core.orchestrator import (
-    embed_input,
-    route_query,
-    retrieve_lightrag,
     check_muscle_memory,
-    resolve_conflicts,
+    embed_input,
     generate_response,
+    resolve_conflicts,
+    retrieve_lightrag,
+    route_query,
     run_cognitive_cycle,
 )
-from me4brain.core.router import RouterResult, QueryType, RoutingDecision
+from me4brain.core.router import QueryType, RouterResult, RoutingDecision
 from me4brain.retrieval.lightrag import LightRAGResult
-from me4brain.core.conflict import ConflictSource, ConflictResolution
-from datetime import UTC, datetime
 
 
 @pytest.fixture

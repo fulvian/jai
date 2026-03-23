@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Optional
 
-import structlog
 import aiohttp
+import structlog
 
 from me4brain.core.scheduler.types import DeliveryConfig
 
@@ -167,7 +166,7 @@ class DeliveryService:
                                 attempt=attempt,
                             )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "webhook_timeout",
                     url=url,
@@ -203,7 +202,7 @@ class DeliveryService:
 
 
 # Singleton
-_delivery_service: Optional[DeliveryService] = None
+_delivery_service: DeliveryService | None = None
 
 
 def get_delivery_service() -> DeliveryService:

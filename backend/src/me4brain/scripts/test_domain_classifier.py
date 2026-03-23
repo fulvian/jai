@@ -5,9 +5,9 @@ import sys
 # Aggiungi src al path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from me4brain.llm.provider_factory import get_reasoning_client
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.types import HybridRouterConfig
+from me4brain.llm.provider_factory import get_reasoning_client
 
 
 async def test_classification():
@@ -51,12 +51,12 @@ async def test_classification():
     ]
 
     for query in queries:
-        print(f"\n" + "=" * 50)
+        print("\n" + "=" * 50)
         print(f"Testing classification for: '{query}'")
 
         # Direct classify
         result = await classifier.classify(query)
-        print(f"Classification Result:")
+        print("Classification Result:")
         print(f"  Domains: {[d.name for d in result.domains]}")
         print(f"  Confidence: {result.confidence}")
 

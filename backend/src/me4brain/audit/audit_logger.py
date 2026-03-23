@@ -8,10 +8,11 @@ Logs all sensitive operations with full context.
 from __future__ import annotations
 
 import json
-import structlog
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
+
+import structlog
 
 from me4brain.models.audit import AuditAction, AuditLogEntry, AuditStatus
 
@@ -35,16 +36,16 @@ class AuditLogger:
     def log(
         self,
         action: AuditAction,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         status: AuditStatus = AuditStatus.SUCCESS,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        request_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        error_message: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        details: dict[str, Any] | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        request_id: str | None = None,
+        session_id: str | None = None,
+        error_message: str | None = None,
     ) -> AuditLogEntry:
         """Log an audit event.
 
@@ -117,12 +118,12 @@ class AuditLogger:
 
     def get_logs(
         self,
-        user_id: Optional[str] = None,
-        action: Optional[AuditAction] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        user_id: str | None = None,
+        action: AuditAction | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         limit: int = 100,
     ) -> list[AuditLogEntry]:
         """Query audit logs.
@@ -193,9 +194,9 @@ class AuditLogger:
 
     def export_logs(
         self,
-        user_id: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        user_id: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> str:
         """Export audit logs as JSON.
 
@@ -215,10 +216,10 @@ class AuditLogger:
     def log_login(
         self,
         user_id: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         success: bool = True,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> AuditLogEntry:
         """Log a login attempt.
 
@@ -245,7 +246,7 @@ class AuditLogger:
         self,
         user_id: str,
         key_id: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AuditLogEntry:
         """Log API key creation.
 
@@ -270,7 +271,7 @@ class AuditLogger:
         self,
         user_id: str,
         key_id: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AuditLogEntry:
         """Log API key revocation.
 
@@ -295,7 +296,7 @@ class AuditLogger:
         self,
         user_id: str,
         conversation_id: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AuditLogEntry:
         """Log conversation access.
 
@@ -320,7 +321,7 @@ class AuditLogger:
         self,
         user_id: str,
         exported_data_types: list[str],
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AuditLogEntry:
         """Log data export (GDPR).
 
@@ -344,7 +345,7 @@ class AuditLogger:
         self,
         user_id: str,
         deleted_data_types: list[str],
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> AuditLogEntry:
         """Log data deletion (GDPR).
 
@@ -366,7 +367,7 @@ class AuditLogger:
 
 
 # Singleton instance
-_audit_logger: Optional[AuditLogger] = None
+_audit_logger: AuditLogger | None = None
 
 
 def get_audit_logger() -> AuditLogger:

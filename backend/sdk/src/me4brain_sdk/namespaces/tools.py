@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Tools Namespace - Tool search, execution, and management."""
 
 from typing import Any

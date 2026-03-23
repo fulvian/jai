@@ -8,8 +8,8 @@ Wrappers for APIs that require API keys (free tier available):
 """
 
 import os
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 import httpx
 import structlog
@@ -17,8 +17,9 @@ from dotenv import load_dotenv
 
 logger = structlog.get_logger(__name__)
 
-# Load environment
-load_dotenv()
+# Load .env from project root (backend/)
+_project_root = Path(__file__).parent.parent.parent
+load_dotenv(_project_root / ".env")
 
 
 # =============================================================================

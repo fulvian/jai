@@ -1,6 +1,7 @@
 """Knowledge & Media API Tools."""
 
 from typing import Any
+
 import httpx
 import structlog
 

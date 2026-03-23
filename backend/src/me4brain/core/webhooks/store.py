@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -80,7 +79,7 @@ class WebhookStore:
 
         return config
 
-    async def get(self, config_id: str) -> Optional[WebhookConfig]:
+    async def get(self, config_id: str) -> WebhookConfig | None:
         """
         Recupera configurazione per ID.
 
@@ -100,7 +99,7 @@ class WebhookStore:
 
     async def list(
         self,
-        tenant_id: Optional[str] = None,
+        tenant_id: str | None = None,
         enabled_only: bool = False,
     ) -> list[WebhookConfig]:
         """
@@ -207,10 +206,10 @@ class WebhookStore:
 
 
 # Singleton
-_webhook_store: Optional[WebhookStore] = None
+_webhook_store: WebhookStore | None = None
 
 
-def get_webhook_store() -> Optional[WebhookStore]:
+def get_webhook_store() -> WebhookStore | None:
     """Ottiene store globale."""
     return _webhook_store
 

@@ -7,9 +7,9 @@ produce scoring composito pesato e signal finale.
 Designed to be called as a native Me4BrAIn tool.
 """
 
+import asyncio
 from typing import Any, Literal
 
-import asyncio
 import structlog
 
 from me4brain.domains.finance_crypto.tools import finance_api

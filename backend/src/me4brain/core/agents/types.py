@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -35,16 +35,16 @@ class AgentProfile(BaseModel):
 
     # State
     status: AgentStatus = AgentStatus.IDLE
-    session_id: Optional[str] = None
-    current_task: Optional[str] = None
+    session_id: str | None = None
+    current_task: str | None = None
 
     # Metadata
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
     metadata: dict = Field(default_factory=dict)
 
     # Stats
     created_at: datetime = Field(default_factory=datetime.now)
-    last_active: Optional[datetime] = None
+    last_active: datetime | None = None
     tasks_completed: int = 0
     tasks_failed: int = 0
 
@@ -75,7 +75,7 @@ class AgentMessage(BaseModel):
 
     # Context
     context: dict = Field(default_factory=dict)
-    reply_to: Optional[str] = None  # ID messaggio a cui risponde
+    reply_to: str | None = None  # ID messaggio a cui risponde
 
     # Flags
     flags: list[MessageFlag] = Field(default_factory=list)
@@ -98,12 +98,12 @@ class HandoffRequest(BaseModel):
 
     # State
     status: Literal["pending", "accepted", "rejected", "completed"] = "pending"
-    result: Optional[dict] = None
+    result: dict | None = None
 
     # Timing
     created_at: datetime = Field(default_factory=datetime.now)
-    accepted_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    accepted_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class TaskContext(BaseModel):
@@ -115,7 +115,7 @@ class TaskContext(BaseModel):
 
     # State
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     ttl_seconds: int = 3600  # 1 ora default
 
 
@@ -136,7 +136,7 @@ class SendMessageRequest(BaseModel):
 
     content: str
     context: dict = Field(default_factory=dict)
-    reply_to: Optional[str] = None
+    reply_to: str | None = None
     flags: list[str] = Field(default_factory=list)
 
 
@@ -144,7 +144,7 @@ class HandoffTaskRequest(BaseModel):
     """Request per handoff task."""
 
     task: str
-    to_agent: Optional[str] = None  # Se None, il supervisor sceglie
+    to_agent: str | None = None  # Se None, il supervisor sceglie
     context: dict = Field(default_factory=dict)
     priority: int = 0
 
@@ -160,7 +160,7 @@ class AgentResponse(BaseModel):
     success_rate: float
 
     @classmethod
-    def from_profile(cls, profile: AgentProfile) -> "AgentResponse":
+    def from_profile(cls, profile: AgentProfile) -> AgentResponse:
         return cls(
             id=profile.id,
             name=profile.name,

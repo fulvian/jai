@@ -4,11 +4,12 @@ Verifica l'integrazione del ciclo cognitivo completo:
 - SemanticRouter + Memory layers
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from me4brain.core.state import create_initial_state, CognitiveState
+import pytest
+
 from me4brain.core.router import SemanticRouter
+from me4brain.core.state import create_initial_state
 
 
 class TestOrchestratorMemoryIntegration:

@@ -7,7 +7,6 @@ Endpoints per gestione sessioni e short-term memory:
 - Reference resolution
 """
 
-import json
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -18,6 +17,8 @@ from pydantic import BaseModel, Field
 
 from me4brain.api.middleware.auth import (
     AuthenticatedUser,
+)
+from me4brain.api.middleware.auth import (
     get_current_user_dev as get_current_user,
 )
 from me4brain.memory.working import WorkingMemory

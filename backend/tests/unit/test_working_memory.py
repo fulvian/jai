@@ -1,7 +1,8 @@
 """Test Working Memory Module."""
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from me4brain.memory.working import WorkingMemory, get_working_memory
 

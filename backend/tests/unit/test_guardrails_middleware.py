@@ -3,8 +3,9 @@
 Tests the middleware with realistic API scenarios across domains.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from me4brain.api.main import create_app

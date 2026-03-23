@@ -4,13 +4,13 @@ Tests complete query workflows from input to response generation,
 verifying that LLM-based routing and domain handlers work together correctly.
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 from me4brain.engine.hybrid_router.types import (
     HybridRouterConfig,
-    DomainClassification,
-    DomainComplexity,
 )
 
 

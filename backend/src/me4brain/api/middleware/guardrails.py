@@ -13,8 +13,9 @@ This middleware:
 
 import json
 import logging
-from typing import Any, Callable, Optional
+from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -22,12 +23,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from me4brain.domains.adaptive_guardrails import (
-    get_guardrails_for_domain,
     ResponseLimiter,
-    stream_large_response,
+    get_guardrails_for_domain,
 )
 from me4brain.domains.universal_guardrails import get_universal_config
-from me4brain.core.interfaces import DomainExecutionResult
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 import asyncio
 from curl_cffi.requests import AsyncSession
 
+
 async def main():
     print("Testing with curl_cffi (Chrome TLS fingerprint spoofing)...")
     headers = {
@@ -10,7 +11,7 @@ async def main():
         "Referer": "https://stats.nba.com/",
     }
     url = "https://stats.nba.com/stats/teamestimatedmetrics?LeagueID=00&Season=2025-26&SeasonType=Regular+Season"
-    
+
     try:
         async with AsyncSession(impersonate="chrome110") as s:
             resp = await s.get(url, headers=headers)
@@ -22,6 +23,7 @@ async def main():
                 print(f"FAILED. Status {resp.status_code}: {resp.text[:200]}")
     except Exception as e:
         print(f"Exception: {type(e).__name__} - {str(e)}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

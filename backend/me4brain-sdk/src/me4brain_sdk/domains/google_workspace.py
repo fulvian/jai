@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Google Workspace Domain - Calendar, Gmail, Drive, Sheets integration."""
 
 from datetime import datetime

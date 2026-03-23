@@ -8,10 +8,10 @@ using cosine similarity to find similar cached responses.
 from __future__ import annotations
 
 import asyncio
-import structlog
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import structlog
 
 if TYPE_CHECKING:
     from me4brain.embeddings.bge_m3 import BGEM3Service
@@ -125,7 +125,7 @@ class SemanticCache:
     async def _get_cached_by_embedding(
         self,
         query: str,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get cached response by query string.
 
         This is a placeholder - in real usage this would query the
@@ -148,7 +148,7 @@ class SemanticCache:
         """
         self._query_cache[query] = cached_response
 
-    async def find_similar(self, query: str) -> Optional[dict[str, Any]]:
+    async def find_similar(self, query: str) -> dict[str, Any] | None:
         """Find a similar cached response.
 
         Args:
@@ -159,7 +159,7 @@ class SemanticCache:
         """
         query_embedding = await self._get_embedding(query)
 
-        best_match: Optional[dict[str, Any]] = None
+        best_match: dict[str, Any] | None = None
         best_similarity = 0.0
 
         for cached_query, cached_data in self._query_cache.items():

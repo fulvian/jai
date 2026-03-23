@@ -14,15 +14,15 @@ Usage:
     token = await auth.get_valid_token()  # Automaticamente refresha se necessario
 """
 
-import os
-import json
-import time
+import asyncio
 import base64
 import hashlib
-import asyncio
+import json
+import os
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
-from datetime import datetime, timedelta
 
 import httpx
 import structlog
@@ -276,9 +276,9 @@ async def interactive_login():
     3. Riceve l'id_token dal redirect
     4. Scambia con Playtomic per ottenere access/refresh tokens
     """
-    import webbrowser
-    from http.server import HTTPServer, BaseHTTPRequestHandler
     import urllib.parse
+    import webbrowser
+    from http.server import BaseHTTPRequestHandler, HTTPServer
 
     print("\n🎾 Playtomic Authentication Setup")
     print("=" * 40)
@@ -324,7 +324,7 @@ async def interactive_login():
         "nonce=" + str(int(time.time()))
     )
 
-    print(f"\n📱 Aprendo browser per login Google...")
+    print("\n📱 Aprendo browser per login Google...")
     print(f"   Se non si apre automaticamente, vai a:\n   {auth_url[:80]}...")
 
     webbrowser.open(auth_url)

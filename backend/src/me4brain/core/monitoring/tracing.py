@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 import structlog
 
@@ -12,7 +11,7 @@ logger = structlog.get_logger(__name__)
 
 def setup_tracing(
     service_name: str = "me4brain",
-    otlp_endpoint: Optional[str] = None,
+    otlp_endpoint: str | None = None,
 ) -> None:
     """
     Configura OpenTelemetry tracing.
@@ -102,7 +101,7 @@ class TracingContext:
             result = process(query)
     """
 
-    def __init__(self, name: str, attributes: Optional[dict] = None):
+    def __init__(self, name: str, attributes: dict | None = None):
         """
         Args:
             name: Nome span
@@ -129,7 +128,7 @@ class TracingContext:
         return False
 
 
-async def trace_async(name: str, attributes: Optional[dict] = None):
+async def trace_async(name: str, attributes: dict | None = None):
     """
     Decorator per funzioni async con tracing.
 

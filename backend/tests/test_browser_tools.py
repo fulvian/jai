@@ -6,18 +6,17 @@ Tests for browser automation functionality including:
 - Permission validation (CONFIRM for browser_open/act)
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from me4brain.domains.utility.tools.browser import (
-    browser_open,
     browser_close,
-    browser_navigate,
-    browser_screenshot,
-    get_tool_definitions,
+    browser_open,
     get_executors,
+    get_tool_definitions,
 )
-from me4brain.engine.permission_validator import PermissionValidator, PermissionLevel
+from me4brain.engine.permission_validator import PermissionLevel, PermissionValidator
 
 
 class TestBrowserToolDefinitions:
@@ -152,10 +151,9 @@ class TestBrowserToolIntegration:
     def test_browser_tools_can_be_imported_from_utility(self):
         """Browser tools should be importable from utility tools package."""
         from me4brain.domains.utility.tools import (
-            browser_open,
             browser_act,
             browser_extract,
-            get_tool_definitions,
+            browser_open,
         )
 
         assert callable(browser_open)

@@ -5,8 +5,10 @@ repeated health checks to the same provider.
 """
 
 import time
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from me4brain.llm.provider_factory import (
     CachedProviderStatus,
     get_cached_best_provider,

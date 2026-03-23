@@ -210,6 +210,7 @@ def _extract_meeting_link(event: dict[str, Any]) -> str | None:
 
 from me4brain.engine.types import ToolDefinition, ToolParameter
 
+
 def get_tool_definitions() -> list[ToolDefinition]:
     return [
         ToolDefinition(
@@ -241,6 +242,7 @@ def get_tool_definitions() -> list[ToolDefinition]:
             category="calendar",
         )
     ]
+
 
 def get_executors() -> dict:
     return {"calendar_analyze_meetings": calendar_analyze_meetings}

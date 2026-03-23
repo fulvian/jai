@@ -9,7 +9,7 @@ Integra LlamaIndex con il sistema di memoria Me4BrAIn:
 from typing import Any
 
 import structlog
-from llama_index.core import Settings, VectorStoreIndex, PropertyGraphIndex
+from llama_index.core import PropertyGraphIndex, Settings, VectorStoreIndex
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.tools import QueryEngineTool, ToolMetadata

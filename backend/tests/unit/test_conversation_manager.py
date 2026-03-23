@@ -1,9 +1,10 @@
 # Phase 7: Conversation Manager Tests
 # Tests for ConversationManager
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from me4brain.engine.conversation_manager import ConversationManager
 from me4brain.models.conversation import (

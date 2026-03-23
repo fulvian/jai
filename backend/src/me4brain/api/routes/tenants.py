@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException
 
-from fastapi import APIRouter, HTTPException, Depends
-
-from me4brain.core.tenant.context import get_tenant_id, get_tenant_config
-from me4brain.core.tenant.store import TenantStore, get_tenant_store
+from me4brain.core.tenant.context import get_tenant_config, get_tenant_id
 from me4brain.core.tenant.quota import QuotaManager, get_quota_manager
+from me4brain.core.tenant.store import TenantStore, get_tenant_store
 from me4brain.core.tenant.types import (
     TenantConfig,
     TenantCreateRequest,
@@ -51,8 +49,8 @@ async def create_tenant(
 
 @router.get("/v1/admin/tenants", response_model=TenantListResponse)
 async def list_tenants(
-    status: Optional[TenantStatus] = None,
-    tier: Optional[TenantTier] = None,
+    status: TenantStatus | None = None,
+    tier: TenantTier | None = None,
     store: TenantStore = Depends(get_tenant_store),
 ):
     """
@@ -169,7 +167,7 @@ async def get_current_tenant_usage(
 
 @router.post("/v1/tenant/usage/reset")
 async def reset_tenant_usage(
-    resource: Optional[str] = None,
+    resource: str | None = None,
     quota_manager: QuotaManager = Depends(get_quota_manager),
 ):
     """

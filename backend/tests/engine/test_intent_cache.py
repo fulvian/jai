@@ -1,12 +1,11 @@
 """Tests for intent analysis caching."""
 
 import time
-import pytest
 
 from me4brain.engine.intent_cache import (
-    IntentCache,
     CacheEntry,
     CacheStats,
+    IntentCache,
     get_intent_cache,
     reset_intent_cache,
 )

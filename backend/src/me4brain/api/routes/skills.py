@@ -3,17 +3,18 @@
 Refactoring per utilizzare il nuovo SkillRegistry e il sistema di Universal Tool Sync.
 """
 
-from typing import Literal, Optional, Any
+from typing import Any, Literal
 
 import structlog
-from fastapi import APIRouter, File, HTTPException, UploadFile, Query, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
+
+from me4brain.config import get_settings
+from me4brain.memory.procedural import get_procedural_memory
 
 # Utilizziamo il nuovo sistema di skills
 from me4brain.skills import SkillLoader, SkillRegistry
-from me4brain.skills.types import SkillDefinition, SkillStatus, SkillSource
-from me4brain.memory.procedural import get_procedural_memory
-from me4brain.config import get_settings
+from me4brain.skills.types import SkillDefinition, SkillSource, SkillStatus
 
 logger = structlog.get_logger(__name__)
 
@@ -39,8 +40,8 @@ class SkillResponse(BaseModel):
     success_count: int = 0
     success_rate: float = 0.0
     confidence: float = 0.5
-    version: Optional[str] = None
-    code: Optional[str] = None  # Mappato da instructions
+    version: str | None = None
+    code: str | None = None  # Mappato da instructions
 
     @classmethod
     def from_skill_definition(cls, skill: SkillDefinition) -> "SkillResponse":
@@ -90,7 +91,7 @@ class SkillStatsResponse(BaseModel):
 # Lazy loading del registry con Universal Sync
 # ============================================================================
 
-_registry: Optional[SkillRegistry] = None
+_registry: SkillRegistry | None = None
 
 
 async def get_registry() -> SkillRegistry:
@@ -157,7 +158,7 @@ async def install_skill(file: UploadFile = File(...)) -> SkillResponse:
 
 @router.get("", response_model=SkillListResponse)
 async def list_skills(
-    type: Optional[Literal["explicit", "crystallized"]] = None,
+    type: Literal["explicit", "crystallized"] | None = None,
     enabled_only: bool = Query(True, alias="enabled_only"),
     registry: SkillRegistry = Depends(get_registry),
 ) -> SkillListResponse:

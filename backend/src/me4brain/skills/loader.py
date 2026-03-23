@@ -6,13 +6,12 @@ Discovers and loads skills from multiple sources:
 - ClawHub cache (~/.clawhub/skills/)
 """
 
-import asyncio
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import AsyncIterator
 
 import structlog
 
-from me4brain.skills.parser import SkillParser, SkillParseError
+from me4brain.skills.parser import SkillParseError, SkillParser
 from me4brain.skills.types import (
     SkillDefinition,
     SkillSource,
@@ -69,7 +68,7 @@ class SkillLoader:
 
         async for skill in self._discover_from_directory(self.clawhub_dir, SkillSource.CLAWHUB):
             skills.append(skill)
-            
+
         async for skill in self._discover_from_directory(self.antigravity_dir, SkillSource.LOCAL):
             skills.append(skill)
 

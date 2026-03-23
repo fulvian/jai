@@ -18,7 +18,7 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 import psutil
 import structlog
@@ -40,7 +40,7 @@ class SystemStats:
     ram_used_gb: float
     ram_available_gb: float
     ram_usage_pct: float
-    gpu_metal_usage: Optional[dict[str, Any]] = None
+    gpu_metal_usage: dict[str, Any] | None = None
     mlx_process_rss_gb: float = 0.0
     embedding_process_rss_gb: float = 0.0
     swap_used_gb: float = 0.0
@@ -89,11 +89,11 @@ class HardwareResourceMonitor:
     POLL_INTERVAL_SECONDS = 5.0
 
     def __init__(self):
-        self._last_stats: Optional[SystemStats] = None
+        self._last_stats: SystemStats | None = None
         self._stats_history: list[SystemStats] = []
         self._max_history = 100
         self._monitoring = False
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: asyncio.Task | None = None
 
     async def get_system_stats(self) -> SystemStats:
         """Statistiche sistema in tempo reale."""
@@ -132,7 +132,7 @@ class HardwareResourceMonitor:
 
         return stats
 
-    async def _get_metal_usage(self) -> Optional[dict[str, Any]]:
+    async def _get_metal_usage(self) -> dict[str, Any] | None:
         """Rileva utilizzo GPU Metal (Apple Silicon)."""
         if platform.system() != "Darwin":
             return None
@@ -229,7 +229,7 @@ class HardwareResourceMonitor:
 
         return processes
 
-    def should_use_cloud_fallback(self, stats: Optional[SystemStats] = None) -> bool:
+    def should_use_cloud_fallback(self, stats: SystemStats | None = None) -> bool:
         """Determina se il sistema è sotto pressione e serve il cloud."""
         if stats is None:
             stats = self._last_stats
@@ -242,7 +242,7 @@ class HardwareResourceMonitor:
             or stats.swap_used_gb > self.SWAP_CRITICAL_GB
         )
 
-    def get_resource_recommendations(self, stats: Optional[SystemStats] = None) -> list[str]:
+    def get_resource_recommendations(self, stats: SystemStats | None = None) -> list[str]:
         """Genera raccomandazioni basate sullo stato delle risorse."""
         if stats is None:
             stats = self._last_stats
@@ -356,7 +356,7 @@ class HardwareResourceMonitor:
         }
 
 
-_resource_monitor: Optional[HardwareResourceMonitor] = None
+_resource_monitor: HardwareResourceMonitor | None = None
 
 
 def get_resource_monitor() -> HardwareResourceMonitor:

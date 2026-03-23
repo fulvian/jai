@@ -100,6 +100,7 @@ async def check_qdrant() -> ServiceHealth:
     start = time.time()
     try:
         from qdrant_client import AsyncQdrantClient
+
         from me4brain.config import get_settings
 
         settings = get_settings()
@@ -166,9 +167,9 @@ async def check_tool_index() -> ServiceHealth:
     """Check if the Tool Index exists in Qdrant."""
     start = time.time()
     try:
-        from me4brain.engine.hybrid_router.tool_index import ToolIndexManager
-        from qdrant_client import AsyncQdrantClient
         import os
+
+        from qdrant_client import AsyncQdrantClient
 
         qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
         client = AsyncQdrantClient(url=qdrant_url, timeout=5)
@@ -431,10 +432,10 @@ async def health_check() -> HealthStatus:
 
     Ritorna lo stato generale del sistema. Per i load balancer e orchestratori.
     """
-    from me4brain import __version__
-
     # Run all checks in parallel
     import asyncio
+
+    from me4brain import __version__
 
     checks = await asyncio.gather(
         check_redis(),

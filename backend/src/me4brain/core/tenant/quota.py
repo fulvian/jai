@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-from typing import Optional, Tuple
-
-import structlog
 import redis.asyncio as redis
+import structlog
 
 from me4brain.config import get_settings
 from me4brain.core.tenant.context import get_tenant_id
@@ -48,7 +45,7 @@ class QuotaManager:
     TTL_DAY = 86400  # 24h
     TTL_MONTH = 2678400  # 31 giorni
 
-    def __init__(self, redis_client: Optional[redis.Redis] = None):
+    def __init__(self, redis_client: redis.Redis | None = None):
         """
         Args:
             redis_client: Client Redis (opzionale)
@@ -107,7 +104,7 @@ class QuotaManager:
         tenant_id: str,
         resource: str,
         amount: int = 1,
-    ) -> Tuple[bool, int, int]:
+    ) -> tuple[bool, int, int]:
         """
         Verifica quota e incrementa se permesso.
 
@@ -302,7 +299,7 @@ class QuotaManager:
 
         return mapping.get(resource, 1000)
 
-    def _get_ttl(self, resource: str) -> Optional[int]:
+    def _get_ttl(self, resource: str) -> int | None:
         """Ottieni TTL per risorsa."""
         ttls = {
             "api_calls_day": self.TTL_DAY,
@@ -333,9 +330,7 @@ def check_quota(resource: str, amount: int = 1):
             tenant_id = get_tenant_id()
             manager = QuotaManager()
 
-            allowed, current, limit = await manager.check_and_increment(
-                tenant_id, resource, amount
-            )
+            allowed, current, limit = await manager.check_and_increment(tenant_id, resource, amount)
 
             if not allowed:
                 raise QuotaExceededError(resource, current, limit)
@@ -348,7 +343,7 @@ def check_quota(resource: str, amount: int = 1):
 
 
 # Singleton
-_quota_manager: Optional[QuotaManager] = None
+_quota_manager: QuotaManager | None = None
 
 
 def get_quota_manager() -> QuotaManager:

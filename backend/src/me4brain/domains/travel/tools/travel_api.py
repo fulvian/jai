@@ -5,8 +5,9 @@
 - Amadeus Self-Service: Ricerca voli con prezzi (Free Tier Permanente)
 """
 
-from typing import Any
 import os
+from typing import Any
+
 import httpx
 import structlog
 
@@ -316,7 +317,6 @@ async def amadeus_search_flights(
 
     try:
         import asyncio
-        from amadeus import ResponseError
 
         # Amadeus SDK is synchronous, run in executor
         def _search():

@@ -10,7 +10,7 @@ Pattern: Circuit Breaker + Timeout + Retry
 
 import asyncio
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
@@ -192,8 +192,8 @@ class DomainRouter:
 
                 return results
 
-            except asyncio.TimeoutError:
-                last_error = asyncio.TimeoutError(f"Domain {domain} timed out after {timeout}s")
+            except TimeoutError:
+                last_error = TimeoutError(f"Domain {domain} timed out after {timeout}s")
                 self._record_failure(domain, "timeout")
                 logger.warning(
                     "domain_execution_timeout",

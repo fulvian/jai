@@ -1,9 +1,10 @@
 """Tests for ConversationalDetector."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from me4brain.engine.conversational_detector import ConversationalDetector
-from me4brain.llm.models import LLMRequest, Message, MessageRole
 
 
 @pytest.fixture

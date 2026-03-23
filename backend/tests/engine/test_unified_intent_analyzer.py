@@ -14,16 +14,18 @@ Tests for:
 """
 
 import json
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from me4brain.engine.unified_intent_analyzer import (
-    UnifiedIntentAnalyzer,
+    IntentAnalysis,
     IntentType,
     QueryComplexity,
-    IntentAnalysis,
+    UnifiedIntentAnalyzer,
 )
-from me4brain.llm.models import LLMResponse, Choice, ChoiceMessage, Usage
 from me4brain.llm.config import get_llm_config
+from me4brain.llm.models import Choice, ChoiceMessage, LLMResponse, Usage
 
 
 @pytest.fixture
@@ -602,7 +604,7 @@ class TestFallbackBehavior:
         async def timeout_side_effect(*args, **kwargs):
             await asyncio.sleep(10)
 
-        mock_llm_client.generate_response.side_effect = asyncio.TimeoutError()
+        mock_llm_client.generate_response.side_effect = TimeoutError()
 
         analysis = await analyzer.analyze("meteo Roma")
 

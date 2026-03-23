@@ -195,7 +195,7 @@ class SleepMode:
 
         try:
             # Recupero batch episodi da Qdrant usando scroll/search
-            from qdrant_client.models import Filter, FieldCondition, Range
+            from qdrant_client.models import FieldCondition, Filter
 
             qdrant = await episodic.get_qdrant()
             if qdrant is None:
@@ -282,7 +282,7 @@ class SleepMode:
         pruned_count = 0
 
         try:
-            from qdrant_client.models import Filter, FieldCondition, PointIdsList
+            from qdrant_client.models import FieldCondition, Filter, PointIdsList
 
             qdrant = await episodic.get_qdrant()
             if qdrant is None:

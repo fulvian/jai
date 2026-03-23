@@ -9,8 +9,8 @@ Ispirato a OpenClaw ma con sicurezza migliorata.
 """
 
 import re
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 
 import structlog
 
@@ -150,16 +150,14 @@ class GuardrailValidator:
     def _compile_patterns(self) -> None:
         """Pre-compila pattern regex per performance."""
         self._injection_patterns = [
-            (re.compile(pattern, re.IGNORECASE), name)
-            for pattern, name in INJECTION_PATTERNS
+            (re.compile(pattern, re.IGNORECASE), name) for pattern, name in INJECTION_PATTERNS
         ]
         self._dangerous_patterns = [
             (re.compile(pattern, re.IGNORECASE), name)
             for pattern, name in DANGEROUS_COMMAND_PATTERNS
         ]
         self._sensitive_patterns = [
-            (re.compile(pattern, re.IGNORECASE), name)
-            for pattern, name in SENSITIVE_DATA_PATTERNS
+            (re.compile(pattern, re.IGNORECASE), name) for pattern, name in SENSITIVE_DATA_PATTERNS
         ]
 
     def validate_input(self, text: str) -> GuardrailResult:
@@ -231,9 +229,7 @@ class GuardrailValidator:
         if matched_patterns:
             # Dangerous commands = DANGEROUS, sensitive data = SUSPICIOUS
             has_dangerous = any(p.startswith("dangerous:") for p in matched_patterns)
-            threat_level = (
-                ThreatLevel.DANGEROUS if has_dangerous else ThreatLevel.SUSPICIOUS
-            )
+            threat_level = ThreatLevel.DANGEROUS if has_dangerous else ThreatLevel.SUSPICIOUS
 
             if self.strict_mode and threat_level == ThreatLevel.SUSPICIOUS:
                 threat_level = ThreatLevel.DANGEROUS

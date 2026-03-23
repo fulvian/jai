@@ -2,7 +2,9 @@
 
 from datetime import UTC, datetime
 from typing import Any
+
 import structlog
+
 from me4brain.core.interfaces import (
     DomainCapability,
     DomainExecutionResult,
@@ -108,9 +110,7 @@ class UtilityHandler(DomainHandler):
     def handles_service(self, service_name: str) -> bool:
         return service_name == "HttpbinService"
 
-    async def execute_tool(
-        self, tool_name: str, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         from me4brain.domains.utility.tools import utility_api
 
         return await utility_api.execute_tool(tool_name, arguments)

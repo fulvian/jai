@@ -8,8 +8,9 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Me4BrAInClient } from '@persan/me4brain-client';
 
 const ME4BRAIN_URL = process.env.ME4BRAIN_URL ?? 'http://localhost:8000/v1';
+const RUN_ME4BRAIN_INTEGRATION = process.env.RUN_ME4BRAIN_INTEGRATION === '1';
 
-describe('Me4BrAIn Client Integration', () => {
+describe.skipIf(!RUN_ME4BRAIN_INTEGRATION)('Me4BrAIn Client Integration', () => {
     let client: Me4BrAInClient;
 
     beforeAll(() => {

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import structlog
 
 from me4brain.core.browser.manager import get_browser_manager
@@ -12,7 +10,7 @@ from me4brain.core.browser.types import BrowserConfig
 logger = structlog.get_logger(__name__)
 
 # Session ID corrente (per continuità)
-_current_session_id: Optional[str] = None
+_current_session_id: str | None = None
 
 
 async def browser_open(
@@ -53,7 +51,7 @@ async def browser_open(
 
 async def browser_act(
     instruction: str,
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
 ) -> dict:
     """
     Esegue azione descritta in linguaggio naturale.
@@ -94,8 +92,8 @@ async def browser_act(
 
 async def browser_extract(
     what: str,
-    schema: Optional[dict] = None,
-    session_id: Optional[str] = None,
+    schema: dict | None = None,
+    session_id: str | None = None,
 ) -> dict:
     """
     Estrae dati strutturati dalla pagina.
@@ -134,7 +132,7 @@ async def browser_extract(
     }
 
 
-async def browser_screenshot(session_id: Optional[str] = None) -> dict:
+async def browser_screenshot(session_id: str | None = None) -> dict:
     """
     Cattura screenshot pagina corrente.
 
@@ -167,7 +165,7 @@ async def browser_screenshot(session_id: Optional[str] = None) -> dict:
 
 async def browser_navigate(
     url: str,
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
 ) -> dict:
     """
     Naviga a nuovo URL.
@@ -201,7 +199,7 @@ async def browser_navigate(
     }
 
 
-async def browser_close(session_id: Optional[str] = None) -> dict:
+async def browser_close(session_id: str | None = None) -> dict:
     """
     Chiude sessione browser.
 
@@ -333,7 +331,7 @@ def get_tool_definitions() -> list:
                     description="Run in headless mode (default: true)",
                 ),
             },
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
         ToolDefinition(
@@ -346,7 +344,7 @@ def get_tool_definitions() -> list:
                     description="Natural language description of the action to perform",
                 ),
             },
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
         ToolDefinition(
@@ -364,14 +362,14 @@ def get_tool_definitions() -> list:
                     description="Optional JSON Schema for structured output",
                 ),
             },
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
         ToolDefinition(
             name="browser_screenshot",
             description="Captures a screenshot of the current page.",
             parameters={},
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
         ToolDefinition(
@@ -384,14 +382,14 @@ def get_tool_definitions() -> list:
                     description="URL to navigate to",
                 ),
             },
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
         ToolDefinition(
             name="browser_close",
             description="Closes the current browser session.",
             parameters={},
-            domain="web_data",
+            domain="utility",
             category="browser",
         ),
     ]

@@ -10,14 +10,14 @@ Ispirato a OpenClaw ma con guardrail di sicurezza.
 """
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any, Callable, Awaitable
+from typing import Any
 
 import structlog
 
 from me4brain.engine.guardrail import GuardrailValidator, ThreatLevel, get_guardrail
 from me4brain.engine.permission_validator import (
-    PermissionLevel,
     PermissionValidator,
     get_permission_validator,
 )
@@ -102,8 +102,7 @@ class HeartbeatLoop:
         engine: Any,  # ToolCallingEngine
         interval_seconds: int = 300,  # 5 minuti
         on_notify: Callable[[HeartbeatAction], Awaitable[None]] | None = None,
-        on_approval_required: Callable[[HeartbeatAction], Awaitable[None]]
-        | None = None,
+        on_approval_required: Callable[[HeartbeatAction], Awaitable[None]] | None = None,
         guardrail: GuardrailValidator | None = None,
         permission_validator: PermissionValidator | None = None,
     ):

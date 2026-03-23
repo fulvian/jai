@@ -170,9 +170,7 @@ class ReasoningStep(BaseModel):
     """Singolo step di ragionamento."""
 
     step: int
-    action: (
-        str  # "query_analysis", "routing", "retrieval", "tool_execution", "synthesis"
-    )
+    action: str  # "query_analysis", "routing", "retrieval", "tool_execution", "synthesis"
     description: str
     duration_ms: float = 0.0
 

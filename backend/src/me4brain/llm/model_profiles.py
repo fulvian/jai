@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -43,11 +43,11 @@ class ModelProfile:
     context_window: int
     max_output_tokens: int
     capabilities: list[ModelCapability] = field(default_factory=list)
-    vram_required_gb: Optional[float] = None
-    speed_tps: Optional[float] = None
+    vram_required_gb: float | None = None
+    speed_tps: float | None = None
     recommended_for: list[str] = field(default_factory=list)
     not_recommended_for: list[str] = field(default_factory=list)
-    quantization: Optional[str] = None
+    quantization: str | None = None
     cost_per_1k_tokens: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -150,7 +150,7 @@ MODEL_PROFILES: dict[str, ModelProfile] = {
 }
 
 
-def get_model_profile(model_id: str) -> Optional[ModelProfile]:
+def get_model_profile(model_id: str) -> ModelProfile | None:
     """Ottiene il profilo di un modello per ID."""
     return MODEL_PROFILES.get(model_id)
 
@@ -183,8 +183,8 @@ def get_models_for_task(task: str) -> list[ModelProfile]:
 def get_best_model_for_task(
     task: str,
     prefer_local: bool = True,
-    max_vram_gb: Optional[float] = None,
-) -> Optional[ModelProfile]:
+    max_vram_gb: float | None = None,
+) -> ModelProfile | None:
     """Seleziona il miglior modello per un task dato.
 
     Args:

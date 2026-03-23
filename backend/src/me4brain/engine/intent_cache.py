@@ -8,10 +8,8 @@ This module provides:
 """
 
 import hashlib
-import logging
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 import structlog
 
@@ -87,7 +85,7 @@ class IntentCache:
         self._default_ttl = default_ttl_seconds
         self._stats = CacheStats()
 
-    def _hash_query(self, query: str, context: Optional[str] = None) -> str:
+    def _hash_query(self, query: str, context: str | None = None) -> str:
         """Hash query and context to create cache key.
 
         Args:
@@ -103,8 +101,8 @@ class IntentCache:
     def get(
         self,
         query: str,
-        context: Optional[str] = None,
-    ) -> Optional[IntentAnalysis]:
+        context: str | None = None,
+    ) -> IntentAnalysis | None:
         """Get cached analysis if available.
 
         Args:
@@ -153,8 +151,8 @@ class IntentCache:
         self,
         query: str,
         analysis: IntentAnalysis,
-        context: Optional[str] = None,
-        ttl_seconds: Optional[float] = None,
+        context: str | None = None,
+        ttl_seconds: float | None = None,
     ) -> None:
         """Cache analysis result.
 
@@ -220,8 +218,7 @@ class IntentCache:
         # Calculate average entry size
         if self._cache:
             total_size = sum(
-                len(entry.analysis.to_dict().__str__().encode())
-                for entry in self._cache.values()
+                len(entry.analysis.to_dict().__str__().encode()) for entry in self._cache.values()
             )
             self._stats.avg_entry_size_bytes = total_size // len(self._cache)
 
@@ -233,11 +230,7 @@ class IntentCache:
         Returns:
             Number of entries removed
         """
-        expired_keys = [
-            key
-            for key, entry in self._cache.items()
-            if entry.is_expired()
-        ]
+        expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
 
         for key in expired_keys:
             del self._cache[key]
@@ -262,7 +255,7 @@ class IntentCache:
 
 
 # Global cache instance
-_intent_cache: Optional[IntentCache] = None
+_intent_cache: IntentCache | None = None
 
 
 def get_intent_cache(

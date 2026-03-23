@@ -10,12 +10,10 @@ SOTA 2026: Discovery dinamica invece di profili hardcoded.
 
 from __future__ import annotations
 
-import json
-import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 import structlog
@@ -35,11 +33,11 @@ class DiscoveredModel:
     id: str
     name: str
     source: ModelSource
-    path: Optional[str] = None
+    path: str | None = None
     context_window: int = 32768
     max_output_tokens: int = 4096
-    quantization: Optional[str] = None
-    size_gb: Optional[float] = None
+    quantization: str | None = None
+    size_gb: float | None = None
     supports_tools: bool = True
     supports_vision: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -238,7 +236,7 @@ class ModelDiscovery:
             pass
         return round(total / (1024**3), 2)
 
-    def _detect_quantization(self, name: str) -> Optional[str]:
+    def _detect_quantization(self, name: str) -> str | None:
         """Rileva quantizzazione dal nome."""
         name_lower = name.lower()
         if "4bit" in name_lower or "-4b" in name_lower or "_4bit" in name_lower:
@@ -270,7 +268,7 @@ class ModelDiscovery:
         return 32768
 
 
-_discovery: Optional[ModelDiscovery] = None
+_discovery: ModelDiscovery | None = None
 
 
 def get_model_discovery() -> ModelDiscovery:

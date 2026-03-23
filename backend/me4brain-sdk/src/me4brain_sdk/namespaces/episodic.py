@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Episodic Memory Namespace - Long-term autobiographical memory."""
 
 from datetime import datetime

@@ -1,15 +1,17 @@
-import pytest
-import jwt
 from unittest.mock import MagicMock, patch
+
+import jwt
+import pytest
 from fastapi import HTTPException, Request
+
 from me4brain.api.middleware.auth import (
+    AuthenticatedUser,
+    TokenPayload,
     decode_token,
     get_current_user,
     get_optional_user,
     require_role,
     require_tenant,
-    TokenPayload,
-    AuthenticatedUser,
 )
 
 

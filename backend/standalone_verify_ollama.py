@@ -8,19 +8,22 @@ from unittest.mock import MagicMock, patch
 import sys
 from types import ModuleType
 
+
 def mock_module(name):
     m = ModuleType(name)
     sys.modules[name] = m
     return m
+
 
 # Mock structlog if needed
 if "structlog" not in sys.modules:
     sl = mock_module("structlog")
     sl.get_logger = lambda x: MagicMock()
 
+
 async def verify():
     print("--- Verificando Ollama Integration ---")
-    
+
     from me4brain.llm.ollama import OllamaClient
     from me4brain.llm.config import LLMConfig
     from me4brain.llm.models import LLMRequest, Message
@@ -51,15 +54,22 @@ async def verify():
             self.status_code = status_code
             self.json_data = json_data
             self.text = json.dumps(json_data)
-        def json(self): return self.json_data
+
+        def json(self):
+            return self.json_data
 
     class MockAsyncClient:
         async def post(self, url, **kwargs):
-            return MockResponse(200, {
-                "choices": [{"message": {"content": "Tool call simulated", "tool_calls": []}}]
-            })
-        async def __aenter__(self): return self
-        async def __aexit__(self, *args): pass
+            return MockResponse(
+                200,
+                {"choices": [{"message": {"content": "Tool call simulated", "tool_calls": []}}]},
+            )
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
 
     with patch("httpx.AsyncClient", return_value=MockAsyncClient()):
         request = LLMRequest(model="test", messages=[Message(role="user", content="test")])
@@ -69,6 +79,7 @@ async def verify():
             print("SUCCESS: OllamaClient ha gestito correttamente la richiesta simulata.")
 
     print("--- Verifica Completata ---")
+
 
 if __name__ == "__main__":
     asyncio.run(verify())

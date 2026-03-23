@@ -5,7 +5,6 @@ Traccia latenze, usage LLM e statistiche di retrieval.
 
 import functools
 import time
-from typing import Any
 
 import structlog
 from prometheus_client import Counter, Histogram
@@ -23,7 +22,7 @@ REQUEST_LATENCY = Histogram(
 LLM_TOKENS_TOTAL = Counter(
     "me4brain_llm_tokens_total",
     "Totale token consumati",
-    ["model", "type", "tenant_id"],  # type: prompt, completion
+    ["model", "type", "tenant_id"],  # token category values: prompt, completion
 )
 
 LLM_REQUEST_LATENCY = Histogram(

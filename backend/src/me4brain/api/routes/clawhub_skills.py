@@ -4,8 +4,6 @@ Questo modulo espone le skills ClawHub installate tramite REST API
 per integrazione con PersAn frontend.
 """
 
-from typing import Optional
-
 import structlog
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -26,13 +24,13 @@ class ClawHubSkillResponse(BaseModel):
     id: str
     name: str
     description: str
-    version: Optional[str] = None
-    author: Optional[str] = None
+    version: str | None = None
+    author: str | None = None
     tags: list[str] = []
     source: str  # "bundled" | "local" | "clawhub"
     status: str  # "discovered" | "loading" | "ready" | "error" | "disabled"
     requirements_met: bool = True
-    instructions_preview: Optional[str] = None
+    instructions_preview: str | None = None
 
 
 class ClawHubSkillListResponse(BaseModel):
@@ -62,7 +60,7 @@ class SearchResultItem(BaseModel):
     type: str  # "tool" | "skill"
     domain: str
     score: float
-    skill_id: Optional[str] = None
+    skill_id: str | None = None
 
 
 class SearchResponse(BaseModel):
@@ -103,7 +101,7 @@ async def _get_registry():
 
 @router.get("", response_model=ClawHubSkillListResponse)
 async def list_clawhub_skills(
-    source: Optional[str] = Query(None, description="Filter by source: bundled|local"),
+    source: str | None = Query(None, description="Filter by source: bundled|local"),
     ready_only: bool = Query(True, description="Only show ready skills"),
 ) -> ClawHubSkillListResponse:
     """
@@ -251,7 +249,7 @@ async def reload_skills() -> dict[str, str]:
 async def search_skills_semantic(
     q: str = Query(..., description="Search query"),
     limit: int = Query(10, ge=1, le=50),
-    type_filter: Optional[str] = Query(None, description="Filter by type: tool|skill"),
+    type_filter: str | None = Query(None, description="Filter by type: tool|skill"),
 ) -> SearchResponse:
     """
     Ricerca semantica in tools e skills tramite Qdrant.

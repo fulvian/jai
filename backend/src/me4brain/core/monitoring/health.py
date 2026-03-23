@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import structlog
 
@@ -33,7 +33,7 @@ class HealthChecker:
         """
         self.timeout = timeout_seconds
         self._checks: dict[str, Callable] = {}
-        self._last_report: Optional[HealthReport] = None
+        self._last_report: HealthReport | None = None
         self._register_default_checks()
 
     def _register_default_checks(self) -> None:
@@ -81,7 +81,7 @@ class HealthChecker:
             result.latency_ms = (time.time() - start) * 1000
             return result
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return ComponentHealth(
                 name=name,
                 status=HealthStatus.UNHEALTHY,
@@ -159,22 +159,24 @@ class HealthChecker:
         try:
             import aiohttp
 
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
                     "http://localhost:6333/collections",
                     timeout=aiohttp.ClientTimeout(total=2),
-                ) as resp:
-                    if resp.status == 200:
-                        return ComponentHealth(
-                            name="qdrant",
-                            status=HealthStatus.HEALTHY,
-                            message="Connected",
-                        )
+                ) as resp,
+            ):
+                if resp.status == 200:
                     return ComponentHealth(
                         name="qdrant",
-                        status=HealthStatus.DEGRADED,
-                        message=f"Status {resp.status}",
+                        status=HealthStatus.HEALTHY,
+                        message="Connected",
                     )
+                return ComponentHealth(
+                    name="qdrant",
+                    status=HealthStatus.DEGRADED,
+                    message=f"Status {resp.status}",
+                )
 
         except Exception as e:
             return ComponentHealth(
@@ -227,22 +229,24 @@ class HealthChecker:
             import aiohttp
 
             # Check NanoGPT health
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
                     "https://nano-gpt.com/api/health",
                     timeout=aiohttp.ClientTimeout(total=5),
-                ) as resp:
-                    if resp.status == 200:
-                        return ComponentHealth(
-                            name="llm",
-                            status=HealthStatus.HEALTHY,
-                            message="API reachable",
-                        )
+                ) as resp,
+            ):
+                if resp.status == 200:
                     return ComponentHealth(
                         name="llm",
-                        status=HealthStatus.DEGRADED,
-                        message=f"Status {resp.status}",
+                        status=HealthStatus.HEALTHY,
+                        message="API reachable",
                     )
+                return ComponentHealth(
+                    name="llm",
+                    status=HealthStatus.DEGRADED,
+                    message=f"Status {resp.status}",
+                )
 
         except Exception as e:
             return ComponentHealth(
@@ -253,7 +257,7 @@ class HealthChecker:
 
 
 # Singleton
-_health_checker: Optional[HealthChecker] = None
+_health_checker: HealthChecker | None = None
 
 
 def get_health_checker() -> HealthChecker:

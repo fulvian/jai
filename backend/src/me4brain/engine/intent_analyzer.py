@@ -13,11 +13,10 @@ Key Principles:
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -161,7 +160,7 @@ class IntentAnalyzer:
 
     def __init__(
         self,
-        llm_client: "NanoGPTClient",
+        llm_client: NanoGPTClient,
         model: str = "deepseek/deepseek-chat-v3-0324",
     ) -> None:
         """Initialize the Intent Analyzer.
@@ -373,7 +372,7 @@ class IntentAnalyzer:
 _analyzer_instance: IntentAnalyzer | None = None
 
 
-def get_intent_analyzer(llm_client: "NanoGPTClient | None" = None) -> IntentAnalyzer:
+def get_intent_analyzer(llm_client: NanoGPTClient | None = None) -> IntentAnalyzer:
     """Get the singleton IntentAnalyzer instance.
 
     Args:
@@ -385,8 +384,6 @@ def get_intent_analyzer(llm_client: "NanoGPTClient | None" = None) -> IntentAnal
     global _analyzer_instance
     if _analyzer_instance is None:
         if llm_client is None:
-            from me4brain.llm.provider_factory import get_reasoning_client
-
             # CRITICAL FIX: get_reasoning_client() is async and must be awaited
             # Since this function is sync, we must raise an error instead
             raise RuntimeError(

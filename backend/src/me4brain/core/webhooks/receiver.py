@@ -5,15 +5,14 @@ from __future__ import annotations
 import hashlib
 import hmac
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Optional
 
 import structlog
 
 from me4brain.core.webhooks.types import (
     IncomingWebhookPayload,
     WebhookEvent,
-    WebhookEventType,
 )
 
 logger = structlog.get_logger(__name__)
@@ -31,8 +30,8 @@ class WebhookReceiver:
 
     def __init__(
         self,
-        secret: Optional[str] = None,
-        handler: Optional[Callable[[WebhookEvent], None]] = None,
+        secret: str | None = None,
+        handler: Callable[[WebhookEvent], None] | None = None,
     ):
         """
         Inizializza receiver.
@@ -49,7 +48,7 @@ class WebhookReceiver:
         self,
         payload: bytes,
         signature: str,
-        secret: Optional[str] = None,
+        secret: str | None = None,
     ) -> bool:
         """
         Verifica HMAC-SHA256 signature.
@@ -91,8 +90,8 @@ class WebhookReceiver:
     async def receive(
         self,
         payload: IncomingWebhookPayload,
-        raw_body: Optional[bytes] = None,
-        signature: Optional[str] = None,
+        raw_body: bytes | None = None,
+        signature: str | None = None,
     ) -> WebhookEvent:
         """
         Riceve e processa webhook in ingresso.
@@ -188,7 +187,7 @@ class WebhookReceiver:
 
         return decorator
 
-    def generate_signature(self, payload: bytes, secret: Optional[str] = None) -> str:
+    def generate_signature(self, payload: bytes, secret: str | None = None) -> str:
         """
         Genera HMAC-SHA256 signature per payload.
 
@@ -213,7 +212,7 @@ class WebhookReceiver:
 
 
 # Singleton
-_webhook_receiver: Optional[WebhookReceiver] = None
+_webhook_receiver: WebhookReceiver | None = None
 
 
 def get_webhook_receiver() -> WebhookReceiver:

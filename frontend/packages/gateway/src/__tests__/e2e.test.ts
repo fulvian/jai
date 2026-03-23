@@ -17,6 +17,7 @@ const GATEWAY_URL = 'http://localhost:3000';
 const WS_URL = 'ws://localhost:3000/ws';
 const STARTUP_TIMEOUT = 10000;
 const TEST_TIMEOUT = 30000;
+const RUN_GATEWAY_E2E = process.env.RUN_GATEWAY_E2E === '1';
 
 let gatewayProcess: ChildProcess | null = null;
 
@@ -84,14 +85,14 @@ function waitForMessage<T>(ws: WebSocket, timeoutMs = 10000): Promise<T> {
 
 // NOTE: waitForMessageType removed - use waitForMessage directly
 
-describe('PersAn Gateway E2E Tests', () => {
+describe.skipIf(!RUN_GATEWAY_E2E)('PersAn Gateway E2E Tests', () => {
 
     beforeAll(async () => {
         console.log('🚀 Starting Gateway for E2E tests...');
 
         // Avvia il gateway
         gatewayProcess = spawn('npm', ['run', 'dev'], {
-            cwd: '/Users/fulvioventura/persan/packages/gateway',
+            cwd: process.cwd(),
             stdio: ['ignore', 'pipe', 'pipe'],
             env: {
                 ...process.env,

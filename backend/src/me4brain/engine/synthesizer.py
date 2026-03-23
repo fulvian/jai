@@ -9,13 +9,14 @@ The synthesizer is responsible for:
 from __future__ import annotations
 
 import asyncio
-
+import inspect
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import structlog
 
-from me4brain.engine.types import ToolResult, StreamChunk
-from me4brain.llm.models import LLMRequest, Message
+from me4brain.engine.types import StreamChunk, ToolResult
+from me4brain.llm.models import LLMChunk, LLMRequest, Message
 from me4brain.llm.provider_factory import resolve_model_client
 
 logger = structlog.get_logger(__name__)
@@ -46,7 +47,7 @@ class ResponseSynthesizer:
 
     def __init__(
         self,
-        llm_client: Any,  # NanoGPTClient
+        llm_client: Any | None = None,  # NanoGPTClient
         model: str = "deepseek-chat",
         is_local: bool = False,
         overflow_strategy: str | None = None,
@@ -130,6 +131,9 @@ Genera una risposta completa in italiano."""
         Returns:
             Natural language response integrating all tool data
         """
+        if self._llm is None:
+            raise RuntimeError("ResponseSynthesizer requires an llm_client for synthesize()")
+
         if not results:
             return "Non sono riuscito a recuperare dati per questa richiesta."
 
@@ -183,7 +187,7 @@ Genera una risposta completa in italiano."""
                     resolved_client.generate_response(request),
                     timeout=900.0,  # 900 second timeout (development)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "synthesizer_timeout",
                     timeout_seconds=900,
@@ -520,7 +524,7 @@ RIASSUNTO:"""
                 timeout=600.0,  # Increased from 120s for development
             )
             return response.content or data_str[:500]
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "summarization_timeout",
                 tool=result.tool_name,
@@ -1029,6 +1033,11 @@ RIASSUNTO:"""
             )
             return
 
+        successful = [r for r in results if r.success]
+        if not successful:
+            yield StreamChunk(type="content", content=self._fallback_response(results))
+            return
+
         # Build context
         results_context = self._format_results(results)
 
@@ -1052,7 +1061,11 @@ RIASSUNTO:"""
         prompt = self._build_prompt(query, results_context, context, failed)
 
         # Create streaming request
-        resolved_client, actual_model = resolve_model_client(self._model)
+        if self._llm is not None:
+            stream_client = self._llm
+            actual_model = self._model
+        else:
+            stream_client, actual_model = resolve_model_client(self._model)
         request = LLMRequest(
             model=actual_model,
             messages=[
@@ -1077,7 +1090,14 @@ RIASSUNTO:"""
                 # If we don't see  within this window, assume no thinking
                 DETECT_WINDOW = 100
 
-                async for chunk in resolved_client.stream_response(request):
+                stream_or_coro = stream_client.stream_response(request)
+                if inspect.isasyncgen(stream_or_coro):
+                    stream_iter: AsyncGenerator[LLMChunk, None] = stream_or_coro
+                elif asyncio.iscoroutine(stream_or_coro):
+                    stream_iter = await stream_or_coro
+                else:
+                    raise TypeError("stream_response must return async generator or awaitable")
+                async for chunk in stream_iter:
                     if not chunk.choices or not chunk.choices[0].delta:
                         continue
 

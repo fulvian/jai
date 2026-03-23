@@ -1,7 +1,5 @@
 """Test per GuardrailValidator e PermissionValidator."""
 
-import pytest
-
 from me4brain.engine.guardrail import (
     GuardrailValidator,
     ThreatLevel,
@@ -148,9 +146,7 @@ class TestPermissionValidator:
         ]
         for tool in safe_tools:
             result = self.validator.validate(tool)
-            assert result.permission_level == PermissionLevel.SAFE, (
-                f"Failed for: {tool}"
-            )
+            assert result.permission_level == PermissionLevel.SAFE, f"Failed for: {tool}"
             assert not result.requires_human_approval
 
     def test_notify_tools(self):
@@ -162,9 +158,7 @@ class TestPermissionValidator:
         ]
         for tool in notify_tools:
             result = self.validator.validate(tool)
-            assert result.permission_level == PermissionLevel.NOTIFY, (
-                f"Failed for: {tool}"
-            )
+            assert result.permission_level == PermissionLevel.NOTIFY, f"Failed for: {tool}"
             assert not result.requires_human_approval
 
     def test_confirm_tools(self):
@@ -178,9 +172,7 @@ class TestPermissionValidator:
         ]
         for tool in confirm_tools:
             result = self.validator.validate(tool)
-            assert result.permission_level == PermissionLevel.CONFIRM, (
-                f"Failed for: {tool}"
-            )
+            assert result.permission_level == PermissionLevel.CONFIRM, f"Failed for: {tool}"
             assert result.requires_human_approval
 
     def test_deny_tools(self):
@@ -192,9 +184,7 @@ class TestPermissionValidator:
         ]
         for tool in deny_tools:
             result = self.validator.validate(tool)
-            assert result.permission_level == PermissionLevel.DENY, (
-                f"Failed for: {tool}"
-            )
+            assert result.permission_level == PermissionLevel.DENY, f"Failed for: {tool}"
             assert result.requires_human_approval
 
     # =========================================================================

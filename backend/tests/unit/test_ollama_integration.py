@@ -1,22 +1,22 @@
 """Unit tests for Ollama client and provider factory."""
 
 import json
-import pytest
+from unittest.mock import patch
+
 import httpx
+import pytest
 import respx
 from httpx import Response
-from unittest.mock import patch
 
 from me4brain.llm import (
     LLMRequest,
     Message,
     OllamaClient,
-    get_ollama_client,
     get_llm_config,
 )
 from me4brain.llm.provider_factory import (
-    get_tool_calling_client,
     get_reasoning_client,
+    get_tool_calling_client,
     resolve_model_client,
 )
 

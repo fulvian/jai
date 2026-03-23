@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import AsyncMock, patch
-
 import pytest
 
+from me4brain.core.monitoring.alerts import AlertManager
+from me4brain.core.monitoring.health import HealthChecker
+from me4brain.core.monitoring.metrics import MetricsCollector
 from me4brain.core.monitoring.types import (
     Alert,
     AlertRule,
@@ -19,10 +19,6 @@ from me4brain.core.monitoring.types import (
     MetricType,
     MetricValue,
 )
-from me4brain.core.monitoring.metrics import MetricsCollector
-from me4brain.core.monitoring.health import HealthChecker
-from me4brain.core.monitoring.alerts import AlertManager
-
 
 # --- Types Tests ---
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 import structlog
 
@@ -22,7 +21,7 @@ logger = structlog.get_logger(__name__)
 MAIN_AGENT_ID = "main"
 
 
-async def sessions_list(capability: Optional[str] = None) -> list[dict]:
+async def sessions_list(capability: str | None = None) -> list[dict]:
     """
     Lista agenti attivi e loro status.
 
@@ -94,7 +93,7 @@ async def sessions_history(
 async def sessions_send(
     to_agent: str,
     message: str,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     reply_skip: bool = False,
 ) -> dict:
     """
@@ -137,8 +136,8 @@ async def sessions_send(
 
 async def sessions_handoff(
     task: str,
-    to_agent: Optional[str] = None,
-    context: Optional[dict] = None,
+    to_agent: str | None = None,
+    context: dict | None = None,
     priority: int = 0,
 ) -> dict:
     """

@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from me4brain.core.tenant.context import (
+    TenantAccessDeniedError,
+    TenantNotSetError,
+    get_tenant_config,
+    get_tenant_id,
+    get_tenant_id_or_none,
+    reset_tenant,
+    resolve_tenant_id,
+    set_tenant,
+    tenant_context,
+    validate_tenant_access,
+)
+from me4brain.core.tenant.quota import QuotaManager
+from me4brain.core.tenant.store import TenantStore
 from me4brain.core.tenant.types import (
     TenantConfig,
     TenantFeatures,
@@ -16,23 +28,7 @@ from me4brain.core.tenant.types import (
     TenantQuota,
     TenantStatus,
     TenantTier,
-    TenantUsage,
 )
-from me4brain.core.tenant.context import (
-    TenantNotSetError,
-    TenantAccessDeniedError,
-    get_tenant_id,
-    get_tenant_id_or_none,
-    get_tenant_config,
-    set_tenant,
-    reset_tenant,
-    tenant_context,
-    validate_tenant_access,
-    resolve_tenant_id,
-)
-from me4brain.core.tenant.store import TenantStore
-from me4brain.core.tenant.quota import QuotaManager, QuotaExceededError
-
 
 # --- Types Tests ---
 
@@ -176,9 +172,8 @@ class TestTenantContext:
 
     def test_validate_tenant_access_denied(self):
         """Test validazione accesso negato."""
-        with tenant_context("tenant-a"):
-            with pytest.raises(TenantAccessDeniedError):
-                validate_tenant_access("tenant-b")
+        with tenant_context("tenant-a"), pytest.raises(TenantAccessDeniedError):
+            validate_tenant_access("tenant-b")
 
     def test_resolve_tenant_id_from_context(self):
         """Test risoluzione da context."""
@@ -339,9 +334,7 @@ class TestQuotaManager:
         mock_redis.incrby.return_value = 51
 
         with patch.object(manager, "_get_limit", return_value=100):
-            allowed, current, limit = await manager.check_and_increment(
-                "t1", "api_calls_day"
-            )
+            allowed, current, limit = await manager.check_and_increment("t1", "api_calls_day")
 
         assert allowed is True
         assert current == 51
@@ -352,9 +345,7 @@ class TestQuotaManager:
         mock_redis.incrby.return_value = 101
 
         with patch.object(manager, "_get_limit", return_value=100):
-            allowed, current, limit = await manager.check_and_increment(
-                "t1", "api_calls_day"
-            )
+            allowed, current, limit = await manager.check_and_increment("t1", "api_calls_day")
 
         assert allowed is False
         # Rollback

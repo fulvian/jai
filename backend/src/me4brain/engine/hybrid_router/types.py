@@ -12,7 +12,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # =============================================================================
 # Stage 1: Domain Classification Types
 # =============================================================================
@@ -121,6 +120,10 @@ class ToolRetrievalResult:
     tools: list[RetrievedTool] = field(default_factory=list)
     total_payload_bytes: int = 0
     domains_searched: list[str] = field(default_factory=list)
+    # Rescue tracking
+    rescue_applied: bool = False
+    rescue_policy: str = ""  # "domain_expand", "lexical_boost", "global_pass"
+    rescue_trigger_reason: str = ""  # Why rescue was triggered
 
     @property
     def tool_names(self) -> list[str]:
@@ -131,6 +134,11 @@ class ToolRetrievalResult:
     def tool_count(self) -> int:
         """Number of tools retrieved."""
         return len(self.tools)
+
+    @property
+    def is_empty(self) -> bool:
+        """Check if no tools were retrieved."""
+        return len(self.tools) == 0
 
     def get_schemas(self) -> list[dict[str, Any]]:
         """Get OpenAI-compatible tool schemas."""

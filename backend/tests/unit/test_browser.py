@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
+from me4brain.core.browser.extractor import SkillExtractor
+from me4brain.core.browser.recorder import SkillRecorder
 from me4brain.core.browser.types import (
     ActionType,
     BrowserAction,
@@ -16,14 +15,10 @@ from me4brain.core.browser.types import (
     BrowserStatus,
     BrowserType,
     CreateSessionRequest,
-    ExtractRequest,
     NavigateRequest,
     RecordingState,
     SessionResponse,
 )
-from me4brain.core.browser.recorder import SkillRecorder
-from me4brain.core.browser.extractor import SkillExtractor
-
 
 # --- Types Tests ---
 
@@ -305,9 +300,7 @@ class TestSkillExtractor:
             id="rec-123",
             session_id="sess-123",
             actions=[
-                BrowserAction(
-                    id="1", type=ActionType.NAVIGATE, target="https://example.com"
-                ),
+                BrowserAction(id="1", type=ActionType.NAVIGATE, target="https://example.com"),
                 BrowserAction(id="2", type=ActionType.CLICK, target="button"),
                 BrowserAction(id="3", type=ActionType.TYPE, value="test"),
             ],
@@ -325,9 +318,7 @@ class TestSkillExtractor:
         extractor = SkillExtractor()
         actions = [
             BrowserAction(id="1", type=ActionType.NAVIGATE, target="https://a.com"),
-            BrowserAction(
-                id="2", type=ActionType.NAVIGATE, target="https://a.com"
-            ),  # Ridondante
+            BrowserAction(id="2", type=ActionType.NAVIGATE, target="https://a.com"),  # Ridondante
             BrowserAction(id="3", type=ActionType.SCREENSHOT),
             BrowserAction(id="4", type=ActionType.SCREENSHOT),  # Ridondante
         ]
@@ -369,9 +360,7 @@ class TestSkillExtractor:
             session_id="sess-123",
             status="stopped",
             actions=[
-                BrowserAction(
-                    id="1", type=ActionType.NAVIGATE, target="https://example.com"
-                ),
+                BrowserAction(id="1", type=ActionType.NAVIGATE, target="https://example.com"),
                 BrowserAction(id="2", type=ActionType.CLICK, target="button.login"),
             ],
         )
@@ -408,9 +397,7 @@ class TestSkillExtractor:
             id="rec-123",
             session_id="sess-123",
             actions=[
-                BrowserAction(
-                    id="1", type=ActionType.NAVIGATE, target="https://github.com/test"
-                ),
+                BrowserAction(id="1", type=ActionType.NAVIGATE, target="https://github.com/test"),
             ],
         )
 
@@ -435,9 +422,7 @@ class TestSkillExtractor:
         """Test ricerca URL sorgente."""
         extractor = SkillExtractor()
         actions = [
-            BrowserAction(
-                id="1", type=ActionType.NAVIGATE, target="https://example.com"
-            ),
+            BrowserAction(id="1", type=ActionType.NAVIGATE, target="https://example.com"),
             BrowserAction(id="2", type=ActionType.CLICK),
         ]
 

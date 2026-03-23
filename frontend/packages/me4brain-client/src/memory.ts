@@ -108,4 +108,24 @@ export class MemoryNamespace {
         });
         return response.deleted;
     }
+
+    /**
+     * Update session metadata (e.g., title).
+     * 
+     * @param sessionId - Session ID
+     * @param title - New title for the session
+     * @param userId - User ID (default: 'default')
+     * @returns True if updated successfully
+     */
+    async updateSession(sessionId: string, title: string, userId: string = 'default'): Promise<boolean> {
+        const response = await this.client.request<{ updated: boolean; session_id: string; title: string }>(
+            'PATCH',
+            `/working/sessions/${sessionId}`,
+            {
+                params: { user_id: userId },
+                body: { title },
+            }
+        );
+        return response.updated;
+    }
 }

@@ -18,8 +18,8 @@ Usage:
 from __future__ import annotations
 
 import contextvars
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import structlog
 

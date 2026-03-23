@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,7 @@ class DeliveryConfig(BaseModel):
     """Configurazione delivery channels."""
 
     channels: list[Literal["log", "webhook"]] = Field(default_factory=lambda: ["log"])
-    webhook_url: Optional[str] = None
+    webhook_url: str | None = None
     webhook_headers: dict[str, str] = Field(default_factory=dict)
 
 
@@ -43,18 +43,18 @@ class ScheduledJob(BaseModel):
 
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     schedule: ScheduleConfig
     payload: JobPayload
     delivery: DeliveryConfig = Field(default_factory=DeliveryConfig)
 
     # Multi-tenancy
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
 
     # Stato
     enabled: bool = True
-    next_run: Optional[datetime] = None
-    last_run: Optional[datetime] = None
+    next_run: datetime | None = None
+    last_run: datetime | None = None
 
     # Statistiche
     run_count: int = 0
@@ -66,7 +66,7 @@ class ScheduledJob(BaseModel):
 
     # Metadata
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     @property
     def success_rate(self) -> float:
@@ -95,27 +95,27 @@ class ExecutionLog(BaseModel):
 
     # Timing
     started_at: datetime
-    completed_at: Optional[datetime] = None
-    duration_ms: Optional[float] = None
+    completed_at: datetime | None = None
+    duration_ms: float | None = None
 
     # Risultato
     status: JobStatus
-    result: Optional[dict] = None
-    error: Optional[str] = None
+    result: dict | None = None
+    error: str | None = None
 
     # Retry info
     attempt: int = 1
     max_attempts: int = 3
 
     # Context
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
 
 
 class CreateJobRequest(BaseModel):
     """Request per creazione job via API."""
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     schedule: ScheduleConfig
     payload: JobPayload
     delivery: DeliveryConfig = Field(default_factory=DeliveryConfig)
@@ -127,11 +127,11 @@ class JobResponse(BaseModel):
 
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     schedule: ScheduleConfig
     enabled: bool
-    next_run: Optional[datetime]
-    last_run: Optional[datetime]
+    next_run: datetime | None
+    last_run: datetime | None
     run_count: int
     success_rate: float
 

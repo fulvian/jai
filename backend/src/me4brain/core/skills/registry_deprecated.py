@@ -4,25 +4,23 @@ This module is kept for backward compatibility.
 """
 
 import warnings
+
 warnings.warn(
     "me4brain.core.skills.registry is deprecated. Use me4brain.skills.registry.SkillRegistry",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 import hashlib
-import json
-import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import structlog
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
 from me4brain.core.skills.parser import SkillParser
-from me4brain.core.skills.types import Skill, SkillDefinition, ScoredSkill
+from me4brain.core.skills.types import ScoredSkill, Skill, SkillDefinition
 
 logger = structlog.get_logger(__name__)
 
@@ -41,8 +39,8 @@ class SkillRegistry:
     def __init__(
         self,
         qdrant: QdrantClient,
-        skill_dir: Optional[Path] = None,
-        tenant_id: Optional[str] = None,
+        skill_dir: Path | None = None,
+        tenant_id: str | None = None,
     ):
         """
         Inizializza il registro skill.
@@ -199,7 +197,7 @@ class SkillRegistry:
         self,
         query_embedding: list[float],
         top_k: int = 5,
-        skill_type: Optional[str] = None,
+        skill_type: str | None = None,
     ) -> list[ScoredSkill]:
         """
         Cerca skill per similarità semantica.
@@ -217,9 +215,7 @@ class SkillRegistry:
         if skill_type:
             filter_conditions.append({"key": "type", "match": {"value": skill_type}})
         if self.tenant_id:
-            filter_conditions.append(
-                {"key": "tenant_id", "match": {"value": self.tenant_id}}
-            )
+            filter_conditions.append({"key": "tenant_id", "match": {"value": self.tenant_id}})
 
         # Cerca in Qdrant
         results = self.qdrant.search(
@@ -247,9 +243,7 @@ class SkillRegistry:
 
         return scored_skills[:top_k]
 
-    def _payload_to_skill(
-        self, payload: dict, embedding: Optional[list[float]] = None
-    ) -> Skill:
+    def _payload_to_skill(self, payload: dict, embedding: list[float] | None = None) -> Skill:
         """Converte payload Qdrant in Skill."""
         return Skill(
             id=payload["id"],
@@ -266,13 +260,11 @@ class SkillRegistry:
             tool_signature=payload.get("tool_signature"),
             created_at=datetime.fromisoformat(payload["created_at"]),
             last_used=(
-                datetime.fromisoformat(payload["last_used"])
-                if payload.get("last_used")
-                else None
+                datetime.fromisoformat(payload["last_used"]) if payload.get("last_used") else None
             ),
         )
 
-    async def find_by_signature(self, signature: str) -> Optional[Skill]:
+    async def find_by_signature(self, signature: str) -> Skill | None:
         """
         Cerca skill per signature (hash tool chain).
 
@@ -285,9 +277,7 @@ class SkillRegistry:
         # Cerca in Qdrant con filtro esatto
         results = self.qdrant.scroll(
             collection_name=self.COLLECTION_NAME,
-            scroll_filter={
-                "must": [{"key": "tool_signature", "match": {"value": signature}}]
-            },
+            scroll_filter={"must": [{"key": "tool_signature", "match": {"value": signature}}]},
             limit=1,
         )
 
@@ -296,7 +286,7 @@ class SkillRegistry:
             return self._payload_to_skill(points[0].payload, points[0].vector)
         return None
 
-    async def get_by_id(self, skill_id: str) -> Optional[Skill]:
+    async def get_by_id(self, skill_id: str) -> Skill | None:
         """Ottiene skill per ID."""
         # Prima cerca in cache esplicite
         if skill_id in self._explicit:
@@ -338,7 +328,7 @@ class SkillRegistry:
             return False
 
     async def list_all(
-        self, skill_type: Optional[str] = None, enabled_only: bool = True
+        self, skill_type: str | None = None, enabled_only: bool = True
     ) -> list[Skill]:
         """Lista tutte le skill."""
         skills: list[Skill] = []

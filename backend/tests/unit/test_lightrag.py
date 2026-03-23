@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from me4brain.retrieval.lightrag import LightRAG, LightRAGResult
+
+import pytest
+
 from me4brain.memory.episodic import Episode
-from me4brain.memory.semantic import Entity, Relation
+from me4brain.memory.semantic import Entity
+from me4brain.retrieval.lightrag import LightRAG, LightRAGResult
 
 
 @pytest.fixture

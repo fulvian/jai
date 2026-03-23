@@ -12,13 +12,11 @@ Provides REST endpoints for:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from me4brain.database import ConversationRepository, get_session
+from me4brain.database import get_session
 from me4brain.engine.conversation_manager import ConversationManager
 from me4brain.models.conversation import (
     Conversation,

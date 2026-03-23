@@ -8,10 +8,10 @@ and graceful fallback when Redis is unavailable.
 from __future__ import annotations
 
 import asyncio
-import structlog
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import redis.asyncio as redis
+import structlog
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ class CachedResponse(BaseModel):
     # Optional query summary
     query_summary: str | None = None
 
-    def to_domain_classification(self) -> "DomainClassification":
+    def to_domain_classification(self) -> DomainClassification:
         """Convert cached response back to DomainClassification.
 
         Returns:
@@ -142,7 +142,7 @@ class CacheManager:
                 raise
         return self._redis
 
-    async def get(self, key: str) -> Optional[CachedResponse]:
+    async def get(self, key: str) -> CachedResponse | None:
         """Get cached response by key.
 
         Args:

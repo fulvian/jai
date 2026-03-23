@@ -6,8 +6,9 @@ Tutti i tool sono gratuiti con limiti generosi:
 - Last.fm: Illimitato (musica)
 """
 
-from typing import Any
 import os
+from typing import Any
+
 import httpx
 import structlog
 
@@ -249,7 +250,7 @@ async def openlibrary_book(isbn: str) -> dict[str, Any]:
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(
-                f"https://openlibrary.org/api/books",
+                "https://openlibrary.org/api/books",
                 params={"bibkeys": f"ISBN:{isbn}", "format": "json", "jscmd": "data"},
             )
             resp.raise_for_status()

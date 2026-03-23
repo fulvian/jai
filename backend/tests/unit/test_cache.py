@@ -1,9 +1,10 @@
 """Unit tests per Cache System."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from me4brain.utils.cache import cached, _generate_cache_key
+import pytest
+
+from me4brain.utils.cache import _generate_cache_key, cached
 
 
 class TestCacheKey:

@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import json
-from datetime import UTC, datetime
-from typing import Optional
 import uuid
+from datetime import UTC, datetime
 
-import structlog
 import redis.asyncio as redis
+import structlog
 
 from me4brain.config import get_settings
 from me4brain.core.tenant.types import (
     TenantConfig,
-    TenantLimits,
     TenantFeatures,
+    TenantLimits,
     TenantStatus,
     TenantTier,
 )
@@ -36,7 +34,7 @@ class TenantStore:
     INDEX_KEY = "tenants:index"
     DEFAULT_TTL = None  # Nessuna scadenza per config
 
-    def __init__(self, redis_client: Optional[redis.Redis] = None):
+    def __init__(self, redis_client: redis.Redis | None = None):
         """
         Args:
             redis_client: Client Redis (opzionale, lazy init)
@@ -62,8 +60,8 @@ class TenantStore:
         self,
         name: str,
         tier: TenantTier = TenantTier.FREE,
-        owner_email: Optional[str] = None,
-        tenant_id: Optional[str] = None,
+        owner_email: str | None = None,
+        tenant_id: str | None = None,
     ) -> TenantConfig:
         """
         Crea nuovo tenant.
@@ -111,7 +109,7 @@ class TenantStore:
 
         return config
 
-    async def get(self, tenant_id: str) -> Optional[TenantConfig]:
+    async def get(self, tenant_id: str) -> TenantConfig | None:
         """
         Recupera config tenant.
 
@@ -137,12 +135,12 @@ class TenantStore:
     async def update(
         self,
         tenant_id: str,
-        name: Optional[str] = None,
-        tier: Optional[TenantTier] = None,
-        status: Optional[TenantStatus] = None,
-        limits: Optional[TenantLimits] = None,
-        features: Optional[TenantFeatures] = None,
-    ) -> Optional[TenantConfig]:
+        name: str | None = None,
+        tier: TenantTier | None = None,
+        status: TenantStatus | None = None,
+        limits: TenantLimits | None = None,
+        features: TenantFeatures | None = None,
+    ) -> TenantConfig | None:
         """
         Aggiorna config tenant.
 
@@ -209,8 +207,8 @@ class TenantStore:
 
     async def list_all(
         self,
-        status: Optional[TenantStatus] = None,
-        tier: Optional[TenantTier] = None,
+        status: TenantStatus | None = None,
+        tier: TenantTier | None = None,
     ) -> list[TenantConfig]:
         """
         Lista tutti i tenant.
@@ -271,7 +269,7 @@ class TenantStore:
 
 
 # Singleton
-_tenant_store: Optional[TenantStore] = None
+_tenant_store: TenantStore | None = None
 
 
 def get_tenant_store() -> TenantStore:

@@ -1,7 +1,7 @@
 """Skill System Types - Modelli Pydantic per il sistema skill ibrido."""
 
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +11,7 @@ class ToolCall(BaseModel):
 
     name: str
     args: dict[str, Any]
-    result: Optional[Any] = None
+    result: Any | None = None
     success: bool = True
     duration_ms: float = 0.0
 
@@ -22,7 +22,7 @@ class ExecutionTrace(BaseModel):
     session_id: str
     input_query: str
     tool_chain: list[ToolCall] = Field(default_factory=list)
-    final_output: Optional[str] = None
+    final_output: str | None = None
     success: bool = False
     total_duration_ms: float = 0.0
     created_at: datetime = Field(default_factory=datetime.now)
@@ -53,17 +53,17 @@ class Skill(BaseModel):
 
     # Metadata
     created_at: datetime = Field(default_factory=datetime.now)
-    last_used: Optional[datetime] = None
-    tenant_id: Optional[str] = None
+    last_used: datetime | None = None
+    tenant_id: str | None = None
     enabled: bool = True
 
     # Per skill esplicite
-    file_path: Optional[str] = None
+    file_path: str | None = None
     version: str = "1.0"
 
     # Per skill cristallizzate
-    source_trace_id: Optional[str] = None
-    tool_signature: Optional[str] = None
+    source_trace_id: str | None = None
+    tool_signature: str | None = None
 
     @property
     def success_rate(self) -> float:
@@ -95,11 +95,11 @@ class SkillDefinition(BaseModel):
     name: str
     description: str
     version: str = "1.0"
-    author: Optional[str] = None
+    author: str | None = None
     tags: list[str] = Field(default_factory=list)
     triggers: list[str] = Field(default_factory=list)  # Pattern di attivazione
     tools_required: list[str] = Field(default_factory=list)
-    tenant_id: Optional[str] = None
+    tenant_id: str | None = None
 
     # Contenuto markdown (istruzioni)
     instructions: str = ""
@@ -134,6 +134,6 @@ class VerificationResult(BaseModel):
     """Risultato verifica skill post-esecuzione."""
 
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     suggestions: list[str] = Field(default_factory=list)
     retry_count: int = 0

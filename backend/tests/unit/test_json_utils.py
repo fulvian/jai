@@ -1,11 +1,9 @@
 """Tests for json_utils module."""
 
-import pytest
-
 from me4brain.utils.json_utils import (
     extract_json_from_markdown,
-    robust_json_parse,
     parse_llm_json_response,
+    robust_json_parse,
     safe_json_loads,
 )
 

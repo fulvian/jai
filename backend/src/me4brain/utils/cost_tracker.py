@@ -3,7 +3,6 @@
 Traccia utilizzo token LLM e costi API per billing e analytics.
 """
 
-import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any

@@ -203,17 +203,11 @@ class ToolRouter:
                 is_available = True
 
             # Google Workspace tools
-            elif tool_name in ["google_gmail_search", "google_gmail_send"]:
-                if not os.getenv("GOOGLE_OAUTH_TOKEN"):
-                    is_available = False
-                    reason = "Google OAuth token not configured"
-
-            elif tool_name in ["google_calendar_list_events", "google_calendar_create_event"]:
-                if not os.getenv("GOOGLE_OAUTH_TOKEN"):
-                    is_available = False
-                    reason = "Google OAuth token not configured"
-
-            elif tool_name in ["google_drive_search", "google_drive_upload"]:
+            elif (
+                tool_name in ["google_gmail_search", "google_gmail_send"]
+                or tool_name in ["google_calendar_list_events", "google_calendar_create_event"]
+                or tool_name in ["google_drive_search", "google_drive_upload"]
+            ):
                 if not os.getenv("GOOGLE_OAUTH_TOKEN"):
                     is_available = False
                     reason = "Google OAuth token not configured"

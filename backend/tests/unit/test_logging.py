@@ -1,8 +1,8 @@
-import pytest
-import structlog
-import logging
-import json
 import io
+import json
+
+import structlog
+
 from me4brain.utils.logging import configure_logging
 
 

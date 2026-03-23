@@ -1,11 +1,12 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from me4brain.api.main import create_app
 from me4brain.api.middleware.auth import AuthenticatedUser
 from me4brain.memory.episodic import Episode
-from me4brain.memory.semantic import Entity, Relation
-from datetime import datetime, UTC
+from me4brain.memory.semantic import Entity
 
 # Mock user for authentication
 MOCK_USER = AuthenticatedUser(user_id="test_user", tenant_id="test_tenant", roles=["user"])

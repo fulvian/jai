@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-import structlog
 
 from me4brain.llm.provider_registry import (
     get_provider_registry,
-    LLMProviderConfig,
-    ProviderModel,
-    ProviderType,
 )
 
 logger = structlog.get_logger(__name__)
@@ -29,12 +26,12 @@ class ProviderModelInput(BaseModel):
     supports_vision: bool = False
     supports_streaming: bool = True
     access_mode: str = "api_paid"
-    pricing: Optional[dict] = None
+    pricing: dict | None = None
 
 
 class SubscriptionInput(BaseModel):
     enabled: bool = False
-    weekly_token_limit: Optional[int] = None
+    weekly_token_limit: int | None = None
     reset_day: int = 1
     tokens_used_this_week: int = 0
 
@@ -45,23 +42,23 @@ class ProviderCreateInput(BaseModel):
         default="openai_compatible", description="openai_compatible, anthropic, google_gemini, etc."
     )
     base_url: str = Field(..., pattern=r"^https?://.+")
-    api_key: Optional[str] = None
+    api_key: str | None = None
     api_key_header: str = "Authorization"
     models: list[ProviderModelInput] = []
     is_local: bool = False
     is_enabled: bool = True
-    subscription: Optional[SubscriptionInput] = None
+    subscription: SubscriptionInput | None = None
 
 
 class ProviderUpdateInput(BaseModel):
-    name: Optional[str] = None
-    base_url: Optional[str] = None
-    api_key: Optional[str] = None
-    api_key_header: Optional[str] = None
-    models: Optional[list[ProviderModelInput]] = None
-    is_local: Optional[bool] = None
-    is_enabled: Optional[bool] = None
-    subscription: Optional[SubscriptionInput] = None
+    name: str | None = None
+    base_url: str | None = None
+    api_key: str | None = None
+    api_key_header: str | None = None
+    models: list[ProviderModelInput] | None = None
+    is_local: bool | None = None
+    is_enabled: bool | None = None
+    subscription: SubscriptionInput | None = None
 
 
 class ProviderResponse(BaseModel):
@@ -69,22 +66,22 @@ class ProviderResponse(BaseModel):
     name: str
     type: str
     base_url: str
-    api_key: Optional[str]
+    api_key: str | None
     api_key_header: str
     models: list[dict]
     is_local: bool
     is_enabled: bool
     created_at: str
     updated_at: str
-    last_test: Optional[dict]
-    subscription: Optional[dict]
+    last_test: dict | None
+    subscription: dict | None
 
 
 class ProviderTestResponse(BaseModel):
     success: bool
     latency_ms: float
-    error: Optional[str] = None
-    models_count: Optional[int] = None
+    error: str | None = None
+    models_count: int | None = None
 
 
 class DiscoverResponse(BaseModel):

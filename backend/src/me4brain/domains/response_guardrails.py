@@ -8,8 +8,8 @@ Implementa guardrail per:
 """
 
 import json
-from typing import Any, Optional
 from dataclasses import dataclass
+from typing import Any
 
 import structlog
 

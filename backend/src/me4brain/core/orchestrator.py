@@ -15,9 +15,7 @@ from me4brain.core.router import get_semantic_router
 from me4brain.core.state import CognitiveState, create_initial_state
 from me4brain.embeddings import get_embedding_service
 from me4brain.memory import (
-    get_episodic_memory,
     get_procedural_memory,
-    get_semantic_memory,
     get_working_memory,
 )
 from me4brain.retrieval.lightrag import LightRAG

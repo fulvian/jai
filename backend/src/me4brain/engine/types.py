@@ -208,7 +208,7 @@ class EngineResponse(BaseModel):
 
 class StreamChunk(BaseModel):
     """Chunk of data yielded during streaming execution.
-    
+
     Used to transport both reasoning/thinking tokens and final answer content.
     """
 

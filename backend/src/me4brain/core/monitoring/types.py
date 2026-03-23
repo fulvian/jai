@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -45,7 +45,7 @@ class MetricDefinition(BaseModel):
     metric_type: MetricType
     description: str
     labels: list[str] = Field(default_factory=list)
-    buckets: Optional[list[float]] = None  # Per histogram
+    buckets: list[float] | None = None  # Per histogram
 
 
 class MetricValue(BaseModel):
@@ -65,8 +65,8 @@ class ComponentHealth(BaseModel):
 
     name: str
     status: HealthStatus
-    latency_ms: Optional[float] = None
-    message: Optional[str] = None
+    latency_ms: float | None = None
+    message: str | None = None
     last_check: datetime = Field(default_factory=datetime.now)
 
 
@@ -78,7 +78,7 @@ class HealthReport(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_components(cls, components: list[ComponentHealth]) -> "HealthReport":
+    def from_components(cls, components: list[ComponentHealth]) -> HealthReport:
         """Calcola status aggregato."""
         if not components:
             return cls(status=HealthStatus.UNKNOWN)
@@ -126,7 +126,7 @@ class Alert(BaseModel):
 
     # Timing
     started_at: datetime = Field(default_factory=datetime.now)
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
 
     # Context
     labels: dict[str, str] = Field(default_factory=dict)
@@ -172,7 +172,7 @@ class LLMUsage(BaseModel):
         model: str,
         usage: dict,
         latency_ms: float,
-    ) -> "LLMUsage":
+    ) -> LLMUsage:
         """Crea da response LLM."""
         prompt = usage.get("prompt_tokens", 0)
         completion = usage.get("completion_tokens", 0)

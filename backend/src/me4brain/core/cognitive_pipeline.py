@@ -22,15 +22,14 @@ Usage:
 
 import json
 import os
-from datetime import UTC, datetime
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import structlog
 
-from me4brain.config import get_settings
 from me4brain.embeddings import get_embedding_service
 from me4brain.llm import LLMRequest, Message, NanoGPTClient, get_llm_config
-from me4brain.memory import get_episodic_memory, get_procedural_memory
+from me4brain.memory import get_episodic_memory
 from me4brain.retrieval.tool_executor import ExecutionRequest, ToolExecutor
 
 logger = structlog.get_logger(__name__)
@@ -990,12 +989,12 @@ async def _execute_multi_tool_parallel(
     # Costruisci query specifiche per ogni servizio (per ricerca semantica in Qdrant)
     service_queries = {
         # Google Workspace
-        "drive": f"Google Drive cerca file documenti",
-        "gmail": f"Gmail cerca email messaggi",
-        "calendar": f"Google Calendar cerca eventi testo query ricerca",
-        "meet": f"Google Meet videochiamate riunioni",
-        "docs": f"Google Docs documenti testo",
-        "sheets": f"Google Sheets fogli calcolo spreadsheet",
+        "drive": "Google Drive cerca file documenti",
+        "gmail": "Gmail cerca email messaggi",
+        "calendar": "Google Calendar cerca eventi testo query ricerca",
+        "meet": "Google Meet videochiamate riunioni",
+        "docs": "Google Docs documenti testo",
+        "sheets": "Google Sheets fogli calcolo spreadsheet",
         # NBA / Sports
         "nba_games": "NBA prossime partite programmate schedule BallDontLie",
         "nba_stats": "NBA live scoreboard partite oggi statistiche squadre nba_api",
@@ -1091,7 +1090,6 @@ def _extract_entities_for_routing(query: str) -> list[str]:
     Returns:
         Lista di entità rilevate (nomi squadre, giocatori, servizi, etc.)
     """
-    import re
 
     entities = []
     query_lower = query.lower()
