@@ -103,3 +103,79 @@ CACHE_OPERATION_LATENCY = Histogram(
     ["operation"],  # get, set, invalidate
     buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0),
 )
+
+# =============================================================================
+# Retrieval SLO Metrics (Wave 4)
+# =============================================================================
+
+# Tool selection recall - tracks whether correct tools appear in top-K
+TOOL_SELECTION_RECALL = Gauge(
+    "tool_selection_recall_at_10",
+    "Tool selection recall@10 - proportion of queries where correct tool appears in top 10",
+)
+
+# Wrong domain failures - queries routed to wrong domain
+WRONG_DOMAIN_FAILURES = Counter(
+    "wrong_domain_failures_total",
+    "Total queries routed to wrong domain",
+    ["expected_domain", "actual_domain"],
+)
+
+# Zero result rate - queries returning 0 tools
+ZERO_RESULT_RETRIEVALS = Counter(
+    "zero_result_retrievals_total",
+    "Total retrievals returning zero results",
+)
+
+# Rescue policy triggers
+RESCUE_POLICY_TRIGGERS = Counter(
+    "rescue_policy_triggers_total",
+    "Total rescue policy triggers",
+    ["trigger_reason", "policy_applied"],
+)
+
+# Retrieval latency by complexity
+RETRIEVAL_LATENCY = Histogram(
+    "retrieval_latency_seconds",
+    "Tool retrieval latency in seconds",
+    ["complexity"],  # simple, medium, complex
+    buckets=(0.5, 1.0, 2.0, 3.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+)
+
+# Tool selection latency
+TOOL_SELECTION_LATENCY = Histogram(
+    "tool_selection_latency_seconds",
+    "Tool selection (LLM call) latency in seconds",
+    ["complexity"],
+    buckets=(1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 45.0, 60.0),
+)
+
+# End-to-end routing latency
+ROUTING_LATENCY = Histogram(
+    "routing_latency_seconds",
+    "End-to-end routing latency (classification + retrieval + selection)",
+    ["complexity"],
+    buckets=(1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 45.0, 60.0, 90.0),
+)
+
+# Classification confidence histogram
+CLASSIFICATION_CONFIDENCE_HIST = Histogram(
+    "classification_confidence_histogram",
+    "Domain classification confidence distribution",
+    ["domain"],
+    buckets=(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+)
+
+# Index consistency - drift between manifest and actual tools
+INDEX_DRIFT = Gauge(
+    "index_drift_count",
+    "Number of tools with inconsistent metadata between manifest and actual index",
+)
+
+# Retrieval result count
+RETRIEVAL_RESULT_COUNT = Histogram(
+    "retrieval_result_count",
+    "Number of tools returned per retrieval",
+    ["domain"],
+    buckets=(1, 3, 5, 10, 15, 20, 25, 30),
+)

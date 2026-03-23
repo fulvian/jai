@@ -1,10 +1,57 @@
 # JAI Session Knowledge Graph - Architecture Analysis & Optimization Plan
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Created:** 2026-03-23  
 **Author:** AI Architecture Analysis  
 **Status:** Analysis Complete  
 **Scope:** Session Knowledge Graph, Drag-and-Drop, Vector Embeddings, Auto-Cataloging
+
+---
+
+## Bug Fixes & Debug Session (2026-03-23)
+
+### Issues Fixed
+
+| # | Issue | Root Cause | Fix |
+|---|-------|------------|-----|
+| 1 | **Clusters not appearing in dashboard** | `ingest_session` did not call `_compute_session_similarities` to create RELATED_TO relationships | Added call to `_safe_compute_similarity()` after session ingest |
+| 2 | **Gateway couldn't reach backend** | `ME4BRAIN_URL=http://localhost:8089` missing `/v1` suffix | Updated `GraphSessionService` to always append `/v1` |
+| 3 | **Backend running on wrong port** | Configuration said `BACKEND_PORT=8000` but actual port was `8089` | Updated fallback logic to use port 8089 |
+
+### Technical Details
+
+**Bug #1 - Missing Similarity Computation:**
+```python
+# In session_graph.py ingest_session() - BEFORE:
+asyncio.create_task(self._safe_extract_topics(session_id, tenant_id, turns))
+asyncio.create_task(self._safe_detect_communities(tenant_id))
+
+# AFTER:
+asyncio.create_task(self._safe_extract_topics(session_id, tenant_id, turns))
+asyncio.create_task(self._safe_compute_similarity(session_id, tenant_id))  # NEW
+asyncio.create_task(self._safe_detect_communities(tenant_id))
+```
+
+**Bug #2 - Missing /v1 path:**
+```typescript
+// In graph_session_service.ts - BEFORE:
+this.baseUrl = process.env.ME4BRAIN_URL ?? `http://localhost:${backendPort}/v1`;
+
+// AFTER:
+const me4brainUrl = process.env.ME4BRAIN_URL ?? '';
+if (me4brainUrl) {
+    this.baseUrl = me4brainUrl.endsWith('/v1') ? me4brainUrl : `${me4brainUrl}/v1`;
+} else {
+    this.baseUrl = `http://localhost:${backendPort}/v1`;
+}
+```
+
+### Verification
+
+After fixes:
+- Neo4j: 5 sessions with RELATED_TO relationships
+- Clusters API returns 1 cluster ("Generale") with all 5 sessions
+- Gateway `/api/graph/clusters` returns correct data
 
 ---
 

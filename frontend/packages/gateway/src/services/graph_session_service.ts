@@ -75,7 +75,16 @@ class GraphSessionService {
     private tenantId: string;
 
     constructor() {
-        this.baseUrl = process.env.ME4BRAIN_URL ?? 'http://localhost:8000/v1';
+        // Backend runs on port 8089 (FastAPI), Gateway on 3030
+        // ME4BRAIN_URL should be full URL like http://localhost:8089/v1
+        const me4brainUrl = process.env.ME4BRAIN_URL ?? '';
+        if (me4brainUrl) {
+            // Ensure /v1 suffix
+            this.baseUrl = me4brainUrl.endsWith('/v1') ? me4brainUrl : `${me4brainUrl}/v1`;
+        } else {
+            const backendPort = process.env.BACKEND_PORT ?? '8089';
+            this.baseUrl = `http://localhost:${backendPort}/v1`;
+        }
         this.tenantId = process.env.TENANT_ID ?? 'default';
     }
 

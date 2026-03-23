@@ -1,3 +1,49 @@
+## [v0.20.5] - 2026-03-23
+
+### Fixed - Qdrant Point ID UUID Requirement
+
+**Problem**: `tool_index.py` used `tool_name` strings as Qdrant point IDs, but Qdrant requires UUID or integer IDs.
+
+**Root Cause**: `CATALOG_MANIFEST_POINT_ID = "__catalog_manifest__"` and tool point IDs like `"openmeteo_current"` are invalid Qdrant IDs.
+
+**Solution**: 
+- Generate deterministic UUID5 for tool point IDs: `uuid.uuid5(uuid.NAMESPACE_DNS, tool_name)`
+- Changed `CATALOG_MANIFEST_POINT_ID` to valid UUID: `"00000000-0000-0000-0000-000000000001"`
+
+**Files Modified**:
+- `src/me4brain/engine/hybrid_router/tool_index.py` - UUID generation for point IDs
+
+### Fixed - LLM Provider Auto-Detection Respects Explicit base_url
+
+**Problem**: `NanoGPTClient` ignored the explicit `base_url` parameter when model name contained `mlx/` prefix, incorrectly routing to LM Studio.
+
+**Root Cause**: `_get_base_url_for_model()` always checked model prefix regardless of user-provided base_url.
+
+**Solution**: 
+- Added `_user_provided_base_url` flag to detect explicit base_url
+- If base_url differs from default, always use it (respect user's explicit choice)
+- Added `_normalize_model_for_provider()` to strip `mlx/` prefix when calling Ollama
+
+**Files Modified**:
+- `src/me4brain/llm/nanogpt.py` - Respect explicit base_url, normalize model names
+
+### Added - Real Integration Tests for Hybrid Router
+
+**Problem**: Needed real integration tests with Qdrant + Ollama (no mocks) for Wave 4.
+
+**Solution**: 
+- Created `tests/integration/test_hybrid_router_real.py` with 6 integration tests
+- Created `tests/benchmarks/golden_set.py` with 54 test cases
+- Created `tests/benchmarks/test_golden_set.py` with 19 unit tests
+- Created `tests/unit/test_tool_index.py` with 13 unit tests
+
+**Test Results**:
+- `tests/unit/test_tool_index.py`: 14 passed
+- `tests/benchmarks/test_golden_set.py`: 19 passed
+- `tests/integration/test_hybrid_router_real.py`: 5 passed, 1 timeout (qwen3.5 thinking slow)
+
+---
+
 ## [v0.20.4] - 2026-03-23
 
 ### Fixed - Ollama Migration & qwen3.5 Thinking Model Support

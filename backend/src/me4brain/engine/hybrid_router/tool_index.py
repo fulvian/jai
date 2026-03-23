@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import uuid
 from typing import Any
 
 import structlog
@@ -40,7 +41,8 @@ from me4brain.retrieval.llamaindex_bridge import Me4BrAInEmbedding
 logger = structlog.get_logger(__name__)
 
 # Fixed point ID for catalog manifest - ensures hash persistence across rebuilds
-CATALOG_MANIFEST_POINT_ID = "__catalog_manifest__"
+# Uses a fixed UUID to comply with Qdrant requirements (UUID or integer only)
+CATALOG_MANIFEST_POINT_ID = "00000000-0000-0000-0000-000000000001"
 
 
 class ToolIndexManager:
@@ -393,8 +395,10 @@ class ToolIndexManager:
                 for key in ["schema_json", "_catalog_hash"]:
                     payload.pop(key, None)
 
-                # Extract tool_name from payload for stable ID
-                point_id = payload.get("tool_name", payload.get("name", ""))
+                # Extract tool_name and generate deterministic UUID5 for Qdrant
+                # Note: Qdrant requires UUID or integer IDs; tool_name strings are invalid
+                tool_name = payload.get("tool_name", payload.get("name", ""))
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, tool_name))
 
                 points.append(
                     PointStruct(

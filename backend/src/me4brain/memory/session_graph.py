@@ -532,6 +532,9 @@ class SessionKnowledgeGraph:
         # Estrai topic in background (fire-and-forget)
         asyncio.create_task(self._safe_extract_topics(session_id, tenant_id, turns))
 
+        # Calcola similarità con altre sessioni (fire-and-forget)
+        asyncio.create_task(self._safe_compute_similarity(session_id, tenant_id))
+
         # Community detection periodica (fire-and-forget con cooldown)
         asyncio.create_task(self._safe_detect_communities(tenant_id))
 
@@ -561,6 +564,22 @@ class SessionKnowledgeGraph:
         except Exception as e:
             logger.warning(
                 "topic_extraction_failed",
+                session_id=session_id,
+                error=str(e),
+            )
+
+    async def _safe_compute_similarity(
+        self,
+        session_id: str,
+        tenant_id: str,
+        threshold: float = 0.5,
+    ) -> None:
+        """Wrapper sicuro per computazione similarità (non propaga eccezioni)."""
+        try:
+            await self._compute_session_similarities(session_id, tenant_id, threshold)
+        except Exception as e:
+            logger.warning(
+                "similarity_computation_failed",
                 session_id=session_id,
                 error=str(e),
             )

@@ -150,8 +150,9 @@ class LlamaIndexToolRetriever:
                 # LLM reranking can be expensive, but should complete in <45 seconds
                 try:
                     # Create a callable wrapper for the sync method
-                    def _run_reranking():
-                        return self._reranker.postprocess_nodes(
+                    # Note: self._reranker is guaranteed non-None here by outer check
+                    def _run_reranking() -> list[NodeWithScore]:
+                        return self._reranker.postprocess_nodes(  # type: ignore[union-attr]
                             nodes,
                             query_str=query,
                         )

@@ -64,9 +64,10 @@ open http://localhost:3000
 **Note on Step 2**: Copying large files (`copy-large-files.sh`) is optional but **strongly recommended**. It copies pre-built models and dependencies from source repos instead of re-downloading them, saving 20-40 minutes. See [COPY_LARGE_FILES.md](./COPY_LARGE_FILES.md) for details.
 
 **Endpoints**:
-- 🎨 Frontend: `http://localhost:3000`
-- 🔌 Backend API: `http://localhost:8000`
-- 📚 API Docs: `http://localhost:8000/docs`
+- 🎨 Frontend: `http://localhost:3020` (Next.js UI)
+- 🔌 Gateway: `http://localhost:3030` (Fastify API Gateway)
+- 🔌 Backend API: `http://localhost:8089` (FastAPI)
+- 📚 API Docs: `http://localhost:8089/docs`
 
 ### Useful Commands
 

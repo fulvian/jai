@@ -225,6 +225,10 @@ class NanoGPTClient(LLMProvider):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self._config_cache: LLMConfig | None = None
+        # Track if user explicitly provided a non-default base_url
+        # If so, we should always respect it instead of auto-detecting
+        cfg = get_llm_config()
+        self._user_provided_base_url = self.base_url != cfg.nanogpt_base_url.rstrip("/")
         # qwen3.5 thinking models can take 150+ seconds per request
         # Increased timeouts to accommodate slow local LLM responses
         self.client = httpx.AsyncClient(
@@ -246,6 +250,20 @@ class NanoGPTClient(LLMProvider):
         return self._config_cache
 
     def _get_base_url_for_model(self, model: str) -> str:
+        """Determine base URL for a model.
+
+        Best practice: If user explicitly provided a base_url (non-default),
+        always respect it. Only auto-detect when using default nanogpt_base_url.
+
+        This allows users to pass base_url="http://localhost:11434/v1" with
+        model="mlx/qwen3.5:9b" and have it work correctly via Ollama's
+        MLX backend, instead of being incorrectly routed to LM Studio.
+        """
+        # If user explicitly provided a base_url, always use it
+        if self._user_provided_base_url:
+            return self.base_url
+
+        # Only auto-detect when using default nanogpt_base_url
         model_lower = model.lower()
         cfg = get_llm_config()
         is_default_cloud_client = self.base_url.rstrip("/") == cfg.nanogpt_base_url.rstrip("/")
@@ -262,6 +280,25 @@ class NanoGPTClient(LLMProvider):
         if ":" in model:
             return cfg.ollama_base_url.rstrip("/")
         return self.base_url
+
+    def _normalize_model_for_provider(self, model: str, base_url: str) -> str:
+        """Normalize model name based on the provider.
+
+        Some providers don't understand certain prefixes. For example:
+        - Ollama doesn't understand 'mlx/' prefix - it expects 'qwen3.5:9b'
+        - LM Studio understands 'mlx/' format
+
+        Best practice: strip provider-specific prefixes when calling the API.
+        """
+        cfg = get_llm_config()
+        ollama_base = cfg.ollama_base_url.rstrip("/")
+        lmstudio_base = cfg.lmstudio_base_url.rstrip("/")
+
+        # Strip mlx/ prefix when using Ollama since it doesn't understand it
+        if base_url == ollama_base and model.startswith("mlx/"):
+            return model[4:]  # Remove 'mlx/' prefix
+
+        return model
 
     def _prepare_payload(self, request: LLMRequest) -> dict[str, Any]:
         """Prepara il payload JSON per la richiesta."""
@@ -335,10 +372,22 @@ class NanoGPTClient(LLMProvider):
 
         base_url = self._get_base_url_for_model(request.model)
 
+        # Normalize model name based on provider (e.g., strip 'mlx/' for Ollama)
+        effective_model = self._normalize_model_for_provider(request.model, base_url)
+        if effective_model != request.model:
+            logger.debug(
+                "model_name_normalized",
+                original=request.model,
+                normalized=effective_model,
+                provider_base_url=base_url,
+            )
+            payload["model"] = effective_model
+
         # Auto-load model if going to LM Studio and model is not loaded
         if base_url == get_llm_config().lmstudio_base_url.rstrip("/"):
             auto_loader = get_lmstudio_auto_loader()
-            model_loaded = await auto_loader.ensure_model_loaded(request.model)
+            # Use normalized model name for LM Studio as well
+            model_loaded = await auto_loader.ensure_model_loaded(effective_model)
             if not model_loaded:
                 logger.error("lmstudio_auto_load_failed", model=request.model)
                 logger.warning(

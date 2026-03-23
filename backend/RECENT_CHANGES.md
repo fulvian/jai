@@ -1,6 +1,35 @@
 # Recent Changes
 
-**Last Updated**: 2026-03-21
+**Last Updated**: 2026-03-23
+
+## 2026-03-23: Qdrant UUID Fix & LLM Provider Auto-Detection
+
+### 🐛 Bug Fixes
+
+#### 1. Qdrant Point ID UUID Requirement
+- **Problem**: `tool_index.py` used string tool names as Qdrant point IDs, but Qdrant requires UUID or integer IDs
+- **Root Cause**: `CATALOG_MANIFEST_POINT_ID = "__catalog_manifest__"` is invalid for Qdrant
+- **Solution**: 
+  - Tool point IDs: `uuid.uuid5(NAMESPACE_DNS, tool_name)` for deterministic UUIDs
+  - Manifest point ID: `"00000000-0000-0000-0000-000000000001"`
+
+#### 2. LLM Provider Auto-Detection Respects Explicit base_url
+- **Problem**: `NanoGPTClient` ignored explicit `base_url` parameter when model had `mlx/` prefix
+- **Solution**:
+  - If user provides `base_url` != default, always respect it
+  - Added `_normalize_model_for_provider()` to strip `mlx/` prefix for Ollama
+
+### 🧪 Testing Infrastructure
+
+Added comprehensive test suite:
+- `tests/integration/test_hybrid_router_real.py` - 6 real integration tests (Qdrant + Ollama)
+- `tests/benchmarks/golden_set.py` - 54 golden set test cases
+- `tests/benchmarks/test_golden_set.py` - 19 unit tests
+- `tests/unit/test_tool_index.py` - 13 unit tests
+
+**Best Practice Implemented**: When user explicitly provides `base_url`, always use it instead of auto-detecting based on model name prefix.
+
+---
 
 ## 2026-03-21: LM Studio Auto-Loader Implementation
 
