@@ -23,11 +23,13 @@ export function LLMModelsTab() {
   const { recommendations } = useHardwareRecommendations();
   const { updateConfig } = useUpdateLLMConfig();
   const [saving, setSaving] = useState(false);
+  // NOTE: Initial state should match server defaults until config is fetched
+  // The useEffect below syncs with server config once available
   const [localConfig, setLocalConfig] = useState({
-    model_primary: 'qwen3.5-4b-mlx',
-    model_routing: 'qwen3.5-4b-mlx',
-    model_synthesis: 'qwen3.5-4b-mlx',
-    model_fallback: 'mistralai/mistral-large-3-675b-instruct-2512',
+    model_primary: '',
+    model_routing: '',
+    model_synthesis: '',
+    model_fallback: '',
     use_local: true,
     context_overflow_strategy: 'map_reduce' as 'map_reduce' | 'truncate' | 'cloud_fallback',
     default_temperature: 0.3,
@@ -35,8 +37,11 @@ export function LLMModelsTab() {
     context_window: 32768,
   });
 
+  // Track if initial config has been loaded from server
+  const [configLoaded, setConfigLoaded] = useState(false);
+
   useEffect(() => {
-    if (config) {
+    if (config && !configLoaded) {
       setLocalConfig({
         model_primary: config.model_primary,
         model_routing: config.model_routing,
@@ -48,8 +53,9 @@ export function LLMModelsTab() {
         default_max_tokens: config.default_max_tokens,
         context_window: config.context_window,
       });
+      setConfigLoaded(true);
     }
-  }, [config]);
+  }, [config, configLoaded]);
 
   const groupedModels = useMemo(() => {
     const local = models.filter((model) => 
@@ -95,7 +101,7 @@ export function LLMModelsTab() {
     }
   };
 
-  const isLoading = configLoading || modelsLoading;
+  const isLoading = configLoading || modelsLoading || !configLoaded;
 
   if (isLoading) {
     return (

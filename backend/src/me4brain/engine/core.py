@@ -7,23 +7,24 @@ Combines Router → Executor → Synthesizer into a simple API.
 from __future__ import annotations
 
 import time
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import structlog
 
+from me4brain.core.skills.crystallizer import Crystallizer
+
+# Skill auto-learning components
+from me4brain.core.skills.monitor import ExecutionMonitor
+from me4brain.core.skills.types import ExecutionTrace
 from me4brain.engine.catalog import ToolCatalog
 from me4brain.engine.executor import ParallelExecutor
 from me4brain.engine.feature_flags import get_feature_flag_manager
 from me4brain.engine.router import ToolRouter
 from me4brain.engine.synthesizer import ResponseSynthesizer
 from me4brain.engine.types import EngineResponse, ToolResult, ToolTask
-from me4brain.engine.unified_intent_analyzer import UnifiedIntentAnalyzer, IntentType
+from me4brain.engine.unified_intent_analyzer import IntentType, UnifiedIntentAnalyzer
 from me4brain.llm.provider_factory import resolve_model_client
-
-# Skill auto-learning components
-from me4brain.core.skills.monitor import ExecutionMonitor
-from me4brain.core.skills.crystallizer import Crystallizer
-from me4brain.core.skills.types import ExecutionTrace
 
 # Iterative execution (ReAct pattern) - imported lazily to avoid circular imports
 # from me4brain.engine.iterative_executor import IterativeExecutor, ExecutionContext
@@ -189,7 +190,7 @@ class ToolCallingEngine:
         synthesis_model: str | None = None,
         timeout_seconds: float = 60.0,
         max_concurrent: int = 5,
-    ) -> "ToolCallingEngine":
+    ) -> ToolCallingEngine:
         """Factory to create engine with HYBRID ROUTING (default since v0.14.1).
 
         Uses Two-Stage Semantic Routing:
@@ -222,7 +223,7 @@ class ToolCallingEngine:
         synthesis_model: str | None = None,
         timeout_seconds: float = 60.0,
         max_concurrent: int = 5,
-    ) -> "ToolCallingEngine":
+    ) -> ToolCallingEngine:
         """Factory to create engine with HYBRID routing.
 
         Uses Two-Stage Hybrid Router for scalable tool selection:
@@ -248,7 +249,7 @@ class ToolCallingEngine:
         from me4brain.llm.provider_factory import get_reasoning_client
 
         config = get_llm_config()
-        llm_client = await get_reasoning_client()
+        llm_client = get_reasoning_client()
 
         # Resolve routing and synthesis models from config
         # Respect dashboard preferences: LLM_ROUTING_MODEL and LLM_SYNTHESIS_MODEL
@@ -276,6 +277,7 @@ class ToolCallingEngine:
             Uses run_in_executor because BGEM3Service.embed_query is synchronous.
             """
             import asyncio
+
             from me4brain.embeddings.bge_m3 import get_embedding_service
 
             service = get_embedding_service()  # Sincrono, ritorna singleton
@@ -298,6 +300,7 @@ class ToolCallingEngine:
         if router_config.use_llamaindex_retriever:
             try:
                 from qdrant_client import AsyncQdrantClient, QdrantClient
+
                 from me4brain.config import get_settings
 
                 settings = get_settings()
@@ -365,8 +368,8 @@ class ToolCallingEngine:
         # Create adapter that wraps HybridToolRouter as ToolRouter interface
         router = _HybridRouterAdapter(hybrid_router, catalog)
 
-        from me4brain.llm.provider_factory import get_tool_calling_client
         from me4brain.engine.iterative_executor import IterativeExecutor
+        from me4brain.llm.provider_factory import get_tool_calling_client
 
         tc_client = get_tool_calling_client()
         tc_model = config.ollama_model if config.use_local_tool_calling else routing_model
@@ -636,7 +639,7 @@ class ToolCallingEngine:
         start_time = time.monotonic()
 
         # Step 0: Security - Validate input with guardrail
-        from me4brain.engine.guardrail import get_guardrail, ThreatLevel
+        from me4brain.engine.guardrail import ThreatLevel, get_guardrail
 
         guardrail = get_guardrail()
         input_validation = guardrail.validate_input(query)
@@ -821,7 +824,7 @@ class ToolCallingEngine:
             Response chunks
         """
         # Step 0: Security - Validate input with guardrail
-        from me4brain.engine.guardrail import get_guardrail, ThreatLevel
+        from me4brain.engine.guardrail import ThreatLevel, get_guardrail
 
         guardrail = get_guardrail()
         input_validation = guardrail.validate_input(query)
@@ -904,7 +907,7 @@ class ToolCallingEngine:
         start_time = time_module.monotonic()
 
         # Step 0: Security - Validate input with guardrail
-        from me4brain.engine.guardrail import get_guardrail, ThreatLevel
+        from me4brain.engine.guardrail import ThreatLevel, get_guardrail
 
         guardrail = get_guardrail()
         input_validation = guardrail.validate_input(query)
@@ -1095,7 +1098,7 @@ class ToolCallingEngine:
         yield {"type": "thinking", "message": "Sto analizzando la tua richiesta...", "icon": "🔍"}
 
         # Security guardrail
-        from me4brain.engine.guardrail import get_guardrail, ThreatLevel
+        from me4brain.engine.guardrail import ThreatLevel, get_guardrail
 
         guardrail = get_guardrail()
         input_validation = guardrail.validate_input(query)
@@ -1254,7 +1257,6 @@ Sii conciso ma completo.""",
 
         try:
             # Step 3: Execute iteratively with streaming
-            from me4brain.engine.iterative_executor import ExecutionContext
 
             iterative_executor = self._iterative_executor
             if iterative_executor is None:
@@ -1473,9 +1475,9 @@ Sii conciso ma completo.""",
                 message="Starting skill handler registration",
             )
 
+            from me4brain.engine.types import ToolDefinition, ToolParameter
             from me4brain.skills import SkillLoader, SkillRegistry
             from me4brain.skills.executor import create_skill_executor
-            from me4brain.engine.types import ToolDefinition, ToolParameter
 
             # Load skills
             loader = SkillLoader()

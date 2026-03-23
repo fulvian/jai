@@ -6,24 +6,19 @@ Supporta model discovery per hot-swapping a monitoring risorse.
 
 from __future__ import annotations
 
-import json
 import os
-import re
-from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException
 import httpx
 import structlog
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
-from me4brain.llm.model_profiles import (
-    ModelProfile,
-    ModelProvider,
-    get_model_profile,
-    get_all_profiles,
-    get_local_models,
-    get_cloud_models,
+from me4brain.core.monitoring.resource_monitor import (
+    get_resource_monitor,
+)
+from me4brain.engine.context_compressor import (
+    get_context_tracker,
 )
 from me4brain.llm.config import get_llm_config
 from me4brain.llm.model_discovery import (
@@ -31,20 +26,13 @@ from me4brain.llm.model_discovery import (
     ModelSource,
     get_model_discovery,
 )
-
-from me4brain.core.monitoring.resource_monitor import (
-    HardwareResourceMonitor,
-    get_resource_monitor,
+from me4brain.llm.model_profiles import (
+    ModelProfile,
+    get_all_profiles,
+    get_cloud_models,
+    get_local_models,
+    get_model_profile,
 )
-
-from me4brain.engine.context_compressor import (
-    AdaptiveContextCompressor,
-    ContextWindowTracker,
-    get_context_tracker,
-)
-
-from me4brain.engine.iterative_executor import ExecutionContext
-from me4brain.engine.types import ToolResult
 
 logger = structlog.get_logger(__name__)
 
@@ -291,82 +279,80 @@ async def update_llm_config(update: LLMConfigUpdate) -> dict[str, Any]:
     should_clear_cache = False
 
     if update.model_primary is not None:
-        os.environ["LLM_PRIMARY_MODEL"] = update.model_primary
         updates_applied.append(f"model_primary={update.model_primary}")
         updates_to_persist["model_primary"] = update.model_primary
         should_clear_cache = True
 
     if update.model_routing is not None:
-        os.environ["LLM_ROUTING_MODEL"] = update.model_routing
         updates_applied.append(f"model_routing={update.model_routing}")
         updates_to_persist["model_routing"] = update.model_routing
         should_clear_cache = True
 
     if update.model_synthesis is not None:
-        os.environ["LLM_SYNTHESIS_MODEL"] = update.model_synthesis
         updates_applied.append(f"model_synthesis={update.model_synthesis}")
         updates_to_persist["model_synthesis"] = update.model_synthesis
         should_clear_cache = True
 
     if update.model_fallback is not None:
-        os.environ["LLM_FALLBACK_MODEL"] = update.model_fallback
         updates_applied.append(f"model_fallback={update.model_fallback}")
         updates_to_persist["model_fallback"] = update.model_fallback
         should_clear_cache = True
 
     if update.use_local_tool_calling is not None:
-        os.environ["USE_LOCAL_TOOL_CALLING"] = str(update.use_local_tool_calling).lower()
         updates_applied.append(f"use_local_tool_calling={update.use_local_tool_calling}")
         updates_to_persist["use_local_tool_calling"] = update.use_local_tool_calling
         should_clear_cache = True
 
     if update.context_overflow_strategy is not None:
-        os.environ["CONTEXT_OVERFLOW_STRATEGY"] = update.context_overflow_strategy
         updates_applied.append(f"context_overflow_strategy={update.context_overflow_strategy}")
         updates_to_persist["context_overflow_strategy"] = update.context_overflow_strategy
         should_clear_cache = True
 
     if update.default_temperature is not None:
-        os.environ["LLM_DEFAULT_TEMPERATURE"] = str(update.default_temperature)
         updates_applied.append(f"default_temperature={update.default_temperature}")
         updates_to_persist["default_temperature"] = update.default_temperature
 
     if update.default_max_tokens is not None:
-        os.environ["LLM_DEFAULT_MAX_TOKENS"] = str(update.default_max_tokens)
         updates_applied.append(f"default_max_tokens={update.default_max_tokens}")
         updates_to_persist["default_max_tokens"] = update.default_max_tokens
 
     if update.context_window_size is not None:
-        os.environ["LLM_CONTEXT_WINDOW_SIZE"] = str(update.context_window_size)
         updates_applied.append(f"context_window_size={update.context_window_size}")
         updates_to_persist["context_window_size"] = update.context_window_size
 
     if update.enable_streaming is not None:
-        os.environ["LLM_ENABLE_STREAMING"] = str(update.enable_streaming).lower()
         updates_applied.append(f"enable_streaming={update.enable_streaming}")
         updates_to_persist["enable_streaming"] = update.enable_streaming
 
     if update.enable_caching is not None:
-        os.environ["LLM_ENABLE_CACHING"] = str(update.enable_caching).lower()
         updates_applied.append(f"enable_caching={update.enable_caching}")
         updates_to_persist["enable_caching"] = update.enable_caching
 
     if update.enable_metrics is not None:
-        os.environ["LLM_ENABLE_METRICS"] = str(update.enable_metrics).lower()
         updates_applied.append(f"enable_metrics={update.enable_metrics}")
         updates_to_persist["enable_metrics"] = update.enable_metrics
 
-    # Persist to .env file
+    # First persist to .env file (source of truth), then update os.environ
     persistence_result = {"success": False, "message": "No updates to persist"}
     if updates_to_persist:
         success, message = _persist_to_env_file(updates_to_persist)
         persistence_result = {"success": success, "message": message}
+        if not success:
+            logger.error("failed_to_persist_env_before_os_update", message=message)
+            # Continue anyway - os.environ update will still work for this process
 
-    # Invalidate cache to force re-read of config
+    # Now update os.environ with the persisted values
+    for config_key, env_var in ENV_VAR_MAPPING.items():
+        if config_key in updates_to_persist:
+            value = updates_to_persist[config_key]
+            value_str = str(value).lower() if isinstance(value, bool) else str(value)
+            os.environ[env_var] = value_str
+
+    # Reset hybrid router singleton to pick up new config
+    # Note: get_llm_config() is not cached - it creates a fresh LLMConfig()
+    # instance each time that reads from os.environ and .env file
     verified_config = {}
     if should_clear_cache:
-        get_llm_config.cache_clear()
-        # Also reset hybrid router singleton to pick up new config
         try:
             from me4brain.engine.hybrid_router.router import _reset_router_singleton
 
@@ -396,6 +382,76 @@ async def update_llm_config(update: LLMConfigUpdate) -> dict[str, Any]:
         "updates_applied": updates_applied,
         "verified_config": verified_config,
         "persistence": persistence_result,
+    }
+
+
+@router.post("/reset")
+async def reset_llm_config() -> dict[str, Any]:
+    """Ripristina la configurazione LLM ai valori predefiniti.
+
+    Reimposta tutte le variabili ambientali LLM ai valori di default
+    definiti in LLMConfig e persiste nel file .env.
+    """
+    from me4brain.llm.config import LLMConfig
+
+    # Get default config values
+    default_config = LLMConfig()
+
+    # Build updates dict with default values
+    updates = {
+        "model_primary": default_config.model_primary,
+        "model_routing": default_config.model_routing,
+        "model_synthesis": default_config.model_synthesis,
+        "model_fallback": default_config.model_fallback,
+        "use_local_tool_calling": default_config.use_local_tool_calling,
+        "context_overflow_strategy": default_config.context_overflow_strategy,
+        "default_temperature": default_config.default_temperature,
+        "default_max_tokens": default_config.default_max_tokens,
+        "context_window_size": default_config.context_window_size,
+        "enable_streaming": default_config.enable_streaming,
+        "enable_caching": default_config.enable_caching,
+        "enable_metrics": default_config.enable_metrics,
+    }
+
+    # Update os.environ
+    env_mapping = {
+        "model_primary": "LLM_PRIMARY_MODEL",
+        "model_routing": "LLM_ROUTING_MODEL",
+        "model_synthesis": "LLM_SYNTHESIS_MODEL",
+        "model_fallback": "LLM_FALLBACK_MODEL",
+        "use_local_tool_calling": "USE_LOCAL_TOOL_CALLING",
+        "context_overflow_strategy": "CONTEXT_OVERFLOW_STRATEGY",
+        "default_temperature": "LLM_DEFAULT_TEMPERATURE",
+        "default_max_tokens": "LLM_DEFAULT_MAX_TOKENS",
+        "context_window_size": "LLM_CONTEXT_WINDOW_SIZE",
+        "enable_streaming": "LLM_ENABLE_STREAMING",
+        "enable_caching": "LLM_ENABLE_CACHING",
+        "enable_metrics": "LLM_ENABLE_METRICS",
+    }
+
+    for config_key, env_var in env_mapping.items():
+        value = updates[config_key]
+        value_str = str(value).lower() if isinstance(value, bool) else str(value)
+        os.environ[env_var] = value_str
+
+    # Persist to .env file
+    persistence_success, persistence_message = _persist_to_env_file(updates)
+
+    # Reset router singleton
+    try:
+        from me4brain.engine.hybrid_router.router import _reset_router_singleton
+
+        _reset_router_singleton()
+    except Exception as e:
+        logger.warning("hybrid_router_reset_failed", error=str(e))
+
+    logger.info("llm_config_reset_to_defaults", persistence=persistence_success)
+
+    return {
+        "status": "reset",
+        "message": "Configurazione ripristinata ai valori predefiniti",
+        "defaults_applied": list(updates.keys()),
+        "persistence": {"success": persistence_success, "message": persistence_message},
     }
 
 

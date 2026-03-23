@@ -40,16 +40,18 @@ interface SettingsState {
   resetConfig: () => void;
 }
 
+// NOTE: These defaults should match the backend defaults in llm/config.py
+// The actual server config is fetched via useLLMConfig() hook
 const defaultLLMConfig: LLMConfig = {
-  model_primary: 'gpt-4o',
-  model_routing: 'gpt-4o-mini',
-  model_synthesis: 'gpt-4o',
-  model_fallback: 'gpt-4o-mini',
-  use_local: false,
-  context_overflow_strategy: 'truncate',
-  default_temperature: 0.7,
-  default_max_tokens: 4096,
-  context_window: 128000,
+  model_primary: 'qwen3.5:9b',
+  model_routing: 'qwen3.5:9b',
+  model_synthesis: 'qwen3.5:9b',
+  model_fallback: 'qwen3.5:9b',
+  use_local: true,
+  context_overflow_strategy: 'map_reduce',
+  default_temperature: 0.3,
+  default_max_tokens: 8192,
+  context_window: 32768,
 };
 
 export const useSettingsStore = create<SettingsState>((set) => ({

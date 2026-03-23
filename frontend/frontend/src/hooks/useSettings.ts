@@ -389,3 +389,16 @@ export function useResetSubscription() {
   };
   return { resetSubscription };
 }
+
+export function useResetLLMConfig() {
+  const resetConfig = async () => {
+    const res = await fetch(`${API_CONFIG.gatewayUrl}/api/config/llm/reset`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to reset LLM config');
+    // Revalidate the config cache after reset
+    mutate('/api/config/llm/current');
+    return res.json();
+  };
+  return { resetConfig };
+}

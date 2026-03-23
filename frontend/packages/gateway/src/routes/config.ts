@@ -36,6 +36,26 @@ async function proxyToMe4BrAIn(
 }
 
 export async function configRoutes(app: FastifyInstance): Promise<void> {
+  // Test route to verify configRoutes is being loaded
+  app.get('/api/config/test', async () => {
+    return { test: 'configRoutes is loaded!' };
+  });
+
+  // Test POST route
+  app.post('/api/config/test-post', async () => {
+    return { test: 'POST works!' };
+  });
+
+  // Test POST route under /api/config/llm/
+  app.post('/api/config/llm/test-post', async () => {
+    return { test: 'POST under llm works!' };
+  });
+
+  // Test POST route using proxyToMe4BrAIn
+  app.post('/api/config/llm/test-proxy', async (req: FastifyRequest, reply: FastifyReply) => {
+    return proxyToMe4BrAIn('/v1/config/llm/reset', req, reply, 'POST');
+  });
+
   app.get('/api/config/llm/current', async (req: FastifyRequest, reply: FastifyReply) => {
     return proxyToMe4BrAIn('/v1/config/llm/current', req, reply);
   });
@@ -50,6 +70,10 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
 
   app.put('/api/config/llm/update', async (req: FastifyRequest, reply: FastifyReply) => {
     return proxyToMe4BrAIn('/v1/config/llm/update', req, reply, 'PUT');
+  });
+
+  app.post('/api/config/llm/reset-config', async (req: FastifyRequest, reply: FastifyReply) => {
+    return proxyToMe4BrAIn('/v1/config/llm/reset', req, reply, 'POST');
   });
 
   app.post('/api/config/llm/context-tracker/reset', async (req: FastifyRequest, reply: FastifyReply) => {

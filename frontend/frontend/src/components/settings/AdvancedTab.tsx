@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react';
 import { Info, AlertTriangle, Check, Loader2 } from 'lucide-react';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { useUpdateLLMConfig, useLLMConfig } from '@/hooks/useSettings';
+import { useUpdateLLMConfig, useLLMConfig, useResetLLMConfig } from '@/hooks/useSettings';
 import { Toggle } from './Toggle';
 import { OVERFLOW_STRATEGIES_IT, FEATURE_FLAGS_IT } from './settingsLabels';
 
 export function AdvancedTab() {
-  const { llmConfig, setLLMConfig } = useSettingsStore();
+  const { llmConfig, setLLMConfig, resetConfig: resetStoreConfig } = useSettingsStore();
   const { config, refresh } = useLLMConfig();
   const { updateConfig } = useUpdateLLMConfig();
+  const { resetConfig: resetBackendConfig } = useResetLLMConfig();
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [confirmedStrategy, setConfirmedStrategy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({
@@ -176,14 +178,25 @@ export function AdvancedTab() {
               <div className="text-xs text-text-tertiary">Ripristina tutte le impostazioni ai valori predefiniti</div>
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (confirm('Sei sicuro di voler ripristinare tutte le impostazioni ai valori predefiniti?')) {
-                  useSettingsStore.getState().resetConfig();
+                  setResetting(true);
+                  setError(null);
+                  try {
+                    await resetBackendConfig();
+                    await refresh();
+                    resetStoreConfig();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Errore durante il ripristino');
+                  } finally {
+                    setResetting(false);
+                  }
                 }
               }}
-              className="px-3 py-1.5 text-sm bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+              disabled={resetting}
+              className="px-3 py-1.5 text-sm bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50"
             >
-              Ripristina
+              {resetting ? 'Ripristino...' : 'Ripristina'}
             </button>
           </div>
         </div>
