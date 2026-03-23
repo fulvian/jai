@@ -30,10 +30,10 @@ interface GraphExplorerProps {
 // ── Component ────────────────────────────────────────────────────────
 
 export function GraphExplorer({ sessionId, onNodeClick, className = '' }: GraphExplorerProps) {
-    const { nodes, loading } = useConnectedNodes(sessionId);
+    const { data: nodes, loading } = useConnectedNodes(sessionId);
     const [isOpen, setIsOpen] = useState(false);
 
-    if (!sessionId || (nodes.length === 0 && !loading)) return null;
+    if (!sessionId || ((nodes ?? []).length === 0 && !loading)) return null;
 
     const toggleOpen = () => setIsOpen(!isOpen);
 
@@ -52,8 +52,8 @@ export function GraphExplorer({ sessionId, onNodeClick, className = '' }: GraphE
                 <span className="graph-explorer__toggle-text">
                     Esplora Grafo
                 </span>
-                {nodes.length > 0 && (
-                    <span className="graph-explorer__badge">{nodes.length}</span>
+                {(nodes ?? []).length > 0 && (
+                    <span className="graph-explorer__badge">{(nodes ?? []).length}</span>
                 )}
                 <motion.span
                     className="graph-explorer__chevron"

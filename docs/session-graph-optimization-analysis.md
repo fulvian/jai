@@ -1651,13 +1651,76 @@ describe('GraphSessionService retry', () => {
 | Backend import | N/A | ✅ Verified |
 | Frontend build | 4 packages | ✅ Pass |
 
-### Next Steps (P1-P3)
+### P1 Tasks - Embedding Optimization ✅ COMPLETED
+
+| Task | Description | Status | Files |
+|------|-------------|--------|-------|
+| **OPT-004** | Embedding Cache Implementation | ✅ Complete | `embedding_cache.py` |
+| **OPT-005** | Batch Embedding Support | ✅ Complete | `bge_m3.py` |
+| **OPT-006** | Error States in React Hooks | ✅ Complete | `useSessionGraph.ts` |
+
+### OPT-004: Embedding Cache Implementation
+
+**New File**: `backend/src/me4brain/embeddings/embedding_cache.py`
+
+**Features**:
+- Multi-tier caching (L1: in-memory LRU + L2: Redis)
+- Hash-based key generation for O(1) lookup
+- SHA256 truncated keys (32 chars)
+- LRU eviction with configurable max size (default: 10000)
+- Redis TTL (default: 24 hours)
+- Async cache-aside pattern with `get_or_compute()`
+- Batch operations support (`batch_get`, `batch_set`)
+- Statistics tracking (hits, misses, hit rate by tier)
+- Lazy Redis initialization with fallback to L1-only
+
+**API**:
+```python
+cache = EmbeddingCache(redis_client=redis, local_max_size=10000)
+embedding = await cache.get(text)  # Returns np.ndarray or None
+await cache.set(text, embedding)
+result = await cache.get_or_compute(text, compute_fn)
+stats = cache.get_stats()  # {hits, misses, hit_rate, l1_hits, l2_hits, ...}
+```
+
+### OPT-005: Batch Embedding Support
+
+**File Modified**: `backend/src/me4brain/embeddings/bge_m3.py`
+
+**Features**:
+- `embed_batch()` - Batch encoding with configurable batch size (default: 32, max: 64)
+- `embed_documents_cached()` - Cache-aside pattern for batch documents
+- `embed_query_async_cached()` - Cached query embedding
+- `embed_document_cached()` - Cached document embedding
+- Integration with EmbeddingCache for all operations
+- Async wrappers for all public methods
+
+**Performance**:
+- Batch processing reduces model call overhead
+- Cache-first strategy minimizes redundant computations
+- L2 Redis cache enables cross-instance sharing
+
+### OPT-006: Error States in React Hooks
+
+**File Modified**: `frontend/frontend/src/hooks/useSessionGraph.ts`
+
+**Changes**:
+- Added `GraphError` class with code, endpoint, and statusCode
+- Added `error: GraphError | null` state to all hooks
+- Added `FetchResult<T>` type for structured fetch responses
+- Updated `UseQueryResult<T>` interface with error field
+- Updated components to use `data` property (e.g., `const { data: clusters }`)
+
+**Components Updated**:
+- `ChatPanel.tsx` - Uses `data: related` from `useRelatedSessions()`
+- `RelatedSessions.tsx` - Uses `data: related` from `useRelatedSessions()`
+- `GraphExplorer.tsx` - Uses `data: nodes` from `useConnectedNodes()`
+- `SessionClusterSidebar.tsx` - Uses `data: clusters` from `useSessionClusters()`
+
+### Next Steps (P2-P3)
 
 | Priority | Task | Description |
 |----------|------|-------------|
-| P1 | OPT-004 | Embedding cache implementation |
-| P1 | OPT-005 | Batch embedding support |
-| P1 | OPT-006 | Error states in React hooks |
 | P2 | OPT-007 | BM25 lexical search |
 | P2 | OPT-008 | RRF fusion |
 | P2 | OPT-009 | Enhanced DnD with optimistic updates |

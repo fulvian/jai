@@ -15,7 +15,7 @@ import {
     ChevronRight,
     Loader2,
 } from 'lucide-react';
-import { useRelatedSessions } from '@/hooks/useSessionGraph';
+import { useRelatedSessions, type SessionSearchResult } from '@/hooks/useSessionGraph';
 
 interface Props {
     sessionId: string | null;
@@ -23,9 +23,9 @@ interface Props {
 }
 
 export default function RelatedSessions({ sessionId, onSelectSession }: Props) {
-    const { related, loading } = useRelatedSessions(sessionId);
+    const { data: related, loading } = useRelatedSessions(sessionId);
 
-    if (!sessionId || (related.length === 0 && !loading)) return null;
+    if (!sessionId || ((related ?? []).length === 0 && !loading)) return null;
 
     return (
         <motion.div
@@ -41,7 +41,7 @@ export default function RelatedSessions({ sessionId, onSelectSession }: Props) {
             </div>
 
             <AnimatePresence>
-                {related.map((r, i) => (
+                {(related ?? []).map((r: SessionSearchResult, i: number) => (
                     <motion.button
                         key={r.sessionId}
                         initial={{ opacity: 0, x: -10 }}

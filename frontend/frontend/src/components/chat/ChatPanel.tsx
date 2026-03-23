@@ -82,7 +82,7 @@ export function ChatPanel() {
     const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
 
     // Graph hooks
-    const { related } = useRelatedSessions(currentSessionId);
+    const { data: related } = useRelatedSessions(currentSessionId);
 
     // Hydration guard: render empty on server, then show real data after mount
     const messages = hasMounted ? rawMessages : [];

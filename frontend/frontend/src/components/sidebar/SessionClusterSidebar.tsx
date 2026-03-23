@@ -18,7 +18,7 @@ import {
     MessageSquare,
     Sparkles,
 } from 'lucide-react';
-import { useSessionClusters, useSessionSearch, type SessionSearchResult } from '@/hooks/useSessionGraph';
+import { useSessionClusters, useSessionSearch, type SessionCluster, type SessionSearchResult } from '@/hooks/useSessionGraph';
 import { useLayout } from '@/components/layout/DashboardLayout';
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
 
 export default function SessionClusterSidebar({ onSelectSession, activeSessionId }: Props) {
     const { isMobile, closeAll } = useLayout();
-    const { clusters, loading } = useSessionClusters();
+    const { data: clusters, loading } = useSessionClusters();
     const { results: searchResults, loading: searching, search, clear } = useSessionSearch();
     const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -56,11 +56,11 @@ export default function SessionClusterSidebar({ onSelectSession, activeSessionId
     const hasAutoExpanded = useRef(false);
 
     // Expand all clusters initially - Safe useEffect with Ref guard
-    // Expand all clusters initially - Safe useEffect with Ref guard
     useEffect(() => {
-        if (!isSearching && clusters.length > 0 && !hasAutoExpanded.current) {
+        const clusterData = clusters ?? [];
+        if (!isSearching && clusterData.length > 0 && !hasAutoExpanded.current) {
             hasAutoExpanded.current = true;
-            setExpandedClusters(new Set(clusters.map(c => c.id)));
+            setExpandedClusters(new Set(clusterData.map((c: SessionCluster) => c.id)));
         }
     }, [clusters, isSearching]); // Removed expandedClusters.size to prevent loop
 
@@ -113,14 +113,14 @@ export default function SessionClusterSidebar({ onSelectSession, activeSessionId
                             <Network size={16} className="cluster-loading-icon" />
                             Caricamento cluster...
                         </div>
-                    ) : clusters.length === 0 ? (
+                    ) : (clusters ?? []).length === 0 ? (
                         <div className="cluster-empty">
                             <Network size={20} className="cluster-empty-icon" />
                             <span>Nessun cluster ancora. Le sessioni verranno organizzate automaticamente.</span>
                         </div>
                     ) : (
                         <AnimatePresence>
-                            {clusters.map((cluster) => (
+                            {(clusters ?? []).map((cluster: SessionCluster) => (
                                 <motion.div
                                     key={cluster.id}
                                     initial={{ opacity: 0, y: 6 }}
