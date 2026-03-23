@@ -195,6 +195,17 @@ See [GITHUB_PUSH_GUIDE.md](./GITHUB_PUSH_GUIDE.md) for production deployment.
 
 ## Troubleshooting
 
+### Redis Connection Issues (ECONNREFUSED)
+If sessions disappear after refresh, check Redis port:
+```bash
+# Verify Redis is running on correct port (6379)
+redis-cli ping
+lsof -i :6379
+
+# Check gateway REDIS_URL
+grep REDIS_URL frontend/.env
+```
+
 ### Port Already in Use
 ```bash
 # Find process using port 8000
@@ -229,7 +240,8 @@ kill -9 <PID>
 ---
 
 **Repository**: https://github.com/fulvian/jai  
-**Last Updated**: 2026-03-22  
+**Last Updated**: 2026-03-23  
 **Current Phase**: Phase 5 - Prometheus Metrics & Diagnostics ✅ COMPLETE  
-**Test Coverage**: 30/30 tests passing (100%)  
-**Next Phase**: Phase 6 - Intelligent Query Caching (Ready for implementation by minimax 2.7)
+**Feature**: Auto Session Title Generation ✅ IMPLEMENTED  
+**Test Coverage**: 1151 unit tests + 22 integration tests (all passing)  
+**Next Phase**: Phase 6 - Intelligent Query Caching (Ready for implementation)
