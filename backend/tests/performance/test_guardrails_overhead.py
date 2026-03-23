@@ -122,7 +122,7 @@ class TestConfigLookupCaching:
         for domain in domains:
             start = time.perf_counter()
             for _ in range(100):
-                config = get_universal_config(domain)
+                get_universal_config(domain)
             elapsed = (time.perf_counter() - start) / 100 * 1000
             times.append(elapsed)
 
@@ -165,8 +165,8 @@ class TestMetricsUpdateOverhead:
 
         start = time.perf_counter()
         for _ in range(100):
-            comp = metrics.get_compression_effectiveness()
-            should_adapt = metrics.should_adapt_limits()
+            metrics.get_compression_effectiveness()
+            metrics.should_adapt_limits()
         elapsed = (time.perf_counter() - start) / 100 * 1000
 
         assert elapsed < 1, f"Metrics calculation took {elapsed:.3f}ms (target: <1ms)"
@@ -195,7 +195,7 @@ class TestResponseLimiterPerformance:
 
         start = time.perf_counter()
         for _ in range(1000):
-            size = ResponseLimiter.calculate_size(large_response)
+            ResponseLimiter.calculate_size(large_response)
         elapsed = (time.perf_counter() - start) / 1000 * 1000
 
         assert elapsed < 1, f"Size calculation took {elapsed:.3f}ms (target: <1ms)"
@@ -220,7 +220,7 @@ class TestResponseLimiterPerformance:
 
         start = time.perf_counter()
         for _ in range(10):
-            result = ResponseLimiter.compress_nested_object(large_response, depth=0, max_depth=3)
+            ResponseLimiter.compress_nested_object(large_response, depth=0, max_depth=3)
         elapsed = (time.perf_counter() - start) / 10 * 1000
 
         assert elapsed < 10, f"Compression took {elapsed:.2f}ms (target: <10ms)"

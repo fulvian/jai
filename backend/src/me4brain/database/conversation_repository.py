@@ -320,7 +320,7 @@ class ConversationRepository:
         if user_id is not None:
             query = query.where(ConversationModel.user_id == user_id)
 
-        result = await self._session.execute(query)
+        await self._session.execute(query)
         # rowcount may not be available in all async drivers
         return True  # Optimistic success
 
@@ -344,7 +344,7 @@ class ConversationRepository:
         if user_id is not None:
             query = query.where(ConversationModel.user_id == user_id)
 
-        result = await self._session.execute(query)
+        await self._session.execute(query)
         return True  # Optimistic success
 
     async def get_conversation_context(

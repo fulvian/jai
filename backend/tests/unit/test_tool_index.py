@@ -3,9 +3,7 @@
 These tests verify the non-destructive indexing behavior and manifest management.
 """
 
-from unittest.mock import MagicMock
 
-import pytest
 
 from me4brain.engine.hybrid_router.tool_index import CATALOG_MANIFEST_POINT_ID
 

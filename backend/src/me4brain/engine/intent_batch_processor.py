@@ -7,6 +7,7 @@ This module provides:
 """
 
 import asyncio
+import contextlib
 from dataclasses import dataclass
 
 import structlog
@@ -71,10 +72,8 @@ class IntentBatchProcessor:
         """Stop batch processor."""
         if self._processor_task:
             self._processor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._processor_task
-            except asyncio.CancelledError:
-                pass
             logger.info("batch_processor_stopped")
 
     async def analyze(
@@ -123,13 +122,11 @@ class IntentBatchProcessor:
         while True:
             try:
                 # Wait for batch to fill or timeout
-                try:
+                with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(
                         self._batch_event.wait(),
                         timeout=self._batch_timeout,
                     )
-                except TimeoutError:
-                    pass
 
                 # Get current batch
                 async with self._lock:
@@ -171,7 +168,7 @@ class IntentBatchProcessor:
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Distribute results to futures
-            for req, result in zip(batch, results):
+            for req, result in zip(batch, results, strict=False):
                 if isinstance(result, Exception):
                     if req.future and not req.future.done():
                         req.future.set_exception(result)

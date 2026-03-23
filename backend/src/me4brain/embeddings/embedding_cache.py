@@ -12,14 +12,14 @@ SOTA 2026 patterns:
 from __future__ import annotations
 
 import hashlib
-import structlog
-from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
+import structlog
 from cachetools import LRUCache
 
 if TYPE_CHECKING:
     import numpy as np
+    import redis.asyncio as redis
 
 logger = structlog.get_logger(__name__)
 
@@ -42,7 +42,7 @@ class EmbeddingCache:
 
     def __init__(
         self,
-        redis_client: "redis.Redis | None" = None,  # type: ignore[name-defined]
+        redis_client: redis.Redis | None = None,
         local_max_size: int | None = None,
         redis_ttl_seconds: int | None = None,
     ) -> None:
@@ -53,7 +53,6 @@ class EmbeddingCache:
             local_max_size: Max L1 cache entries (default: 10000)
             redis_ttl_seconds: Redis TTL in seconds (default: 86400 = 24h)
         """
-        import redis.asyncio as redis
 
         self._redis: redis.Redis | None = redis_client  # type: ignore[assignment]
         self._l1_max_size = local_max_size or self.DEFAULT_L1_MAX_SIZE
@@ -84,7 +83,7 @@ class EmbeddingCache:
         text_hash = hashlib.sha256(text.encode()).hexdigest()[:32]
         return f"{self.KEY_PREFIX}:{text_hash}"
 
-    async def _get_redis(self) -> "redis.Redis | None":  # type: ignore[name-defined]
+    async def _get_redis(self) -> redis.Redis | None:
         """Get or initialize Redis client (lazy initialization).
 
         Returns:
@@ -114,7 +113,7 @@ class EmbeddingCache:
 
         return self._redis
 
-    async def get(self, text: str) -> "np.ndarray | None":  # type: ignore[name-defined]
+    async def get(self, text: str) -> np.ndarray | None:  # type: ignore[name-defined]
         """Get embedding from cache (L1 then L2).
 
         Args:
@@ -160,7 +159,7 @@ class EmbeddingCache:
         logger.debug("embedding_cache_miss", key=key[:16])
         return None
 
-    async def set(self, text: str, embedding: "np.ndarray") -> bool:  # type: ignore[name-defined]
+    async def set(self, text: str, embedding: np.ndarray) -> bool:  # type: ignore[name-defined]
         """Store embedding in cache (both L1 and L2).
 
         Args:
@@ -202,8 +201,8 @@ class EmbeddingCache:
     async def get_or_compute(
         self,
         text: str,
-        compute_fn: "callable",  # type: ignore[type-arg]
-    ) -> "np.ndarray":  # type: ignore[name-defined]
+        compute_fn: callable,  # type: ignore[type-arg]
+    ) -> np.ndarray:  # type: ignore[name-defined]
         """Get embedding from cache or compute if not present.
 
         Implements the cache-aside pattern with multi-tier fallback.
@@ -215,7 +214,6 @@ class EmbeddingCache:
         Returns:
             Embedding as numpy array
         """
-        import numpy as np
 
         # Try cache first
         cached = await self.get(text)
@@ -233,7 +231,7 @@ class EmbeddingCache:
     async def batch_get(
         self,
         texts: list[str],
-    ) -> dict[str, "np.ndarray | None"]:  # type: ignore[name-defined]
+    ) -> dict[str, np.ndarray | None]:  # type: ignore[name-defined]
         """Get multiple embeddings from cache.
 
         Args:
@@ -242,7 +240,7 @@ class EmbeddingCache:
         Returns:
             Dict mapping text to embedding (or None if not cached)
         """
-        results: dict[str, "np.ndarray | None"] = {}  # type: ignore[var-annotated]
+        results: dict[str, np.ndarray | None] = {}  # type: ignore[var-annotated]
 
         for text in texts:
             results[text] = await self.get(text)
@@ -251,7 +249,7 @@ class EmbeddingCache:
 
     async def batch_set(
         self,
-        items: list[tuple[str, "np.ndarray"]],  # type: ignore[type-arg]
+        items: list[tuple[str, np.ndarray]],  # type: ignore[type-arg]
     ) -> None:
         """Store multiple embeddings in cache.
 

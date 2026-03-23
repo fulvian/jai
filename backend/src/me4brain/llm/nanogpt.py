@@ -292,7 +292,7 @@ class NanoGPTClient(LLMProvider):
         """
         cfg = get_llm_config()
         ollama_base = cfg.ollama_base_url.rstrip("/")
-        lmstudio_base = cfg.lmstudio_base_url.rstrip("/")
+        cfg.lmstudio_base_url.rstrip("/")
 
         # Strip mlx/ prefix when using Ollama since it doesn't understand it
         if base_url == ollama_base and model.startswith("mlx/"):

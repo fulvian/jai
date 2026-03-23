@@ -17,7 +17,6 @@ Fonti dati (tutte free):
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 
 import structlog
@@ -347,11 +346,11 @@ class NBABettingAnalyzer:
     ) -> None:
         """Filtra infortuni rilevanti per le squadre in analisi."""
         injuries = injuries_data.get("injuries", [])
-        home_lower = analysis.home_team.lower()
-        away_lower = analysis.away_team.lower()
+        analysis.home_team.lower()
+        analysis.away_team.lower()
 
         for injury in injuries:
-            player = injury.get("player", "")
+            injury.get("player", "")
             status = injury.get("status", "").lower()
             # Includi solo Out e Doubtful (impatto significativo)
             if status in ("out", "doubtful", "o", "d"):

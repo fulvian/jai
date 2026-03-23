@@ -306,7 +306,7 @@ Your task: Analyze the user query and determine:
 INTENT TYPES:
 - conversational: Greetings, small talk, meta questions, opinions
   Examples: "ciao", "come stai", "chi sei", "cosa pensi di X"
-  
+
 - tool_required: Requires data retrieval, API calls, external tools
   Examples: "che tempo fa a Roma", "prezzo bitcoin", "cerca notizie", "invia email"
 
@@ -436,13 +436,14 @@ Respond with ONLY valid JSON (no other text):
             if not use_tier2:
                 # TIER 1: FAST PATH
                 prompt = self._build_tier1_prompt(query)
-                max_tokens = 50
-                timeout_ms = 150  # Strict timeout for Tier 1
+                # For thinking models (qwen3.5), need higher max_tokens and reasoning extraction
+                max_tokens = 2000  # Increased for thinking models to allow reasoning + JSON output
+                reasoning_exclude = False  # Enable to extract JSON from reasoning content
             else:
                 # TIER 2: REASONING PATH
                 prompt = self._build_tier2_prompt(query, context)
-                max_tokens = 300
-                timeout_ms = 1000
+                max_tokens = 2000
+                reasoning_exclude = False
 
             # Call LLM
             from me4brain.llm.models import LLMRequest, Message, MessageRole
@@ -455,6 +456,7 @@ Respond with ONLY valid JSON (no other text):
                 model=actual_model,
                 temperature=0.1,
                 max_tokens=max_tokens,
+                reasoning_exclude=reasoning_exclude,
             )
 
             response = await self.llm_client.generate_response(llm_request)
@@ -504,7 +506,7 @@ Respond with ONLY valid JSON (no other text):
 
             try:
                 # Validate and convert to IntentAnalysisModel
-                validated = IntentAnalysisModel(**result)
+                IntentAnalysisModel(**result)
 
                 # Filter domains to only available ones
                 domains = result.get("domains", [])

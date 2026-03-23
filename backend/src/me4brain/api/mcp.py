@@ -147,7 +147,7 @@ async def get_semantic_facts(entity: str) -> str:
     """
     Retrieve facts and relationships for a specific entity from the Knowledge Graph.
     """
-    semantic = get_semantic_memory()
+    get_semantic_memory()
     # Mock/Simple implementation for now - should query Neo4j
     # In a real scenario, we'd use semantic.get_entity(entity)
     return f"Semantic data for {entity} would be retrieved from Neo4j here."

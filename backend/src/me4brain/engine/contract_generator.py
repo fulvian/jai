@@ -17,8 +17,6 @@ Usage:
 from __future__ import annotations
 
 import importlib
-import pkgutil
-from pathlib import Path
 from typing import Any
 
 import structlog
@@ -96,7 +94,7 @@ def _infer_risk_level(domain: str, category: str | None) -> RiskLevel:
         return RiskLevel.HIGH
 
     # Read-only/utility domains
-    low_risk_keywords = {"search", "get", "list", "fetch", "price", "quote", "weather", "search"}
+    low_risk_keywords = {"search", "get", "list", "fetch", "price", "quote", "weather"}
     if category and any(kw in category.lower() for kw in low_risk_keywords):
         return RiskLevel.LOW
 

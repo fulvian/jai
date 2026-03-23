@@ -1,8 +1,8 @@
 """Pytest Configuration for Me4BrAIn Tests."""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 
 from me4brain.api.routes.session_title import router as session_title_router
 

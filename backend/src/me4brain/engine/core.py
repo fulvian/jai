@@ -867,12 +867,11 @@ class ToolCallingEngine:
             elif isinstance(chunk, str):
                 full_answer += chunk
                 yield chunk
-            elif isinstance(chunk, dict):
-                if chunk.get("type") == "content":
-                    text = chunk.get("content", "")
-                    if text:
-                        full_answer += text
-                        yield text
+            elif isinstance(chunk, dict) and chunk.get("type") == "content":
+                text = chunk.get("content", "")
+                if text:
+                    full_answer += text
+                    yield text
 
         # Step 3.5: Post-synthesis - Populate empty Google Docs with synthesized content
         if full_answer:
@@ -1355,10 +1354,9 @@ Sii conciso ma completo.""",
                             "phase": phase or "synthesis",
                             "icon": "🤔",
                         }
-                elif event_type == "content":
-                    if content_text:
-                        full_answer += content_text
-                        yield {"type": "content", "content": content_text}
+                elif event_type == "content" and content_text:
+                    full_answer += content_text
+                    yield {"type": "content", "content": content_text}
 
             # DEBUG: Log total thinking sent
             logger.info(

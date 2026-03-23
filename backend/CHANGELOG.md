@@ -1,3 +1,58 @@
+## [v0.20.6] - 2026-03-23
+
+### Fixed - Weather Query Classification (geo_weather domain)
+
+**Problem**: Weather queries like "Che tempo fa a Caltanissetta?" returned "Operazione completata. Non sono stati necessari strumenti aggiuntivi" instead of fetching real weather data.
+
+**Root Cause**: Multiple issues:
+1. Incorrect model name in `.env`: `LLM_ROUTING_MODEL='mlx/qwen3.5:9b'` caused 404 errors
+2. qwen3.5 thinking model consumed all `max_tokens=50` for reasoning, leaving empty `content`
+3. Missing `reasoning_exclude` support for thinking models
+
+**Solution**:
+- Fixed `.env`: Changed `LLM_ROUTING_MODEL` from `'mlx/qwen3.5:9b'` to `'qwen3.5:9b'`
+- Increased `max_tokens` in Tier 1 from 50 to 2000 to allow thinking + JSON output
+- Added `reasoning_exclude` support to `OllamaClient._prepare_payload()`
+- Added fallback in `OllamaClient.generate_response()` to use `reasoning` as `content` when `content` is empty
+
+**Files Modified**:
+- `backend/.env` - Corrected model name
+- `src/me4brain/llm/ollama.py` - Added reasoning_exclude and content fallback
+- `src/me4brain/engine/unified_intent_analyzer.py` - Increased max_tokens to 2000
+
+**Verification**: Weather query now correctly returns `Intent: IntentType.TOOL_REQUIRED`, `Domains: ['geo_weather']`, `Confidence: 1.0`
+
+### Fixed - Linter Issues (F821 Undefined Names - Actual Bugs)
+
+**Problem**: 12 F821 "undefined name" errors that were actual bugs causing runtime failures.
+
+**Solution**:
+- Added missing TYPE_CHECKING imports for `NanoGPTClient`, `DomainClassification`, `BrowserSessionWrapper`, `LLMProvider`, `Optional`, `AsyncGenerator`, `redis`, `pandas`
+- Fixed forward reference issues in type annotations
+
+**Files Modified**:
+- `src/me4brain/engine/iterative_executor.py` - Added Optional, LLMProvider imports
+- `src/me4brain/llm/batch_scheduler.py` - Added AsyncGenerator import
+- `src/me4brain/api/routes/engine.py` - Added NanoGPTClient TYPE_CHECKING import
+- `src/me4brain/cache/cache_manager.py` - Added DomainClassification import
+- `src/me4brain/core/browser/manager.py` - Added BrowserSessionWrapper import
+- `src/me4brain/domains/finance_crypto/tools/finance_api.py` - Added pandas TYPE_CHECKING
+- `src/me4brain/embeddings/embedding_cache.py` - Fixed redis imports and type annotations
+
+### Fixed - Auto-Fixable Linter Issues
+
+**Solution** (via `ruff check --fix --unsafe-fixes`):
+- W291/W293: 20 trailing whitespace and blank line whitespace issues fixed
+- F401: Unused imports removed
+- F841: 50+ unused variable assignments removed
+
+### Added - Test Coverage Verification
+
+- All 1180 unit tests pass
+- 0 regressions introduced
+
+---
+
 ## [v0.20.5] - 2026-03-23
 
 ### Fixed - Qdrant Point ID UUID Requirement

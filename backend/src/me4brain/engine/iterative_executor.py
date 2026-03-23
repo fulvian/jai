@@ -25,6 +25,7 @@ from me4brain.utils.json_utils import robust_json_parse
 if TYPE_CHECKING:
     from me4brain.engine.hybrid_router.llama_tool_retriever import LlamaIndexToolRetriever
     from me4brain.llm import NanoGPTClient
+    from me4brain.llm.base import LLMProvider
 
 logger = structlog.get_logger(__name__)
 
@@ -196,8 +197,8 @@ class IterativeExecutor:
         retriever: LlamaIndexToolRetriever,
         executor: ParallelExecutor,
         model: str = "qwen3.5:4b",
-        tool_calling_llm: Optional[LLMProvider] = None,
-        tool_calling_model: Optional[str] = None,
+        tool_calling_llm: LLMProvider | None = None,
+        tool_calling_model: str | None = None,
         context_window: int = 32768,
     ):
         self._llm = llm_client

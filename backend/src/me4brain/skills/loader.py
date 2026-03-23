@@ -102,10 +102,7 @@ class SkillLoader:
         Returns:
             Loaded SkillDefinition
         """
-        if skill_path.is_dir():
-            skill_md = skill_path / "SKILL.md"
-        else:
-            skill_md = skill_path
+        skill_md = skill_path / "SKILL.md" if skill_path.is_dir() else skill_path
 
         skill = self.parser.parse(skill_md)
         skill.status = SkillStatus.READY

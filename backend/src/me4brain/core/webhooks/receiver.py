@@ -108,9 +108,8 @@ class WebhookReceiver:
             ValueError: Se signature invalida
         """
         # Verifica signature se presente
-        if signature and raw_body:
-            if not self.verify_signature(raw_body, signature):
-                raise ValueError("Invalid webhook signature")
+        if signature and raw_body and not self.verify_signature(raw_body, signature):
+            raise ValueError("Invalid webhook signature")
 
         # Crea evento
         event = WebhookEvent(

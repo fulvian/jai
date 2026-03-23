@@ -9,6 +9,7 @@ from datetime import datetime
 import structlog
 from redis.asyncio import Redis
 
+from me4brain.core.browser.session import BrowserSessionWrapper
 from me4brain.core.browser.types import (
     BrowserConfig,
     BrowserSession,

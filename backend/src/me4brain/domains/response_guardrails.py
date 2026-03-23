@@ -60,7 +60,7 @@ class ResponseLimiter:
                 # Mantieni solo chiavi importanti
                 important_keys = [
                     k
-                    for k in obj.keys()
+                    for k in obj
                     if any(x in k.lower() for x in ["game", "prediction", "odds", "value", "pick"])
                 ]
                 if important_keys:

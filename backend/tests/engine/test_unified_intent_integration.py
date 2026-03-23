@@ -455,7 +455,7 @@ class TestPerformance:
         )
 
         start_time = time.time()
-        analysis = await analyzer.analyze("meteo Roma")
+        await analyzer.analyze("meteo Roma")
         elapsed_ms = (time.time() - start_time) * 1000
 
         # Should complete quickly (mock adds minimal overhead)
@@ -534,11 +534,9 @@ class TestCaching:
 
         # First call
         analysis1 = await analyzer.analyze("meteo Roma")
-        call_count_1 = mock_llm_client.generate_response.call_count
 
         # Second call with same query
         analysis2 = await analyzer.analyze("meteo Roma")
-        call_count_2 = mock_llm_client.generate_response.call_count
 
         # Results should be identical
         assert analysis1.intent == analysis2.intent

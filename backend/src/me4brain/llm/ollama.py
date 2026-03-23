@@ -103,6 +103,24 @@ class OllamaClient(LLMProvider):
         if request.response_format:
             payload["response_format"] = request.response_format
 
+        # Reasoning control for thinking models (qwen3.5)
+        # reasoning_exclude=True disables thinking, reasoning_effort controls thinking depth
+        if request.reasoning_exclude:
+            payload["reasoning"] = {"exclude": True}
+        elif request.reasoning_effort:
+            from me4brain.llm.models import ReasoningLevel
+
+            if request.reasoning_effort != ReasoningLevel.MEDIUM:
+                # Convert ReasoningLevel enum to string
+                effort_map = {
+                    ReasoningLevel.MINIMAL: "minimal",
+                    ReasoningLevel.LOW: "low",
+                    ReasoningLevel.MEDIUM: "medium",
+                    ReasoningLevel.HIGH: "high",
+                }
+                effort_value = effort_map.get(request.reasoning_effort, "medium")
+                payload["reasoning"] = {"effort": effort_value}
+
         # Tool calling (supportato nativamente da mlx_lm.server)
         if request.tools:
             payload["tools"] = [t.model_dump(exclude_none=True) for t in request.tools]
@@ -155,6 +173,16 @@ class OllamaClient(LLMProvider):
                 content = msg_data.get("content") or ""
                 reasoning = msg_data.get("reasoning")
                 tool_calls = msg_data.get("tool_calls")
+
+                # For thinking models (qwen3.5): if content is empty but reasoning exists,
+                # extract JSON from reasoning content (which contains the actual response)
+                if not content and reasoning:
+                    logger.debug(
+                        "ollama_using_reasoning_as_content",
+                        reasoning_len=len(reasoning),
+                    )
+                    content = reasoning
+                    reasoning = None  # Avoid duplication
 
                 if not content and not tool_calls and not reasoning:
                     logger.warning("ollama_invalid_choice_message", message=msg_data)

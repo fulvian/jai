@@ -422,7 +422,6 @@ class TestAdaptiveGuardrailsIntegration:
             _, _ = ResponseLimiter.apply_guardrails(data, config)
 
         # Config should adapt
-        original_items = 5
         config.adapt_to_metrics()
 
         # Verify metrics were updated

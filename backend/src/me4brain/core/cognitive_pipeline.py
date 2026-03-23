@@ -137,13 +137,13 @@ RISPONDI ESCLUSIVAMENTE CON JSON VALIDO. NESSUN TESTO PRIMA O DOPO IL JSON.
 }}
 
 DOMINI DISPONIBILI:
-geo_weather, finance_crypto, sports_nba, medical, travel, jobs, food, 
-entertainment, tech_coding, google_workspace, knowledge_media, 
+geo_weather, finance_crypto, sports_nba, medical, travel, jobs, food,
+entertainment, tech_coding, google_workspace, knowledge_media,
 science_research, utility, web_search
 
 MAPPING ENTITÀ → DOMINIO:
 - "location" (città, paesi) → geo_weather, travel
-- "financial_instrument" (BTC, AAPL) → finance_crypto  
+- "financial_instrument" (BTC, AAPL) → finance_crypto
 - "organization" (Lakers, Celtics) → sports_nba
 - "person" (atleti, celebrities) → sports_nba, knowledge_media
 - "medical_condition" → medical
@@ -156,7 +156,7 @@ REGOLE:
 - Analisi cross-domain (confronti, correlazioni) → più domini
 
 ESEMPI:
-Query: "Confronta BTC con meteo Milano" 
+Query: "Confronta BTC con meteo Milano"
 → domains_required: ["finance_crypto", "geo_weather"]
 
 Query: "Statistiche Lakers e quote scommesse"
@@ -182,20 +182,20 @@ MEMORIA CONTESTUALE:
 REGOLE OBBLIGATORIE (NESSUNA ECCEZIONE)
 ═══════════════════════════════════════════════════════════════════
 
-1. **DATI NUMERICI**: Ogni numero che citi (prezzi, quote, statistiche, percentuali, 
+1. **DATI NUMERICI**: Ogni numero che citi (prezzi, quote, statistiche, percentuali,
    temperature, punteggi) DEVE essere COPIATO ESATTAMENTE dal JSON sopra.
    - NON arrotondare
    - NON inventare
    - NON stimare
-   
-2. **DATI MANCANTI**: Se un dato richiesto NON è presente nel JSON sopra, 
+
+2. **DATI MANCANTI**: Se un dato richiesto NON è presente nel JSON sopra,
    scrivi ESPLICITAMENTE: "Questo dato non è disponibile nei dati raccolti."
    NON inventare valori per riempire lacune.
 
 3. **CITAZIONE FONTI**: Per ogni dato numerico, indica la fonte:
    - "(fonte: [nome_tool])" o "(da [FONTE] nel JSON)"
-   
-4. **NOMI E IDENTIFICATORI**: Copia esattamente nomi di persone, squadre, 
+
+4. **NOMI E IDENTIFICATORI**: Copia esattamente nomi di persone, squadre,
    aziende, luoghi come appaiono nel JSON. Non modificarli.
 
 5. **STRUTTURA TABELLARE**: Quando presenti dati comparativi, usa tabelle
@@ -209,7 +209,7 @@ ISTRUZIONI RISPOSTA:
 3. Se dati da più fonti, fai cross-reference
 4. Rispondi in italiano, in modo completo e dettagliato
 
-RICORDA: La tua risposta sarà verificata contro il JSON. Numeri non presenti 
+RICORDA: La tua risposta sarà verificata contro il JSON. Numeri non presenti
 nel JSON verranno segnalati come errore."""
 
 
@@ -2290,7 +2290,7 @@ async def run_cognitive_pipeline(
         base_url=config.nanogpt_base_url,
     )
     embedding_service = get_embedding_service()
-    executor = ToolExecutor()
+    ToolExecutor()
 
     logger.info("cognitive_pipeline_start", query=query[:50])
 

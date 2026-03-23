@@ -143,7 +143,7 @@ class AgentMessenger:
 
         messages: list[tuple[str, AgentMessage]] = []
 
-        for stream, stream_messages in results:
+        for _stream, stream_messages in results:
             for redis_id, data in stream_messages:
                 try:
                     message = self._parse_message(data)
@@ -187,7 +187,7 @@ class AgentMessenger:
 
         messages: list[AgentMessage] = []
 
-        for redis_id, data in results:
+        for _redis_id, data in results:
             try:
                 message = self._parse_message(data)
                 messages.append(message)

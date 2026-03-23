@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING
 import structlog
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from me4brain.llm.base import LLMProvider
     from me4brain.llm.models import LLMChunk, LLMRequest, LLMResponse
 

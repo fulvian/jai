@@ -205,7 +205,7 @@ class HealthChecker:
 
             async with driver.session() as session:
                 result = await session.run("RETURN 1 as n, size(labels(n)) as check")
-                record = await result.single()
+                await result.single()
                 await result.consume()
 
             await driver.close()

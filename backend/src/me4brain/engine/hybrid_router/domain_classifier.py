@@ -335,7 +335,7 @@ Determine which domains (tool categories) are relevant for the query.
 
 ## COMPLEXITY
 - "low": 1-3 tools
-- "medium": 4-8 tools  
+- "medium": 4-8 tools
 - "high": 8+ tools or complex
 
 ## OUTPUT
@@ -1017,9 +1017,8 @@ Current time: {current_datetime}"""
         keyword_map = self._get_keyword_map()
 
         for domain, keywords in keyword_map.items():
-            if any(kw in query_lower for kw in keywords):
-                if domain in self._domains:
-                    detected_domains.append(domain)
+            if any(kw in query_lower for kw in keywords) and domain in self._domains:
+                detected_domains.append(domain)
 
         if not detected_domains:
             detected_domains = self._config.fallback_domains

@@ -97,7 +97,7 @@ async def workspace_report_aggregator(
 
         gathered = await asyncio.gather(*task_coroutines, return_exceptions=True)
 
-        for name, result in zip(task_names, gathered):
+        for name, result in zip(task_names, gathered, strict=False):
             if isinstance(result, Exception):
                 logger.warning(f"{name}_aggregation_failed", error=str(result))
                 results[name] = {"error": str(result), "items": []}
@@ -153,7 +153,7 @@ async def workspace_report_aggregator(
         # Filtra conferenze per periodo e keyword
         filtered_conferences = []
         for conf in conferences:
-            conf_date = conf.get("date", "")
+            conf.get("date", "")
             conf_title = conf.get("title", "").lower()
 
             # Filtro per keyword nel titolo
@@ -190,7 +190,7 @@ async def workspace_report_aggregator(
 TOOL_DEFINITION = {
     "name": "google_workspace_report",
     "description": """Genera un report aggregato multi-source per un progetto.
-    
+
 Esegue ricerche parallele su Google Drive, Gmail, Calendar e Meet,
 aggregando i risultati in un report strutturato con sezioni:
 - documents: File e documenti su Drive

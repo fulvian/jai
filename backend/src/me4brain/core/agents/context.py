@@ -56,10 +56,7 @@ class SharedContext:
         context_key = self._context_key(task_id)
 
         # Serializza valore
-        if isinstance(value, (dict, list)):
-            serialized = json.dumps(value)
-        else:
-            serialized = str(value)
+        serialized = json.dumps(value) if isinstance(value, (dict, list)) else str(value)
 
         await self.redis.hset(context_key, key, serialized)
 
@@ -178,10 +175,7 @@ class SharedContext:
         context_key = self._context_key(task_id)
 
         for key, value in data.items():
-            if isinstance(value, (dict, list)):
-                serialized = json.dumps(value)
-            else:
-                serialized = str(value)
+            serialized = json.dumps(value) if isinstance(value, (dict, list)) else str(value)
             await self.redis.hset(context_key, key, serialized)
 
         await self.redis.expire(context_key, self.ttl_seconds)

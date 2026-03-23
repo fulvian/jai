@@ -339,10 +339,10 @@ class TestComplexityBasedSelection:
             confidence=0.95,
         )
 
-        result_high = await retriever.retrieve("test", classification_high)
+        await retriever.retrieve("test", classification_high)
         # Reset embed_fn for second call
         embed_fn.return_value = np.array([0.7, 0.0])
-        result_low = await retriever.retrieve("test", classification_low)
+        await retriever.retrieve("test", classification_low)
 
         # High complexity should retrieve fewer/no tools (stricter threshold)
         # Low complexity should retrieve more tools (looser threshold)

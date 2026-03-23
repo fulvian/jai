@@ -286,10 +286,7 @@ class ConversationManager:
         if conversation_id:
             context = await self.get_context(conversation_id, max_context_tokens)
 
-        if context:
-            enriched_query = f"{context}\n\nCurrent query: {query}"
-        else:
-            enriched_query = query
+        enriched_query = f"{context}\n\nCurrent query: {query}" if context else query
 
         if domain_classifier is not None:
             try:

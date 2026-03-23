@@ -131,10 +131,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
             return True
 
         # Prefix match per admin tenant creation
-        if path.startswith("/v1/admin/tenants") and not path.endswith("/usage"):
-            return True
-
-        return False
+        return bool(path.startswith("/v1/admin/tenants") and not path.endswith("/usage"))
 
     def _extract_tenant_id(self, request: Request) -> str | None:
         """

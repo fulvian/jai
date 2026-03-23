@@ -229,7 +229,7 @@ def create_app() -> FastAPI:
         description="""
 ## Piattaforma Universale di Memoria Agentica API-First
 
-Me4BrAIn Core fornisce un sistema di memoria a lungo termine per agenti AI, 
+Me4BrAIn Core fornisce un sistema di memoria a lungo termine per agenti AI,
 ispirato ai sistemi di memoria umana:
 
 - **Memoria Episodica**: Eventi e esperienze passate

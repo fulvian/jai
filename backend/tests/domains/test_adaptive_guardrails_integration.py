@@ -99,7 +99,6 @@ class TestNBADomainGuardrails:
             metrics=GuardrailsMetrics(domain="test_nba_adaptive"),
         )
 
-        initial_items = config.max_items_per_page
 
         # Simulate 20 large responses
         for batch in range(20):
@@ -165,7 +164,7 @@ class TestNBADomainGuardrails:
             cached=False,
         )
 
-        guarded = apply_response_guardrails(response, "sports_nba")
+        apply_response_guardrails(response, "sports_nba")
 
         # Should have applied compression (removed deep nesting)
         metrics = config.metrics

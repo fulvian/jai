@@ -1,13 +1,12 @@
 """Tests per Session Title Generation API."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from me4brain.api.routes.session_title import (
-    GenerateTitleRequest,
-    GenerateTitleResponse,
-    _parse_title,
     _build_title_request,
+    _parse_title,
     generate_session_title,
 )
 

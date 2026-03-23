@@ -13,7 +13,7 @@ L'Engine usa il ToolCatalog con auto-discovery dai domini.
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -21,6 +21,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from me4brain.api.middleware.api_key import get_optional_api_key
+
+if TYPE_CHECKING:
+    from me4brain.llm import NanoGPTClient
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/engine", tags=["Engine"])
@@ -1101,7 +1104,7 @@ async def list_tools(
         ]
 
         # Estrai domini unici
-        domains = sorted(set(t.domain for t in all_tools if t.domain))
+        domains = sorted({t.domain for t in all_tools if t.domain})
 
         return ToolListResponse(
             tools=tools_info,

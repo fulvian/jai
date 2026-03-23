@@ -141,7 +141,7 @@ class ToolCatalog:
         for tool in self._tools.values():
             if tool.domain:
                 domains.add(tool.domain)
-        return sorted(list(domains))
+        return sorted(domains)
 
     def get_function_schemas(
         self,
@@ -191,7 +191,7 @@ class ToolCatalog:
             return 0
 
         # Iterate over submodules
-        for importer, modname, ispkg in pkgutil.iter_modules(
+        for _importer, modname, ispkg in pkgutil.iter_modules(
             pkg.__path__,
             prefix=f"{package}.",
         ):

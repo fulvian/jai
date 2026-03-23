@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -110,7 +109,7 @@ class AgentRegistry:
         logger.info("agent_unregistered", agent_id=agent_id)
         return True
 
-    async def get(self, agent_id: str) -> Optional[AgentProfile]:
+    async def get(self, agent_id: str) -> AgentProfile | None:
         """
         Recupera profilo agente.
 
@@ -130,9 +129,9 @@ class AgentRegistry:
 
     async def list_agents(
         self,
-        capability: Optional[str] = None,
-        status: Optional[AgentStatus] = None,
-        agent_type: Optional[AgentType] = None,
+        capability: str | None = None,
+        status: AgentStatus | None = None,
+        agent_type: AgentType | None = None,
     ) -> list[AgentProfile]:
         """
         Lista agenti con filtri.
@@ -172,7 +171,7 @@ class AgentRegistry:
         self,
         agent_id: str,
         status: AgentStatus,
-        current_task: Optional[str] = None,
+        current_task: str | None = None,
     ) -> None:
         """
         Aggiorna stato agente.
@@ -230,8 +229,8 @@ class AgentRegistry:
     async def find_best_agent(
         self,
         capability: str,
-        exclude: Optional[list[str]] = None,
-    ) -> Optional[AgentProfile]:
+        exclude: list[str] | None = None,
+    ) -> AgentProfile | None:
         """
         Trova miglior agente per capability.
 
@@ -267,10 +266,10 @@ class AgentRegistry:
 
 
 # Singleton
-_agent_registry: Optional[AgentRegistry] = None
+_agent_registry: AgentRegistry | None = None
 
 
-def get_agent_registry() -> Optional[AgentRegistry]:
+def get_agent_registry() -> AgentRegistry | None:
     """Ottiene registry globale."""
     return _agent_registry
 

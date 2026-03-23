@@ -52,10 +52,7 @@ class User:
         """
         if not self.is_active:
             return False
-        for role in self.roles:
-            if has_permission(role, permission):
-                return True
-        return False
+        return any(has_permission(role, permission) for role in self.roles)
 
     def has_any_permission(self, permissions: list[Permission]) -> bool:
         """Check if user has any of the specified permissions.

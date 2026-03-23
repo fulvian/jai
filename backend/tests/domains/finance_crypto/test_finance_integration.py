@@ -100,7 +100,7 @@ class TestComplexFinanceQuery:
         mock_ticker.history.return_value = pd.DataFrame({"close": [100, 101, 102]})
 
         with patch("yahooquery.Ticker", return_value=mock_ticker):
-            result = await yahooquery_historical(symbols=tickers, period="1mo")
+            await yahooquery_historical(symbols=tickers, period="1mo")
 
         # Should have called Ticker once with all symbols
         assert mock_ticker.history.call_count == 1

@@ -355,8 +355,9 @@ class TestHybridRouterRealServices:
         Indexing with string tool names would fail - this test focuses on
         retrieval only.
         """
-        from me4brain.engine.hybrid_router.constants import CAPABILITIES_COLLECTION
         from qdrant_client import QdrantClient
+
+        from me4brain.engine.hybrid_router.constants import CAPABILITIES_COLLECTION
 
         # Connect to Qdrant
         qdrant_client = QdrantClient(host="localhost", port=6333)
@@ -372,7 +373,7 @@ class TestHybridRouterRealServices:
             ("Bitcoin price live", ["CoinGecko"], "finance_crypto"),
         ]
 
-        for query, expected_tools, expected_domain in retrieval_queries:
+        for query, _expected_tools, expected_domain in retrieval_queries:
             print(f"\n[Retrieval] Query: {query}")
 
             # Generate embedding for query
@@ -396,7 +397,7 @@ class TestHybridRouterRealServices:
 
             # Verify at least one result has matching domain
             retrieved_domains = {r.payload.get("domain", "") for r in results}
-            retrieved_tools = {r.payload.get("tool_name", "") for r in results}
+            {r.payload.get("tool_name", "") for r in results}
 
             # Check domain match (flexible - any of the expected domains)
             domain_match = expected_domain in retrieved_domains
@@ -418,11 +419,12 @@ class TestHybridRouterRealServices:
 
         This is the ultimate integration test - verifies the entire flow.
         """
+        from qdrant_client import QdrantClient
+
         from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
         from me4brain.engine.hybrid_router.llama_tool_retriever import LlamaIndexToolRetriever
         from me4brain.engine.hybrid_router.tool_index import ToolIndexManager
         from me4brain.engine.hybrid_router.types import HybridRouterConfig as TypesConfig
-        from qdrant_client import QdrantClient
 
         print("\n" + "=" * 70)
         print("FULL ROUTING PIPELINE TEST")
@@ -548,11 +550,12 @@ class TestRescuePolicyReal:
 
         When classification confidence is very low, rescue should expand domain.
         """
+        from qdrant_client import QdrantClient
+
         from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
         from me4brain.engine.hybrid_router.llama_tool_retriever import LlamaIndexToolRetriever
         from me4brain.engine.hybrid_router.tool_index import ToolIndexManager
         from me4brain.engine.hybrid_router.types import HybridRouterConfig as TypesConfig
-        from qdrant_client import QdrantClient
 
         print("\n[Rescue Policy Test] Ambiguous query handling")
 
@@ -616,10 +619,11 @@ class TestSloMetricsReal:
 
         Tests the metrics infrastructure added in Wave 4.
         """
+        from qdrant_client import QdrantClient
+
         from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
         from me4brain.engine.hybrid_router.tool_index import ToolIndexManager
         from me4brain.engine.hybrid_router.types import HybridRouterConfig as TypesConfig
-        from qdrant_client import QdrantClient
 
         # Setup
         qdrant_client = QdrantClient(host="localhost", port=6333)
@@ -662,7 +666,7 @@ class TestSloMetricsReal:
         # Here we're measuring single query, not P95, but should be under 10s
         assert classify_latency < 60, f"Classification took too long: {classify_latency}s"
 
-        print(f"  [PASS] Latencies within expected bounds")
+        print("  [PASS] Latencies within expected bounds")
 
 
 if __name__ == "__main__":

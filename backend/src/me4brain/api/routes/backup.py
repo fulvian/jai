@@ -79,7 +79,7 @@ async def create_snapshot(
     user: AuthenticatedUser = Depends(get_current_user),
 ) -> BackupStatus:
     """Crea uno snapshot di Qdrant e/o Neo4j."""
-    settings = get_settings()
+    get_settings()
     started_at = datetime.now(UTC).isoformat()
     details: dict[str, Any] = {}
 

@@ -78,7 +78,7 @@ class TestMetricsIntegration:
 
     def test_metrics_exist_and_are_registered(self):
         """Test that all metrics are registered with Prometheus."""
-        metric_names = [m.name for m in REGISTRY.collect() if hasattr(m, "name")]
+        [m.name for m in REGISTRY.collect() if hasattr(m, "name")]
 
         # Check key metrics are registered
         assert any("domain_classification_total" in str(m) for m in REGISTRY.collect())

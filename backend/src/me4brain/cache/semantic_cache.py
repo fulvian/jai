@@ -162,7 +162,7 @@ class SemanticCache:
         best_match: dict[str, Any] | None = None
         best_similarity = 0.0
 
-        for cached_query, cached_data in self._query_cache.items():
+        for _cached_query, cached_data in self._query_cache.items():
             cached_embedding = cached_data.get("cached_embedding")
             if cached_embedding is None:
                 continue

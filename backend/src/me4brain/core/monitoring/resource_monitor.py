@@ -13,6 +13,7 @@ Fornisce alerting per memory pressure e OOM prevention.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import platform
 import subprocess
 import time
@@ -101,10 +102,8 @@ class HardwareResourceMonitor:
         swap = psutil.swap_memory()
 
         load_avg = (0.0, 0.0, 0.0)
-        try:
+        with contextlib.suppress(AttributeError, OSError):
             load_avg = tuple(psutil.getloadavg())
-        except (AttributeError, OSError):
-            pass
 
         cpu_pct = psutil.cpu_percent(interval=0.1)
 
@@ -325,10 +324,8 @@ class HardwareResourceMonitor:
         self._monitoring = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
             self._monitor_task = None
         logger.info("resource_monitoring_stopped")
 

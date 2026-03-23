@@ -167,9 +167,7 @@ def _validate_type(parsed: Any, expect_array: bool, expect_object: bool) -> bool
     """Validate that parsed JSON matches expected type."""
     if expect_array and not isinstance(parsed, list):
         return False
-    if expect_object and not isinstance(parsed, dict):
-        return False
-    return True
+    return not (expect_object and not isinstance(parsed, dict))
 
 
 def parse_llm_json_response(

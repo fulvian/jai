@@ -151,7 +151,7 @@ class TestGetCachedBestProvider:
         with patch("me4brain.llm.provider_factory.get_llm_health_checker") as mock_health_getter:
             with patch(
                 "me4brain.llm.provider_factory._provider_cache", None, create=True
-            ) as mock_cache_var:
+            ):
                 mock_health_checker = AsyncMock()
                 mock_health_checker.get_best_provider = AsyncMock(return_value="ollama")
                 mock_health_getter.return_value = mock_health_checker

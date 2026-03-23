@@ -9,15 +9,20 @@ Wrapper async per le API finanziarie:
 Tutte le API sono pubbliche (no auth richiesta).
 """
 
+from __future__ import annotations
+
 import os
 import re
 from datetime import UTC
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 import structlog
 from dotenv import load_dotenv
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # Load .env from project root (backend/)
 _project_root = Path(__file__).parent.parent.parent
@@ -71,10 +76,7 @@ async def coingecko_price(
     """
     try:
         # Normalize ids to comma-separated string
-        if isinstance(ids, list):
-            ids_str = ",".join(ids)
-        else:
-            ids_str = ids
+        ids_str = ",".join(ids) if isinstance(ids, list) else ids
 
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.get(
@@ -1269,7 +1271,7 @@ async def nasdaq_quote(symbol: str = "AAPL") -> dict[str, Any]:
             values = dataset.get("data", [[]])[0] if dataset.get("data") else []
 
             # Map columns to values
-            quote_data = dict(zip(columns, values)) if columns and values else {}
+            quote_data = dict(zip(columns, values, strict=False)) if columns and values else {}
 
             return {
                 "symbol": symbol,
@@ -1932,7 +1934,7 @@ def _detect_asset_type_simple(symbol: str) -> str:
     return "stock"
 
 
-async def _fetch_ohlc_yahooquery(symbol: str, period: str = "6mo") -> "pd.DataFrame | None":
+async def _fetch_ohlc_yahooquery(symbol: str, period: str = "6mo") -> pd.DataFrame | None:
     """Fetch OHLC data da Yahoo Finance via yahooquery (primary, no API key).
 
     Vantaggio: 1 sola chiamata API, nessuna API key necessaria.

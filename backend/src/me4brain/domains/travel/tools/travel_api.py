@@ -92,7 +92,7 @@ async def opensky_flight_track(icao24: str) -> dict[str, Any]:
         import time
 
         end_time = int(time.time())
-        begin_time = end_time - 3600  # Ultima ora
+        end_time - 3600  # Ultima ora
 
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(
@@ -359,7 +359,7 @@ async def amadeus_search_flights(
                 "arrival": last_segment.get("arrival", {}).get("at"),
                 "duration": outbound.get("duration"),  # ISO 8601 duration
                 "stops": len(outbound_segments) - 1,
-                "carriers": list(set(seg.get("carrierCode", "") for seg in outbound_segments)),
+                "carriers": list({seg.get("carrierCode", "") for seg in outbound_segments}),
                 "flight_numbers": [
                     f"{seg.get('carrierCode', '')}{seg.get('number', '')}"
                     for seg in outbound_segments

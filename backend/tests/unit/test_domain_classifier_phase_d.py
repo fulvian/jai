@@ -212,7 +212,7 @@ class TestEdgeCases:
 
     def test_unicode_accents(self, classifier):
         """Test accented characters."""
-        result = classifier._fallback_classification("scommësse nba")
+        classifier._fallback_classification("scommësse nba")
         # Should still detect 'scommessa' root
         # Note: actual matching depends on unicode normalization
 
@@ -229,17 +229,17 @@ class TestEdgeCases:
 
     def test_hyphenated_keywords(self, classifier):
         """Test hyphenated keywords."""
-        result = classifier._fallback_classification("over-under betting nba")
+        classifier._fallback_classification("over-under betting nba")
         # Depends on how 'over/under' is stored
 
     def test_slashed_keywords(self, classifier):
         """Test slashed keywords like over/under."""
-        result = classifier._fallback_classification("nba over/under")
+        classifier._fallback_classification("nba over/under")
         # Should match "over/under" keyword
 
     def test_domain_not_in_available_list(self, classifier):
         """Test when matched domain not in available_domains."""
-        result = classifier._fallback_classification("unknown_domain_keyword")
+        classifier._fallback_classification("unknown_domain_keyword")
         # Should use fallback domains only
 
 

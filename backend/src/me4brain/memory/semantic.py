@@ -492,7 +492,7 @@ class SemanticMemory:
                 result = await session.run(
                     """
                     MATCH (e:Entity)-[r:RELATES_TO]->(neighbor:Entity)
-                    WHERE e.tenant_id = $tenant_id 
+                    WHERE e.tenant_id = $tenant_id
                       AND neighbor.tenant_id = $tenant_id
                       AND e.id IN $ids
                     RETURN e.id as source_id, neighbor.id as target_id, r.weight as weight
@@ -599,11 +599,7 @@ class SemanticMemory:
             return [], []
 
         # Build relationship filter
-        rel_filter = ""
-        if relation_types:
-            rel_filter = f"[:{' | '.join(relation_types)}]"
-        else:
-            rel_filter = ""
+        f"[:{' | '.join(relation_types)}]" if relation_types else ""
 
         nodes: list[dict[str, Any]] = []
         edges: list[dict[str, str]] = []

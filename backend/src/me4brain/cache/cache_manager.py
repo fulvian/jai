@@ -17,6 +17,8 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from redis.asyncio import ConnectionPool
 
+    from me4brain.engine.hybrid_router.types import DomainClassification
+
 logger = structlog.get_logger(__name__)
 
 # Default Redis URL if not configured

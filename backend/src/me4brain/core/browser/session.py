@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
 from me4brain.core.browser.types import (
-    ActionType,
-    BrowserAction,
     BrowserActionResult,
     BrowserSession,
     BrowserStatus,
@@ -239,7 +236,7 @@ class BrowserSessionWrapper:
     async def extract(
         self,
         instruction: str,
-        schema: Optional[dict] = None,
+        schema: dict | None = None,
     ) -> BrowserActionResult:
         """
         Estrae dati strutturati (Stagehand).

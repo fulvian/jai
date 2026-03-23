@@ -5,8 +5,6 @@ These tests verify the ToolContract model and ToolContractRegistry singleton.
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from me4brain.engine.tool_contract import (

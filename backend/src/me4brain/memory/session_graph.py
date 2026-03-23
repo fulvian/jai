@@ -837,9 +837,9 @@ class SessionKnowledgeGraph:
 
                 // Combined score: embedding base score + up to 15% bonus for shared topics
                 WITH s1, s2,
-                     CASE 
-                       WHEN cosine_sim + (shared_topics * 0.05) > 1.0 THEN 1.0 
-                       ELSE cosine_sim + (shared_topics * 0.05) 
+                     CASE
+                       WHEN cosine_sim + (shared_topics * 0.05) > 1.0 THEN 1.0
+                       ELSE cosine_sim + (shared_topics * 0.05)
                      END AS combined_score,
                      cosine_sim,
                      shared_topics

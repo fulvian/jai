@@ -656,7 +656,4 @@ class QueryDecomposer:
             "call",
         ]
         sources_mentioned = sum(1 for s in source_indicators if s in query_lower)
-        if sources_mentioned >= 2:
-            return True
-
-        return False
+        return sources_mentioned >= 2

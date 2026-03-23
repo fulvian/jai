@@ -1394,7 +1394,7 @@ async def docs_insert_text(
 
         docs = await _run_sync(partial(service._get_google_service, "docs", "v1"))
 
-        result = await _run_sync(
+        await _run_sync(
             lambda: (
                 docs.documents()
                 .batchUpdate(
@@ -1454,7 +1454,7 @@ async def docs_append_text(
         # L'ultimo elemento contiene l'endIndex
         end_index = content[-1].get("endIndex", 1) if content else 1
 
-        result = await _run_sync(
+        await _run_sync(
             lambda: (
                 docs.documents()
                 .batchUpdate(
@@ -2009,7 +2009,7 @@ async def slides_add_slide(
 
         predefined_layout = layout_map.get(layout.upper(), "BLANK")
 
-        result = await _run_sync(
+        await _run_sync(
             lambda: (
                 slides.presentations()
                 .batchUpdate(

@@ -7,8 +7,9 @@ Endpoints per interazione con il sistema di memoria:
 - Query: interrogazione con ciclo cognitivo completo
 """
 
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any, AsyncGenerator
+from typing import Any
 from uuid import uuid4
 
 import structlog
@@ -18,9 +19,10 @@ from pydantic import BaseModel, Field
 
 from me4brain.api.middleware.auth import (
     AuthenticatedUser,
-    get_current_user,
+    get_current_user,  # noqa: F401 - Required for test dependency overrides
     get_current_user_dev,
 )
+from me4brain.api.middleware.rate_limit import RATE_LIMITS, limiter
 from me4brain.core import run_cognitive_cycle
 from me4brain.embeddings import get_embedding_service
 from me4brain.memory import (
@@ -32,7 +34,6 @@ from me4brain.memory import (
     get_working_memory,
 )
 from me4brain.utils.metrics import track_latency
-from me4brain.api.middleware.rate_limit import limiter, RATE_LIMITS
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/memory", tags=["Memory"])
@@ -839,14 +840,15 @@ async def stream_cognitive_response(
     Time to First Byte da 5-15s a <500ms.
     """
     import json
+
     from me4brain.core.cognitive_pipeline import (
         analyze_query,
         execute_semantic_tool_loop,
-        synthesize_response_stream,
         retrieve_memory_context,
+        synthesize_response_stream,
     )
-    from me4brain.llm.nanogpt import get_llm_client
     from me4brain.llm.config import get_llm_config
+    from me4brain.llm.nanogpt import get_llm_client
     from me4brain.retrieval.tool_executor import get_tool_executor
 
     thread_id = str(uuid4())

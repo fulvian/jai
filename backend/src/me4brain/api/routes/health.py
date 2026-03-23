@@ -273,7 +273,7 @@ async def check_database() -> ServiceHealth:
             from sqlalchemy import text
 
             result = await session.execute(text("SELECT 1"))
-            row = result.scalar()
+            result.scalar()
 
         latency = (time.time() - start) * 1000
         return ServiceHealth(
@@ -368,17 +368,15 @@ async def check_llm_providers() -> ServiceHealth:
         # Handle exceptions
         if isinstance(ollama_result, Exception):
             ollama_healthy = False
-            ollama_error = str(ollama_result)[:100]
+            str(ollama_result)[:100]
         else:
             ollama_healthy = ollama_result.healthy
-            ollama_error = None
 
         if isinstance(lmstudio_result, Exception):
             lmstudio_healthy = False
-            lmstudio_error = str(lmstudio_result)[:100]
+            str(lmstudio_result)[:100]
         else:
             lmstudio_healthy = lmstudio_result.healthy
-            lmstudio_error = None
 
         # Overall status
         any_healthy = ollama_healthy or lmstudio_healthy

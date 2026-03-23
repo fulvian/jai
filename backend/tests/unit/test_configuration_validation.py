@@ -104,7 +104,6 @@ class TestConfigurationValidation:
     async def test_warn_but_not_crash_if_no_models_available(self):
         """Should warn but not crash if all models are unavailable."""
         # Given - no models loaded
-        configured_model = "qwen3.5-4b-mlx"
         loaded_models = []
 
         # When - checking availability

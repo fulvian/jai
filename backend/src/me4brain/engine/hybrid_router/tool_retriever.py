@@ -278,7 +278,7 @@ class ToolRetriever:
         # Ensure within payload limit
         final_tools, total_bytes = self._fit_to_payload_limit(top_k)
 
-        domains_searched = list(set(t.domain for t in final_tools))
+        domains_searched = list({t.domain for t in final_tools})
 
         logger.info(
             "global_topk_retrieval_complete",

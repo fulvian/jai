@@ -48,7 +48,7 @@ class TestTrackLatency:
     @pytest.mark.asyncio
     async def test_failed_operation(self):
         with pytest.raises(ValueError):
-            async with track_latency("test_op") as tracker:
+            async with track_latency("test_op"):
                 raise ValueError("test error")
 
 

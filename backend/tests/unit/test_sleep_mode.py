@@ -23,7 +23,7 @@ async def test_run_consolidation_basic(sleep_mode):
     with (
         patch("me4brain.core.sleep_mode.get_episodic_memory", return_value=mock_episodic),
         patch("me4brain.core.sleep_mode.get_semantic_memory", return_value=mock_semantic),
-        patch("me4brain.core.sleep_mode.get_embedding_service") as mock_emb,
+        patch("me4brain.core.sleep_mode.get_embedding_service"),
     ):
         result = await sleep_mode.run_consolidation(tenant_id="t1", dry_run=True)
 

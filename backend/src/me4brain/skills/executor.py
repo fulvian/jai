@@ -139,7 +139,7 @@ class SkillExecutor:
         options: dict[str, Any] | None,
     ) -> SkillExecutionResult:
         """Execute Apple Notes operations."""
-        action = (options or {}).get("action", "list")
+        (options or {}).get("action", "list")
 
         if "search" in query.lower() or "find" in query.lower():
             # Search notes
@@ -509,7 +509,7 @@ def create_skill_executor(skill: SkillDefinition) -> Callable:
 
         # If no known alias matched, use the first string-valued argument
         if not query:
-            for key, value in list(kwargs.items()):
+            for _key, value in list(kwargs.items()):
                 if isinstance(value, str) and value:
                     query = value
                     break

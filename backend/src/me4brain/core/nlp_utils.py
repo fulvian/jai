@@ -245,9 +245,8 @@ def robust_entity_extraction(
                 continue
 
         # Location - basic validation
-        if etype == "location":
-            if len(value) < 2:
-                continue
+        if etype == "location" and len(value) < 2:
+            continue
 
         # Add validated entity
         validated.append(entity)

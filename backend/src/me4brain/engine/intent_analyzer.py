@@ -359,10 +359,7 @@ class IntentAnalyzer:
             return True
 
         # Multi-intent likely needs multiple tools
-        if analysis.intent_type == IntentType.MULTI_INTENT:
-            return True
-
-        return False
+        return analysis.intent_type == IntentType.MULTI_INTENT
 
 
 # ---------------------------------------------------------------------------

@@ -238,10 +238,7 @@ class SequentialDAGExecutor:
         # Naviga il path
         if path:
             for part in self._parse_path(path):
-                if isinstance(part, int):
-                    value = value[part]
-                else:
-                    value = value[part]
+                value = value[part] if isinstance(part, int) else value[part]
 
         return value
 

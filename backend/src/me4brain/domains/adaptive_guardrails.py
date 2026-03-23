@@ -182,7 +182,7 @@ class ResponseLimiter:
                 # Mantieni solo chiavi importanti
                 important_keys = [
                     k
-                    for k in obj.keys()
+                    for k in obj
                     if any(
                         x in k.lower()
                         for x in [
@@ -285,7 +285,7 @@ class ResponseLimiter:
             action_taken = "compress"
 
         # 2. Pagina risultati se necessario
-        results_keys = [k for k in data.keys() if "prediction" in k or "result" in k]
+        results_keys = [k for k in data if "prediction" in k or "result" in k]
         for key in results_keys:
             if isinstance(data.get(key), list):
                 results = data[key]

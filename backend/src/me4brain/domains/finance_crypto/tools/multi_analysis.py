@@ -273,7 +273,6 @@ async def multi_dimensional_analysis(
     asset_type = _detect_asset_type(symbol)
     logger.info("multi_analysis_start", symbol=symbol, asset_type=asset_type, depth=depth)
 
-    tasks: dict[str, Any] = {}
     scores: dict[str, float] = {}
     breakdowns: dict[str, dict] = {}
     risk_flags: list[str] = []
@@ -424,7 +423,7 @@ async def multi_dimensional_analysis(
         # Crypto scoring
         b24 = results.get("binance_24h", {})
         change_pct = b24.get("price_change_percent", 0)
-        volume = b24.get("volume_24h", 0)
+        b24.get("volume_24h", 0)
 
         # Momentum from 24h change
         if isinstance(change_pct, (int, float)):

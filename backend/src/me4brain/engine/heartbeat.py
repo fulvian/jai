@@ -10,6 +10,7 @@ Ispirato a OpenClaw ma con guardrail di sicurezza.
 """
 
 import asyncio
+import contextlib
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
@@ -158,10 +159,8 @@ class HeartbeatLoop:
 
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
 
         logger.info(
             "🫀 heartbeat_loop_stopped",

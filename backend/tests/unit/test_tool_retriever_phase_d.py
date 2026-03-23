@@ -390,7 +390,7 @@ class TestToolRetrievalComplexity:
             domains=[DomainComplexity(name="domain", complexity="high")],
             confidence=0.9,
         )
-        result_high = await retriever.retrieve("test", classification_high)
+        await retriever.retrieve("test", classification_high)
 
         # Test medium complexity (threshold 0.6)
         classification_medium = DomainClassification(

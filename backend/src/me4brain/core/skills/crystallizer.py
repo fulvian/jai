@@ -101,10 +101,7 @@ class Crystallizer:
             return False
 
         # Tutti i tool devono avere successo
-        if not all(t.success for t in trace.tool_chain):
-            return False
-
-        return True
+        return all(t.success for t in trace.tool_chain)
 
     async def _crystallize_new(self, trace: ExecutionTrace) -> Skill | None:
         """

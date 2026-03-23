@@ -93,7 +93,7 @@ async def test_lightrag_full_integration():
 
     assert len(results) > 0
     # Verifichiamo che i sorgenti siano misti (Hybrid)
-    sources = set(r.source for r in results)
+    sources = {r.source for r in results}
     print(f"[LightRAG] Sources covered: {sources}")
     assert "local" in sources
 

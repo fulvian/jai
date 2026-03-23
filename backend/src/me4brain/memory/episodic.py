@@ -615,10 +615,7 @@ class EpisodicMemory:
 
         if since:
             # Qdrant Range richiede valore numerico (timestamp)
-            if hasattr(since, "timestamp"):
-                since_ts = since.timestamp()
-            else:
-                since_ts = float(since)
+            since_ts = since.timestamp() if hasattr(since, "timestamp") else float(since)
 
             must_conditions.append(
                 models.FieldCondition(

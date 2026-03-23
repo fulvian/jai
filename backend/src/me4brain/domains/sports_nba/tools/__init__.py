@@ -3,23 +3,35 @@
 Esporta tool NBA per uso da SportsNBAHandler.
 """
 
+from me4brain.domains.sports_nba.tools.betting_analyzer import (
+    get_executors as get_betting_executors,
+)
+from me4brain.domains.sports_nba.tools.betting_analyzer import (
+    get_tool_definitions as get_betting_definitions,
+)
+from me4brain.domains.sports_nba.tools.betting_analyzer import (
+    nba_betting_analyzer,
+)
 from me4brain.domains.sports_nba.tools.nba_api import (
     AVAILABLE_TOOLS as NBA_API_TOOLS,
+)
+from me4brain.domains.sports_nba.tools.nba_api import (
     balldontlie_games,
     balldontlie_players,
     balldontlie_stats,
     balldontlie_teams,
     espn_injuries,
     espn_scoreboard,
-    execute_tool as nba_api_execute,
-    get_executors as get_nba_api_executors,
-    get_tool_definitions as get_nba_api_definitions,
     odds_api_odds,
 )
-from me4brain.domains.sports_nba.tools.betting_analyzer import (
-    nba_betting_analyzer,
-    get_executors as get_betting_executors,
-    get_tool_definitions as get_betting_definitions,
+from me4brain.domains.sports_nba.tools.nba_api import (
+    execute_tool as nba_api_execute,
+)
+from me4brain.domains.sports_nba.tools.nba_api import (
+    get_executors as get_nba_api_executors,
+)
+from me4brain.domains.sports_nba.tools.nba_api import (
+    get_tool_definitions as get_nba_api_definitions,
 )
 
 

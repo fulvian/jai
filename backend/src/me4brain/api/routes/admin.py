@@ -219,7 +219,7 @@ async def get_stats(
     from me4brain.memory import get_episodic_memory, get_semantic_memory
 
     episodic = get_episodic_memory()
-    semantic = get_semantic_memory()
+    get_semantic_memory()
 
     # Conteggio episodi (placeholder - in produzione query Qdrant)
     # Conteggio entità (placeholder - in produzione query KuzuDB)

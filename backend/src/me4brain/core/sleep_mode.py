@@ -383,7 +383,7 @@ class SleepMode:
                     orphan_result = await session.run(
                         """
                         MATCH (e:Entity {tenant_id: $tenant_id})
-                        WHERE NOT (e)-[]-() 
+                        WHERE NOT (e)-[]-()
                         AND e.created_at < datetime() - duration('P90D')
                         DETACH DELETE e
                         RETURN count(e) as deleted_count

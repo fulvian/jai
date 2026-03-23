@@ -6,7 +6,6 @@ the golden set and measuring SLO compliance.
 
 import sys
 from pathlib import Path
-from typing import Literal
 
 import pytest
 
@@ -16,7 +15,7 @@ if str(_tests_dir) not in sys.path:
     sys.path.insert(0, str(_tests_dir))
 
 # Import golden set data directly to avoid import issues
-from golden_set import GOLDEN_SET, GOLDEN_SET_STATS, GoldenTestCase
+from golden_set import GOLDEN_SET, GOLDEN_SET_STATS
 
 # Import types needed for mock fixtures
 from me4brain.engine.hybrid_router.types import (

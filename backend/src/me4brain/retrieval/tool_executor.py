@@ -1065,7 +1065,7 @@ class ToolExecutor:
                     "cik": cik,
                     "recent_filings": [
                         {"form": f, "date": d, "doc": desc}
-                        for f, d, desc in zip(forms, dates, descriptions)
+                        for f, d, desc in zip(forms, dates, descriptions, strict=False)
                     ],
                     "source": "SEC EDGAR",
                 }

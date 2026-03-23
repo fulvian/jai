@@ -88,7 +88,7 @@ class ResponseSynthesizer:
         try:
             from me4brain.llm.provider_factory import get_reasoning_client
 
-            cloud_client = await get_reasoning_client()
+            await get_reasoning_client()
             results_context = self._format_results(results)
 
             prompt = f"""Query: {query}
@@ -497,7 +497,7 @@ Dati raccolti dai tool:
         # Prendi i primi 8K chars per non eccedere Qwen context in questa fase
         data_str = json.dumps(result.data, ensure_ascii=False)[:8192]
 
-        prompt = f"""Analizza i dati seguenti provenienti dal tool '{result.tool_name}'. 
+        prompt = f"""Analizza i dati seguenti provenienti dal tool '{result.tool_name}'.
 RIASSUMI in max 200 parole i dettagli più importanti, mantenendo cifre esatte, nomi e date.
 Se è un report finanziario, mantieni i prezzi e le variazioni %.
 Se sono email o file, mantieni oggetti, mittenti e link.

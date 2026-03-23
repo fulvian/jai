@@ -151,11 +151,10 @@ class TechCodingHandler(DomainHandler):
             # Try to extract package name
             words = query.split()
             for i, w in enumerate(words):
-                if w.lower() in ["pypi", "pip", "package"]:
-                    if i + 1 < len(words):
-                        pkg = words[i + 1]
-                        data = await execute_tool("pypi_package", {"name": pkg})
-                        return [make_result(data, "pypi_package")]
+                if w.lower() in ["pypi", "pip", "package"] and i + 1 < len(words):
+                    pkg = words[i + 1]
+                    data = await execute_tool("pypi_package", {"name": pkg})
+                    return [make_result(data, "pypi_package")]
 
         # Stack Overflow
         if "stackoverflow" in query_lower or "errore" in query_lower or "error" in query_lower:

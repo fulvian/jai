@@ -746,7 +746,7 @@ class LlamaIndexToolRetriever:
                 metadata = node.node.metadata
                 tool_name = metadata.get("tool_name", "") or metadata.get("name", "")
                 description = metadata.get("description", "").lower()
-                domain = metadata.get("domain", "")
+                metadata.get("domain", "")
 
                 # Check if any query term matches description or tool name
                 matches = sum(

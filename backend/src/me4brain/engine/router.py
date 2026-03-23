@@ -207,10 +207,9 @@ class ToolRouter:
                 tool_name in ["google_gmail_search", "google_gmail_send"]
                 or tool_name in ["google_calendar_list_events", "google_calendar_create_event"]
                 or tool_name in ["google_drive_search", "google_drive_upload"]
-            ):
-                if not os.getenv("GOOGLE_OAUTH_TOKEN"):
-                    is_available = False
-                    reason = "Google OAuth token not configured"
+            ) and not os.getenv("GOOGLE_OAUTH_TOKEN"):
+                is_available = False
+                reason = "Google OAuth token not configured"
 
             if is_available:
                 validated.append(task)

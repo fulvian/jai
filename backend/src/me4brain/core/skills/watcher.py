@@ -1,6 +1,7 @@
 """Skill Watcher - File system watcher per hot-reload skill senza restart."""
 
 import asyncio
+import contextlib
 from collections.abc import Callable
 from pathlib import Path
 
@@ -138,10 +139,8 @@ class SkillWatcher:
         """Scansiona tutti i file SKILL.md e registra mtime."""
         mtimes: dict[Path, float] = {}
         for skill_file in self.skill_dir.rglob("SKILL.md"):
-            try:
+            with contextlib.suppress(OSError):
                 mtimes[skill_file] = skill_file.stat().st_mtime
-            except OSError:
-                pass
         return mtimes
 
     async def _poll_loop(self) -> None:

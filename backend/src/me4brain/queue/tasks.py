@@ -154,7 +154,7 @@ async def classify_domain_async(query: str, conversation_id: str = None) -> dict
             from me4brain.config.settings import get_settings
             from me4brain.engine.hybrid_router.domain_classifier import DomainClassifier
 
-            settings = get_settings()
+            get_settings()
             classifier = DomainClassifier()
 
             result = await classifier.classify(query)

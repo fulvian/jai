@@ -470,7 +470,7 @@ async def clinicaltrials_search(
                 identification = protocol.get("identificationModule", {})
                 status_module = protocol.get("statusModule", {})
                 design = protocol.get("designModule", {})
-                description = protocol.get("descriptionModule", {})
+                protocol.get("descriptionModule", {})
                 sponsor = protocol.get("sponsorCollaboratorsModule", {})
 
                 # Estrai interventi

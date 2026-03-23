@@ -335,7 +335,7 @@ async def nba_api_player_stats_cascade(
             headers = result_sets[0].get("headers", [])
             rows = result_sets[0].get("rowSet", [])
             if rows:
-                player_data = dict(zip(headers, rows[0]))
+                player_data = dict(zip(headers, rows[0], strict=False))
                 logger.info("player_stats_cascade_success", source="nba_api")
                 return {
                     "player_id": player_id,
@@ -756,7 +756,7 @@ async def nba_api_team_games(
             rows = result_sets[0].get("rowSet", [])
 
             for row in rows[:10]:  # Ultime 10 partite
-                game = dict(zip(headers, row))
+                game = dict(zip(headers, row, strict=False))
                 games.append(
                     {
                         "game_id": game.get("Game_ID"),
@@ -818,7 +818,7 @@ async def nba_api_player_career(player_id: int) -> dict[str, Any]:
                     headers = result.get("headers", [])
                     rows = result.get("rowSet", [])
                     for row in rows:
-                        stats = dict(zip(headers, row))
+                        stats = dict(zip(headers, row, strict=False))
                         career_totals.append(
                             {
                                 "games": stats.get("GP"),
@@ -937,7 +937,7 @@ async def espn_team_stats(team_id: str = "13") -> dict[str, Any]:
             parsed_stats: dict[str, Any] = {}
             if isinstance(stats_categories, list):
                 for category in stats_categories:
-                    cat_name = category.get("displayName", category.get("name", "unknown"))
+                    category.get("displayName", category.get("name", "unknown"))
                     for stat in category.get("stats", []):
                         stat_name = stat.get("name", stat.get("abbreviation", ""))
                         stat_value = stat.get("displayValue", stat.get("value", ""))
@@ -1116,7 +1116,7 @@ async def polymarket_nba_odds() -> dict[str, Any]:
                         except (ValueError, TypeError):
                             prices = None
 
-                    outcomes = m.get("outcomes", [])
+                    m.get("outcomes", [])
                     market_data.append(
                         {
                             "question": m.get("question", m.get("groupItemTitle", "")),
@@ -1238,7 +1238,7 @@ async def nba_api_advanced_stats(
 
         if headers and rows:
             for row in rows:
-                row_dict = dict(zip(headers, row))
+                row_dict = dict(zip(headers, row, strict=False))
                 if row_dict.get("TEAM_ID") == team_id:
                     team_stats = {
                         "team_id": team_id,
@@ -1315,7 +1315,7 @@ async def nba_api_standings(
             rows = result_sets[0].get("rowSet", [])
 
             for row in rows:
-                team_data = dict(zip(headers, row))
+                team_data = dict(zip(headers, row, strict=False))
                 team_entry = {
                     "team_id": team_data.get("TeamID"),
                     "team": team_data.get("TeamCity", "") + " " + team_data.get("TeamName", ""),
@@ -1410,7 +1410,7 @@ async def nba_api_head_to_head(
                 headers = result_sets[0].get("headers", [])
                 rows = result_sets[0].get("rowSet", [])
                 for row in rows:
-                    game = dict(zip(headers, row))
+                    game = dict(zip(headers, row, strict=False))
                     season_games.append(
                         {
                             "date": game.get("GAME_DATE"),

@@ -284,7 +284,7 @@ class BGEM3Service:
                 )
 
                 # Store in cache and collect results
-                for idx, text, embedding in zip(batch_indices, batch_texts, batch_embeddings):
+                for idx, text, embedding in zip(batch_indices, batch_texts, batch_embeddings, strict=False):
                     embedding_array = embedding.astype(np.float32)
                     await self.cache.set(text, embedding_array)
                     cached_results[idx] = embedding_array

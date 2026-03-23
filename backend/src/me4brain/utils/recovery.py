@@ -177,7 +177,7 @@ def calculate_delay(
     return delay
 
 
-async def retry_with_backoff(
+async def retry_with_backoff[T](
     func: Callable[..., Coroutine[Any, Any, T]],
     *args: Any,
     config: RetryConfig | None = None,
