@@ -688,7 +688,7 @@ class HybridToolRouter:
                 tool_calls = message.tool_calls or []
 
             # Build schema lookup for validation
-            schema_lookup: dict[str, dict[str, Any]] = {t.tool_name: t.schema for t in tools}
+            schema_lookup: dict[str, dict[str, Any]] = {t.name: t.schema for t in tools}
 
             tasks = []
             for tc in tool_calls[:max_tools]:
