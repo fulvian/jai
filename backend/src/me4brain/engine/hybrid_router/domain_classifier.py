@@ -35,6 +35,7 @@ from me4brain.engine.hybrid_router.trace_contract import (
 from me4brain.engine.hybrid_router.types import (
     DomainClassification,
     DomainComplexity,
+    DomainScore,
     HybridRouterConfig,
 )
 from me4brain.llm.nanogpt import NanoGPTClient
@@ -214,6 +215,7 @@ class DomainClassifier:
         """Build the system prompt for domain classification."""
         domain_list = ", ".join([f'"{d}"' for d in self._domains])
 
+        # Wave 2: Updated to request top_k_domains with per-domain confidence
         return f"""You are a DOMAIN CLASSIFIER for tool selection. Analyze the user query and identify relevant domains.
 
 ## YOUR TASK
@@ -225,57 +227,93 @@ Analyze the user's request and determine which domains (categories of tools) are
 ## HOW TO ANALYZE
 1. First, understand what the user is asking for
 2. Then, match their needs to the available domains
-3. If uncertain, indicate lower confidence
-4. For multi-domain queries, list ALL relevant domains
+3. Assign a CALIBRATED confidence score (0.0-1.0) to each domain:
+   - 0.9+: Very confident this domain is needed
+   - 0.7-0.8: Confident, good match
+   - 0.5-0.6: Somewhat confident, possible match
+   - 0.3-0.4: Low confidence, may be relevant
+   - Below 0.3: Probably not relevant
+4. For multi-domain queries, list ALL relevant domains with their confidence scores
+5. Provide brief reasoning for top choices
 
-## COMPLEXITY LEVELS
-- "low": Simple query, 1-3 tools needed
-- "medium": Moderate query, 4-8 tools needed
-- "high": Complex query, 8+ tools or multiple steps
+## OUTPUT FORMAT (Wave 2 Top-K Scoring)
+Return JSON with:
+- "top_k_domains": List of {{"domain": "...", "confidence": 0.0-1.0, "reasoning": "..."}}
+- "query_summary": Brief summary of what the query is asking
 
 ## EXAMPLES
 
 Query: "meteo a Milano e prezzo Bitcoin oggi"
-→ {{"domains": [{{"name": "geo_weather", "complexity": "low"}}, {{"name": "finance_crypto", "complexity": "medium"}}], "confidence": 0.98, "query_summary": "Weather + crypto price query"}}
+→ {{"top_k_domains": [
+    {{"domain": "geo_weather", "confidence": 0.92, "reasoning": "Weather query explicitly asked"}},
+    {{"domain": "finance_crypto", "confidence": 0.85, "reasoning": "Crypto price requested"}}
+  ], "query_summary": "Weather + crypto price query"}}
 
 Query: "crea evento calendario domani alle 10, invia email a Mario e cerca file progetto X"
-→ {{"domains": [{{"name": "google_workspace", "complexity": "medium"}}, {{"name": "productivity", "complexity": "low"}}], "confidence": 0.95, "query_summary": "Multi-operation G-Suite request"}}
+→ {{"top_k_domains": [
+    {{"domain": "google_workspace", "confidence": 0.95, "reasoning": "Calendar + email + drive operations"}}
+  ], "query_summary": "Multi-operation G-Suite request"}}
 
 Query: "cerca informazioni su machine learning e papers su arXiv"
-→ {{"domains": [{{"name": "web_search", "complexity": "medium"}}, {{"name": "science_research", "complexity": "low"}}], "confidence": 0.85, "query_summary": "Search + scientific research query"}}
+→ {{"top_k_domains": [
+    {{"domain": "web_search", "confidence": 0.78, "reasoning": "General information search"}},
+    {{"domain": "science_research", "confidence": 0.65, "reasoning": "Academic papers requested"}}
+  ], "query_summary": "Search + scientific research query"}}
 
 Query: "Qual è il senso della vita?"
-→ {{"domains": [], "confidence": 0.9, "query_summary": "Philosophical question, no tools needed"}}
+→ {{"top_k_domains": [], "query_summary": "Philosophical question, no tools needed"}}
 
 Query: "analisi tecnica AAPL con RSI e MACD, confronta con metriche fondamentali"
-→ {{"domains": [{{"name": "finance_crypto", "complexity": "high"}}], "confidence": 0.95, "query_summary": "Complex financial analysis request"}}
+→ {{"top_k_domains": [
+    {{"domain": "finance_crypto", "confidence": 0.95, "reasoning": "Stock technical + fundamental analysis"}}
+  ], "query_summary": "Complex financial analysis request"}}
 
 Query: "pronostico Lakers vs Celtics, value bet e sistema di scommesse NBA"
-→ {{"domains": [{{"name": "sports_nba", "complexity": "high"}}], "confidence": 0.95, "query_summary": "NBA betting analysis and predictions"}}
+→ {{"top_k_domains": [
+    {{"domain": "sports_nba", "confidence": 0.95, "reasoning": "NBA betting analysis and predictions"}}
+  ], "query_summary": "NBA betting analysis and predictions"}}
 
 Query: "prenota campo da tennis per domani alle 18"
-→ {{"domains": [{{"name": "sports_booking", "complexity": "low"}}], "confidence": 0.98, "query_summary": "Sports facility booking"}}
+→ {{"top_k_domains": [
+    {{"domain": "sports_booking", "confidence": 0.98, "reasoning": "Sports facility booking explicitly requested"}}
+  ], "query_summary": "Sports facility booking"}}
 
 Query: "trova ristoranti stellati a Parigi e prenota per due"
-→ {{"domains": [{{"name": "food", "complexity": "medium"}}], "confidence": 0.95, "query_summary": "Food and restaurant search"}}
+→ {{"top_k_domains": [
+    {{"domain": "food", "confidence": 0.95, "reasoning": "Restaurant search and booking"}}
+  ], "query_summary": "Food and restaurant search"}}
 
 Query: "organizza un viaggio a Tokyo: voli, hotel e attività"
-→ {{"domains": [{{"name": "travel", "complexity": "high"}}], "confidence": 0.95, "query_summary": "Complex travel planning"}}
+→ {{"top_k_domains": [
+    {{"domain": "travel", "confidence": 0.95, "reasoning": "Complex travel planning with multiple components"}}
+  ], "query_summary": "Complex travel planning"}}
 
 Query: "ogni giorno analizza HOG e decidi buy/sell"
-→ {{"domains": [{{"name": "utility", "complexity": "low"}}], "confidence": 0.95, "query_summary": "Scheduled recurring task setup"}}
+→ {{"top_k_domains": [
+    {{"domain": "utility", "confidence": 0.95, "reasoning": "Scheduled recurring task setup"}}
+  ], "query_summary": "Scheduled recurring task setup"}}
 
 Query: "cerca offerta di lavoro come Senior AI Engineer a Milano"
-→ {{"domains": [{{"name": "jobs", "complexity": "low"}}], "confidence": 0.95, "query_summary": "Job search query"}}
+→ {{"top_k_domains": [
+    {{"domain": "jobs", "confidence": 0.95, "reasoning": "Job search query explicitly requested"}}
+  ], "query_summary": "Job search query"}}
 
 Query: "i sintomi del diabete e ultime news mediche"
-→ {{"domains": [{{"name": "medical", "complexity": "medium"}}, {{"name": "knowledge_media", "complexity": "low"}}], "confidence": 0.95, "query_summary": "Medical info and recent news search"}}
+→ {{"top_k_domains": [
+    {{"domain": "medical", "confidence": 0.88, "reasoning": "Medical symptoms and health information"}},
+    {{"domain": "knowledge_media", "confidence": 0.55, "reasoning": "News search may be relevant"}}
+  ], "query_summary": "Medical info and recent news search"}}
 
 DISAMBIGUATION:
 - "scommesse", "betting", "pronostico", "odds", "value bet", "spread", "over/under" → ALWAYS "sports_nba", NEVER "finance_crypto"
 - "finance_crypto" is for stocks, crypto, trading, forex, ETF, bonds — NOT sports betting
 - "google_workspace" is for all G-Suite tools (Drive, Docs, Sheets, Gmail, Calendar, Meet)
 - "productivity" is for miscellaneous tasks, reminders, and notes outside G-Suite
+
+## CONFIDENCE CALIBRATION NOTES
+- Confidence should be CALIBRATED: 0.7+ means strong match, don't over-assign high confidence
+- If top_domain.confidence < 0.4, the query may be misrouted - flag for rescue
+- Multi-domain queries should have confidence scores that reflect relative importance
 
 Current time: {current_datetime}"""
 
@@ -459,23 +497,64 @@ Current time: {current_datetime}"""
                 try:
                     # Type is now guaranteed to be dict[str, Any]
                     data_dict: dict[str, Any] = data  # type: ignore[assignment]
-                    domains = []
+
+                    # Wave 2: Parse top_k_domains format (new) or fallback to legacy domains
+                    top_k_domains: list[DomainScore] = []
+                    legacy_domains: list[DomainComplexity] = []
+
+                    # First try Wave 2 format: top_k_domains
+                    top_k_data = data_dict.get("top_k_domains", [])
+                    if top_k_data:
+                        for d in top_k_data:
+                            if isinstance(d, dict):
+                                top_k_domains.append(
+                                    DomainScore(
+                                        domain=d.get("domain", "unknown"),
+                                        confidence=d.get("confidence", 0.5),
+                                        reasoning=d.get("reasoning"),
+                                    )
+                                )
+                            elif isinstance(d, str):
+                                # Handle string format by converting to DomainScore
+                                top_k_domains.append(DomainScore(domain=d, confidence=0.5))
+
+                    # Also parse legacy domains format for backwards compatibility
                     for d in data_dict.get("domains", []):
                         if isinstance(d, dict):
-                            domains.append(
+                            legacy_domains.append(
                                 DomainComplexity(
                                     name=d.get("name", "unknown"),
                                     complexity=d.get("complexity", "medium"),
                                 )
                             )
                         elif isinstance(d, str):
-                            domains.append(DomainComplexity(name=d, complexity="medium"))
+                            legacy_domains.append(DomainComplexity(name=d, complexity="medium"))
 
-                    classification = DomainClassification(
-                        domains=domains,
-                        confidence=data_dict.get("confidence", 0.8),
-                        query_summary=data_dict.get("query_summary", ""),
-                    )
+                    # Build classification with both formats
+                    # Use top_k_domains if available, otherwise convert legacy domains
+                    if top_k_domains:
+                        # Wave 2 format available
+                        primary_domain = top_k_domains[0].domain if top_k_domains else None
+                        avg_confidence = (
+                            sum(d.confidence for d in top_k_domains) / len(top_k_domains)
+                            if top_k_domains
+                            else 0.5
+                        )
+
+                        classification = DomainClassification(
+                            domains=legacy_domains,  # Backwards compat
+                            confidence=avg_confidence,  # Use average for legacy
+                            query_summary=data_dict.get("query_summary", ""),
+                            top_k_domains=top_k_domains,
+                            primary_domain=primary_domain,
+                        )
+                    else:
+                        # Legacy format only - convert to Wave 2 format
+                        classification = DomainClassification(
+                            domains=legacy_domains,
+                            confidence=data_dict.get("confidence", 0.8),
+                            query_summary=data_dict.get("query_summary", ""),
+                        )
 
                     # Record metrics for successful LLM classification
                     elapsed = time.time() - start_time
@@ -489,10 +568,11 @@ Current time: {current_datetime}"""
                         "domain_classification_llm_success",
                         attempt=attempt,
                         query_preview=query[:50],
-                        domains=[d.name for d in domains],
+                        domains=classification.domain_names,
                         confidence=classification.confidence,
                         is_multi_domain=classification.is_multi_domain,
                         latency_seconds=elapsed,
+                        top_k_domains=[d.domain for d in top_k_domains] if top_k_domains else [],
                     )
 
                     # Cache the result (only on successful LLM classification)
@@ -720,23 +800,60 @@ Current time: {current_datetime}"""
                 try:
                     # Type is now guaranteed to be dict[str, Any]
                     data_dict: dict[str, Any] = data  # type: ignore[assignment]
-                    domains = []
+
+                    # Wave 2: Parse top_k_domains format (new) or fallback to legacy domains
+                    top_k_domains: list[DomainScore] = []
+                    legacy_domains: list[DomainComplexity] = []
+
+                    # First try Wave 2 format: top_k_domains
+                    top_k_data = data_dict.get("top_k_domains", [])
+                    if top_k_data:
+                        for d in top_k_data:
+                            if isinstance(d, dict):
+                                top_k_domains.append(
+                                    DomainScore(
+                                        domain=d.get("domain", "unknown"),
+                                        confidence=d.get("confidence", 0.5),
+                                        reasoning=d.get("reasoning"),
+                                    )
+                                )
+                            elif isinstance(d, str):
+                                top_k_domains.append(DomainScore(domain=d, confidence=0.5))
+
+                    # Also parse legacy domains format for backwards compatibility
                     for d in data_dict.get("domains", []):
                         if isinstance(d, dict):
-                            domains.append(
+                            legacy_domains.append(
                                 DomainComplexity(
                                     name=d.get("name", "unknown"),
                                     complexity=d.get("complexity", "medium"),
                                 )
                             )
                         elif isinstance(d, str):
-                            domains.append(DomainComplexity(name=d, complexity="medium"))
+                            legacy_domains.append(DomainComplexity(name=d, complexity="medium"))
 
-                    classification = DomainClassification(
-                        domains=domains,
-                        confidence=data_dict.get("confidence", 0.8),
-                        query_summary=data_dict.get("query_summary", ""),
-                    )
+                    # Build classification with both formats
+                    if top_k_domains:
+                        primary_domain = top_k_domains[0].domain if top_k_domains else None
+                        avg_confidence = (
+                            sum(d.confidence for d in top_k_domains) / len(top_k_domains)
+                            if top_k_domains
+                            else 0.5
+                        )
+
+                        classification = DomainClassification(
+                            domains=legacy_domains,
+                            confidence=avg_confidence,
+                            query_summary=data_dict.get("query_summary", ""),
+                            top_k_domains=top_k_domains,
+                            primary_domain=primary_domain,
+                        )
+                    else:
+                        classification = DomainClassification(
+                            domains=legacy_domains,
+                            confidence=data_dict.get("confidence", 0.8),
+                            query_summary=data_dict.get("query_summary", ""),
+                        )
 
                     # Trace success
                     trace.success = True
@@ -750,9 +867,10 @@ Current time: {current_datetime}"""
                         "domain_classification_llm_success",
                         attempt=attempt,
                         query_preview=query[:50],
-                        domains=[d.name for d in domains],
+                        domains=classification.domain_names,
                         confidence=classification.confidence,
                         is_multi_domain=classification.is_multi_domain,
+                        top_k_domains=[d.domain for d in top_k_domains] if top_k_domains else [],
                     )
 
                     trace.duration_ms = (time.time() - start_time) * 1000
@@ -869,14 +987,14 @@ Current time: {current_datetime}"""
                         # New domain from registry
                         merged[domain] = keywords
 
-                self._logger.debug(
+                logger.debug(
                     "keyword_map_synced_from_registry",
                     domains_with_keywords=len(merged),
                 )
                 return merged
 
         except Exception as e:
-            self._logger.debug(
+            logger.debug(
                 "keyword_map_registry_sync_failed",
                 error=str(e),
             )
@@ -889,6 +1007,8 @@ Current time: {current_datetime}"""
 
         Uses keyword-based domain detection instead of generic web_search.
         Keywords are auto-synced from ToolContractRegistry when available.
+
+        Wave 2: Also populates top_k_domains for consistent format.
         """
         query_lower = query.lower()
         detected_domains: list[str] = []
@@ -904,10 +1024,22 @@ Current time: {current_datetime}"""
         if not detected_domains:
             detected_domains = self._config.fallback_domains
 
+        # Wave 2: Build top_k_domains format
+        top_k = [
+            DomainScore(
+                domain=d,
+                confidence=0.6,  # Fallback confidence - moderate
+                reasoning="Detected via keyword fallback",
+            )
+            for d in detected_domains[:3]
+        ]
+
         return DomainClassification(
             domains=[DomainComplexity(name=d, complexity="medium") for d in detected_domains[:3]],
             confidence=0.6,
             query_summary="Fallback classification via keyword detection",
+            top_k_domains=top_k,
+            primary_domain=top_k[0].domain if top_k else None,
         )
 
     async def classify_with_fallback(

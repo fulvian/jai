@@ -310,11 +310,14 @@ export class SessionManager {
     async createSession(id: string, title: string, config?: SessionConfig): Promise<ChatSession> {
         try {
             // 1. Write to source of truth FIRST
-            await this.memory.createSession(id);
+            // Note: MemoryNamespace.createSession generates session_id on backend
+            // We MUST use the backend's sessionId for consistency
+            const created = await this.memory.createSession('default', { title });
 
             const now = new Date().toISOString();
+            // Use the backend-generated sessionId to ensure consistency between gateway and backend
             const session: ChatSession = {
-                session_id: id,
+                session_id: created.sessionId, // Use backend's sessionId
                 title,
                 created_at: now,
                 updated_at: now,

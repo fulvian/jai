@@ -1724,8 +1724,8 @@ stats = cache.get_stats()  # {hits, misses, hit_rate, l1_hits, l2_hits, ...}
 | P2 | OPT-007 | BM25 lexical search | ✅ Complete |
 | P2 | OPT-008 | RRF fusion | ✅ Complete |
 | P2 | OPT-009 | Enhanced DnD with optimistic updates |
-| P2 | OPT-010 | Incremental community detection |
-| P2 | OPT-011 | Adaptive similarity thresholds |
+| P2 | OPT-010 | Incremental community detection | ✅ Complete |
+| P2 | OPT-011 | Adaptive similarity thresholds | ✅ Complete |
 | P2 | OPT-012 | Cross-list DnD support |
 
 ### P2 Tasks - Hybrid Search Enhancement ✅ IN PROGRESS
@@ -1789,6 +1789,52 @@ fused_results = reciprocal_rank_fusion(
     k=RRF_K,
 )
 ```
+
+### OPT-010: Incremental Community Detection Implementation
+
+**File Modified**: `backend/src/me4brain/memory/session_graph.py`
+
+**Changes**:
+- Added `_incremental_cluster_assignment()` method for fast cluster assignment
+- Added `_should_run_full_clustering()` method with hourly interval
+- Added `run_incremental_clustering()` orchestrator method
+- Added `_assign_unclustered_sessions()` for batch processing
+- Added constants: `INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD=0.85`, `SINGLETON_THRESHOLD=0.75`, `FULL_CLUSTERING_INTERVAL_SECONDS=3600`
+
+**Strategy**:
+1. When new session is ingested, find most similar existing session
+2. If similarity > 0.85, assign to same cluster
+3. Otherwise, leave unassigned (will be picked up by periodic full clustering)
+4. Full Louvain runs at most once per hour
+
+**New Methods**:
+```python
+cluster_id = await graph._incremental_cluster_assignment(session_id, tenant_id)
+should_run = await graph._should_run_full_clustering()
+clusters = await graph.run_incremental_clustering(tenant_id)
+```
+
+### OPT-011: Adaptive Similarity Thresholds Implementation
+
+**File Modified**: `backend/src/me4brain/memory/session_graph.py`
+
+**Changes**:
+- Added `_compute_similarity_stats()` to analyze corpus-wide similarity distribution
+- Added `_get_adaptive_threshold()` for percentile-based threshold calculation
+- Added `_compute_session_similarities_adaptive()` using adaptive thresholds
+- Added constants: `DEFAULT_SIMILARITY_THRESHOLD=0.75`, `ADAPTIVE_THRESHOLD_PERCENTILE=0.10`, `MIN_SIMILARITY_THRESHOLD=0.60`
+
+**Adaptive Threshold Algorithm**:
+- Sample up to 1000 session pairs
+- Compute similarity distribution percentiles (p25, p50, p75, p90, p95, p99)
+- Use p90 as threshold (top 10% of pairs become connected)
+- Floor at MIN_SIMILARITY_THRESHOLD (0.60) to prevent over-connection
+- Cache stats in Redis for 1 hour
+
+**Benefits**:
+- Automatic calibration based on corpus characteristics
+- Consistent relationship density regardless of corpus size
+- No manual threshold tuning required
 
 ---
 

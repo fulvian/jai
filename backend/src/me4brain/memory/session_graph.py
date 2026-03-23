@@ -54,6 +54,26 @@ COMMUNITY_DETECTION_COOLDOWN_SECONDS = 300  # 5 min
 # Higher values give more weight to lower ranks
 RRF_K = 60
 
+# Incremental Community Detection parameters
+# Threshold for assigning to existing cluster (high confidence)
+INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD = 0.85
+# Threshold for creating singleton cluster
+SINGLETON_THRESHOLD = 0.75
+# Full clustering interval (default: hourly)
+FULL_CLUSTERING_INTERVAL_KEY = "me4brain:full_clustering:last_run"
+FULL_CLUSTERING_INTERVAL_SECONDS = 3600  # 1 hour
+
+# Adaptive Similarity Threshold parameters
+# Default similarity threshold for RELATED_TO relationships
+DEFAULT_SIMILARITY_THRESHOLD = 0.75
+# Adaptive threshold percentile (top X% of similarities become connections)
+ADAPTIVE_THRESHOLD_PERCENTILE = 0.10  # Top 10%
+# Minimum threshold floor (never go below this)
+MIN_SIMILARITY_THRESHOLD = 0.60
+# Cache TTL for similarity statistics
+SIMILARITY_STATS_CACHE_KEY = "me4brain:similarity_stats"
+SIMILARITY_STATS_CACHE_TTL = 3600  # 1 hour
+
 # ============================================================================
 # Utility Functions
 # ============================================================================
@@ -835,6 +855,195 @@ class SessionKnowledgeGraph:
                     top_score=records[0][1] if records else 0,
                 )
 
+    async def _compute_similarity_stats(
+        self,
+        tenant_id: str,
+        sample_size: int = 1000,
+    ) -> dict[str, float] | None:
+        """Compute corpus-wide similarity statistics for adaptive thresholds.
+
+        Analyzes a sample of session pairs to compute similarity distribution,
+        allowing percentile-based threshold selection instead of fixed thresholds.
+
+        Args:
+            tenant_id: Tenant ID
+            sample_size: Maximum number of session pairs to sample
+
+        Returns:
+            Dict with stats: min, max, mean, p25, p50, p75, p90, p95, p99
+            or None if insufficient data
+        """
+        import statistics
+
+        driver = await self.semantic.get_driver()
+        if driver is None:
+            return None
+
+        async with driver.session() as neo_session:
+            # Sample session pairs and compute their similarities
+            result = await neo_session.run(
+                """
+                MATCH (s1:Session {tenant_id: $tenant_id})
+                MATCH (s2:Session {tenant_id: $tenant_id})
+                WHERE s1.id < s2.id  // Avoid duplicates
+                  AND s1.embedding IS NOT NULL
+                  AND s2.embedding IS NOT NULL
+                WITH s1, s2,
+                     vector.similarity.cosine(s1.embedding, s2.embedding) AS sim
+                WHERE sim IS NOT NULL
+                RETURN sim
+                ORDER BY sim
+                LIMIT $sample_size
+                """,
+                {"tenant_id": tenant_id, "sample_size": sample_size},
+            )
+
+            similarities: list[float] = []
+            async for record in result:
+                if record[0] is not None:
+                    similarities.append(float(record[0]))
+
+        if len(similarities) < 10:
+            logger.debug(
+                "similarity_stats_insufficient_data",
+                tenant_id=tenant_id,
+                sample_size=len(similarities),
+            )
+            return None
+
+        # Compute percentiles
+        sorted_sims = sorted(similarities)
+        n = len(sorted_sims)
+
+        def percentile(p: float) -> float:
+            idx = int(n * p)
+            idx = min(idx, n - 1)
+            return sorted_sims[max(0, idx)]
+
+        stats = {
+            "min": sorted_sims[0],
+            "max": sorted_sims[-1],
+            "mean": statistics.mean(similarities),
+            "p25": percentile(0.25),
+            "p50": percentile(0.50),
+            "p75": percentile(0.75),
+            "p90": percentile(0.90),
+            "p95": percentile(0.95),
+            "p99": percentile(0.99),
+            "count": n,
+        }
+
+        logger.info(
+            "similarity_stats_computed",
+            tenant_id=tenant_id,
+            sample_size=n,
+            p50=round(stats["p50"], 3),
+            p95=round(stats["p95"], 3),
+        )
+
+        return stats
+
+    async def _get_adaptive_threshold(
+        self,
+        tenant_id: str,
+    ) -> float:
+        """Get adaptive similarity threshold based on corpus distribution.
+
+        Uses percentile-based approach: the threshold is set such that
+        only the top ADAPTIVE_THRESHOLD_PERCENTILE of session pairs
+        will be connected with RELATED_TO relationships.
+
+        Falls back to DEFAULT_SIMILARITY_THRESHOLD if stats unavailable.
+
+        Args:
+            tenant_id: Tenant ID
+
+        Returns:
+            Adaptive similarity threshold
+        """
+        redis_client = await self._get_redis()
+
+        # Try to get cached stats
+        stats = None
+        if redis_client:
+            try:
+                cached = await redis_client.get(f"{SIMILARITY_STATS_CACHE_KEY}:{tenant_id}")
+                if cached:
+                    import json
+
+                    stats = json.loads(cached)
+                    logger.debug("similarity_stats_cache_hit", tenant_id=tenant_id)
+            except Exception as e:
+                logger.warning(
+                    "similarity_stats_cache_read_failed",
+                    tenant_id=tenant_id,
+                    error=str(e),
+                )
+
+        # Compute stats if not cached
+        if stats is None:
+            stats = await self._compute_similarity_stats(tenant_id)
+
+        if stats is None:
+            logger.info(
+                "using_default_similarity_threshold",
+                tenant_id=tenant_id,
+                threshold=DEFAULT_SIMILARITY_THRESHOLD,
+            )
+            return DEFAULT_SIMILARITY_THRESHOLD
+
+        # Cache computed stats
+        if redis_client:
+            try:
+                import json
+
+                await redis_client.setex(
+                    f"{SIMILARITY_STATS_CACHE_KEY}:{tenant_id}",
+                    SIMILARITY_STATS_CACHE_TTL,
+                    json.dumps(stats),
+                )
+            except Exception as e:
+                logger.warning(
+                    "similarity_stats_cache_write_failed",
+                    tenant_id=tenant_id,
+                    error=str(e),
+                )
+
+        # Use percentile-based threshold
+        # For ADAPTIVE_THRESHOLD_PERCENTILE=0.10, we use p90 as threshold
+        # This means only top 10% of pairs will be connected
+        threshold = stats["p90"]
+        threshold = max(threshold, MIN_SIMILARITY_THRESHOLD)
+
+        logger.info(
+            "adaptive_threshold_computed",
+            tenant_id=tenant_id,
+            threshold=round(threshold, 3),
+            p90=round(stats["p90"], 3),
+            p95=round(stats["p95"], 3),
+            count=stats["count"],
+        )
+
+        return threshold
+
+    async def _compute_session_similarities_adaptive(
+        self,
+        session_id: str,
+        tenant_id: str,
+    ) -> None:
+        """Compute session similarities using adaptive threshold.
+
+        Uses corpus-wide similarity distribution to determine the
+        threshold dynamically, ensuring consistent connection density
+        regardless of corpus size or distribution.
+
+        Args:
+            session_id: ID of session to compute similarities for
+            tenant_id: Tenant ID
+        """
+        threshold = await self._get_adaptive_threshold(tenant_id)
+        await self._compute_session_similarities(session_id, tenant_id, threshold=threshold)
+
     # ========================================================================
     # Community Detection (Louvain)
     # ========================================================================
@@ -1035,6 +1244,223 @@ class SessionKnowledgeGraph:
             logger.warning("cluster_naming_failed", error=str(e))
             # Fallback: usa il topic più frequente
             return topics[0] if topics else "Generale", ""
+
+    async def _incremental_cluster_assignment(
+        self,
+        session_id: str,
+        tenant_id: str,
+    ) -> str | None:
+        """Assign session to cluster incrementally without full Louvain.
+
+        Strategy:
+        1. Find most similar existing session
+        2. If similarity > INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD (0.85),
+           assign to same cluster
+        3. Otherwise, create singleton cluster or leave unassigned
+        4. Periodically run full clustering (via _should_run_full_clustering)
+
+        This is much faster than running full Louvain on every ingestion.
+
+        Args:
+            session_id: ID of newly ingested session
+            tenant_id: Tenant ID
+
+        Returns:
+            Cluster ID if assigned, None if left unassigned
+        """
+        driver = await self.semantic.get_driver()
+        if driver is None:
+            return None
+
+        # Find most similar session with high similarity
+        async with driver.session() as neo_session:
+            result = await neo_session.run(
+                """
+                MATCH (s:Session {tenant_id: $tenant_id, id: $session_id})
+                MATCH (other:Session {tenant_id: $tenant_id})
+                WHERE other.id <> $session_id
+                  AND other.embedding IS NOT NULL
+                  AND s.embedding IS NOT NULL
+                WITH other, s,
+                     vector.similarity.cosine(s.embedding, other.embedding) AS sim
+                WHERE sim > $threshold
+                OPTIONAL MATCH (other)-[:BELONGS_TO]->(c:TopicCluster)
+                WHERE c IS NOT NULL
+                RETURN other.id, c.id, c.name, sim
+                ORDER BY sim DESC
+                LIMIT 1
+                """,
+                {
+                    "session_id": session_id,
+                    "tenant_id": tenant_id,
+                    "threshold": INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD,
+                },
+            )
+
+            async for record in result:
+                similar_session_id = record[0]
+                cluster_id = record[1]
+                cluster_name = record[2]
+                similarity = record[3]
+
+                if (
+                    cluster_id
+                    and similarity
+                    and similarity >= INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD
+                ):
+                    # Assign to existing cluster
+                    await neo_session.run(
+                        """
+                        MATCH (s:Session {id: $session_id})
+                        MATCH (c:TopicCluster {id: $cluster_id})
+                        MERGE (s)-[:BELONGS_TO]->(c)
+                        SET s.cluster_assigned_at = $now
+                        """,
+                        {
+                            "session_id": session_id,
+                            "cluster_id": cluster_id,
+                            "now": datetime.now(UTC).isoformat(),
+                        },
+                    )
+                    logger.info(
+                        "incremental_cluster_assigned",
+                        session_id=session_id,
+                        similar_session_id=similar_session_id,
+                        cluster_id=cluster_id,
+                        cluster_name=cluster_name,
+                        similarity=similarity,
+                    )
+                    return cluster_id
+
+        # No suitable cluster found - session remains unassigned
+        # Full clustering will pick it up periodically
+        logger.debug(
+            "incremental_cluster_no_match",
+            session_id=session_id,
+            threshold=INCREMENTAL_CLUSTER_SIMILARITY_THRESHOLD,
+        )
+        return None
+
+    async def _should_run_full_clustering(self) -> bool:
+        """Check if full clustering should be run.
+
+        Uses Redis-based interval tracking to ensure full clustering
+        runs at most once per hour (or configured interval).
+
+        Returns:
+            True if full clustering should run
+        """
+        redis_client = await self._get_redis()
+
+        if redis_client is None:
+            # No Redis - skip full clustering
+            return False
+
+        try:
+            last_run = await redis_client.get(FULL_CLUSTERING_INTERVAL_KEY)
+            if last_run is not None:
+                elapsed = time.time() - float(last_run)
+                if elapsed < FULL_CLUSTERING_INTERVAL_SECONDS:
+                    logger.debug(
+                        "full_clustering_skipping",
+                        reason="interval_not_elapsed",
+                        elapsed_seconds=elapsed,
+                        interval_seconds=FULL_CLUSTERING_INTERVAL_SECONDS,
+                    )
+                    return False
+
+            # Update last run timestamp
+            await redis_client.setex(
+                FULL_CLUSTERING_INTERVAL_KEY,
+                FULL_CLUSTERING_INTERVAL_SECONDS,
+                str(time.time()),
+            )
+            return True
+
+        except Exception as e:
+            logger.warning(
+                "full_clustering_interval_check_failed",
+                error=str(e),
+            )
+            return False
+
+    async def run_incremental_clustering(
+        self,
+        tenant_id: str,
+    ) -> list[TopicCluster] | None:
+        """Run incremental clustering for a tenant.
+
+        First attempts to assign unclustered sessions to existing clusters.
+        If enough time has passed since last full clustering, runs full Louvain.
+
+        Args:
+            tenant_id: Tenant ID
+
+        Returns:
+            List of clusters if full clustering ran, None if only incremental
+        """
+        driver = await self.semantic.get_driver()
+        if driver is None:
+            return None
+
+        # First, try to assign any unclustered sessions incrementally
+        await self._assign_unclustered_sessions(tenant_id)
+
+        # Check if full clustering should run
+        if await self._should_run_full_clustering():
+            logger.info("running_full_clustering", tenant_id=tenant_id)
+            return await self.detect_communities(tenant_id)
+
+        return None
+
+    async def _assign_unclustered_sessions(
+        self,
+        tenant_id: str,
+    ) -> int:
+        """Find and assign unclustered sessions incrementally.
+
+        Args:
+            tenant_id: Tenant ID
+
+        Returns:
+            Number of sessions assigned
+        """
+        driver = await self.semantic.get_driver()
+        if driver is None:
+            return 0
+
+        async with driver.session() as neo_session:
+            # Find sessions without BELONGS_TO relationship
+            result = await neo_session.run(
+                """
+                MATCH (s:Session {tenant_id: $tenant_id})
+                WHERE s.embedding IS NOT NULL
+                  AND NOT EXISTS((s)-[:BELONGS_TO]->(:TopicCluster))
+                RETURN s.id
+                LIMIT 100
+                """,
+                {"tenant_id": tenant_id},
+            )
+
+            unclustered: list[str] = []
+            async for record in result:
+                unclustered.append(record[0])
+
+        assigned_count = 0
+        for session_id in unclustered:
+            cluster_id = await self._incremental_cluster_assignment(session_id, tenant_id)
+            if cluster_id:
+                assigned_count += 1
+
+        if assigned_count > 0:
+            logger.info(
+                "unclustered_sessions_assigned",
+                tenant_id=tenant_id,
+                assigned_count=assigned_count,
+                total_unclustered=len(unclustered),
+            )
+
+        return assigned_count
 
     # ========================================================================
     # Retrieval & Search

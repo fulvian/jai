@@ -296,11 +296,11 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
      */
     app.post('/api/chat/sessions', async (_request: FastifyRequest, reply: FastifyReply) => {
         const body = _request.body as { title?: string; config?: SessionConfig } | undefined;
-        const sessionId = randomUUID();
         const title = body?.title ?? 'Nuova conversazione';
         const config = body?.config;
-        await sessionManager.createSession(sessionId, title, config);
-        return reply.status(201).send({ session_id: sessionId, config });
+        // Note: createSession now returns ChatSession with backend's sessionId
+        const session = await sessionManager.createSession('unused-id', title, config);
+        return reply.status(201).send({ session_id: session.session_id, config });
     });
 
     /**

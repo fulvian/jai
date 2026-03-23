@@ -27,40 +27,79 @@ class DomainComplexity(BaseModel):
     )
 
 
+class DomainScore(BaseModel):
+    """Top-K domain with calibrated confidence score.
+
+    Wave 2 enhancement: Returns per-domain confidence scores
+    instead of single overall confidence for the classification.
+    """
+
+    domain: str = Field(..., description="Domain name (e.g., 'finance_crypto')")
+    confidence: float = Field(
+        ...,
+        description="Calibrated confidence score (0.0-1.0). 0.7+ means strong match.",
+    )
+    reasoning: str | None = Field(
+        default=None,
+        description="Why this domain was selected",
+    )
+
+
 class DomainClassification(BaseModel):
     """Result of Stage 1 domain classification.
 
     The router LLM outputs this to indicate which domains are relevant
     and how complex the query is for each domain.
+
+    Wave 2 enhancement: Now supports Top-K domain scoring with per-domain
+    confidence scores via `top_k_domains` field.
     """
 
+    # Legacy field: kept for backwards compatibility
     domains: list[DomainComplexity] = Field(
         default_factory=list,
-        description="List of relevant domains with complexity",
+        description="List of relevant domains with complexity (legacy format)",
     )
     confidence: float = Field(
         default=0.8,
-        description="Classification confidence (0-1). Low = ambiguous query",
+        description="Classification confidence (0-1). Low = ambiguous query (legacy)",
     )
     query_summary: str = Field(
         default="",
         description="Brief summary of what the query is asking",
     )
 
+    # Wave 2: Top-K domain scoring
+    top_k_domains: list[DomainScore] = Field(
+        default_factory=list,
+        description="Top-K domains with per-domain confidence scores",
+    )
+    primary_domain: str | None = Field(
+        default=None,
+        description="Primary domain (highest confidence domain)",
+    )
+
     @property
     def domain_names(self) -> list[str]:
         """Get just the domain names."""
+        if self.top_k_domains:
+            return [d.domain for d in self.top_k_domains]
         return [d.name for d in self.domains]
 
     @property
     def is_multi_domain(self) -> bool:
         """Check if query spans multiple domains."""
+        if self.top_k_domains:
+            return len(self.top_k_domains) > 1
         return len(self.domains) > 1
 
     @property
     def is_low_confidence(self) -> bool:
         """Check if classification confidence is below threshold."""
-        return self.confidence < 0.5  # Lowered from 0.7
+        if self.top_k_domains and len(self.top_k_domains) > 0:
+            # Use primary domain confidence for threshold
+            return self.top_k_domains[0].confidence < 0.5
+        return self.confidence < 0.5
 
     @property
     def needs_fallback(self) -> bool:
@@ -69,6 +108,14 @@ class DomainClassification(BaseModel):
         Conversational queries usually have no domains but HIGH confidence.
         We only want to trigger fallback (web_search) if confidence is also low.
         """
+        if self.top_k_domains:
+            # Wave 2: Use primary domain confidence
+            primary_confidence = self.top_k_domains[0].confidence if self.top_k_domains else 0.0
+            if not self.top_k_domains and primary_confidence >= 0.8:
+                return False  # Conversational query
+            return primary_confidence < 0.4  # Low confidence threshold for rescue
+
+        # Legacy path
         if not self.domains and self.confidence >= 0.8:
             return False  # Conversational query, trust the LLM that no tools are needed
         return not self.domains or self.is_low_confidence
@@ -188,6 +235,24 @@ class HybridRouterConfig:
     # Multi-intent decomposition
     use_query_decomposition: bool = True  # Decompose multi-domain queries
     decomposition_model: str = field(default_factory=lambda: _get_router_model())
+
+    # Wave 2: Dynamic budgets and timeouts
+    # Dynamic rerank budget based on query complexity
+    rerank_budget_base: int = 20
+    rerank_budget_per_domain: int = 5
+
+    # Wave 2: Timeout budgets (in seconds)
+    coarse_timeout_seconds: float = 10.0
+    rerank_timeout_seconds: float = 30.0
+    selection_timeout_seconds: float = 45.0
+
+    @property
+    def rerank_top_n_dynamic(self) -> int:
+        """Dynamic rerank budget based on domain count.
+
+        Allows more candidates for multi-domain queries.
+        """
+        return self.rerank_budget_base
 
 
 def _get_router_model() -> str:
