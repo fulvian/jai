@@ -1,7 +1,7 @@
 # JAI - Local Development Deployment Guide
 
-**Version**: 1.0  
-**Date**: 2026-03-23  
+**Version**: 1.1  
+**Date**: 2026-03-25  
 **Status**: READY FOR LOCAL DEPLOYMENT
 
 ---
@@ -427,7 +427,7 @@ The Gateway **must** know where the backend (Me4BrAIn) is running. This is confi
 |---------|------|-----|
 | **Backend (Me4BrAIn)** | 8000 | `http://localhost:8000` |
 | **Gateway** | 3030 | `http://localhost:3030` |
-| **Frontend (Next.js)** | 3000 | `http://localhost:3000` |
+| **Frontend (Next.js)** | 3020 | `http://localhost:3020` |
 
 #### Starting Gateway with Correct Backend URL
 

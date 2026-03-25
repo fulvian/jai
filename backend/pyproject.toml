@@ -182,6 +182,28 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
+# ==============================================================================
+# UV Configuration - Deterministic Python Dependencies
+# ==============================================================================
+# PyTorch CPU-only index to avoid NVIDIA/CUDA downloads
+# ROCm support can be enabled later by switching to ROCm index
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+explicit = false
+
+[tool.uv.sources]
+# Pin torch and related packages to CPU index
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.151.9",

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
-const ME4BRAIN_URL = process.env.ME4BRAIN_URL ?? 'http://localhost:8089';
+const ME4BRAIN_URL = process.env.ME4BRAIN_URL ?? 'http://localhost:8000';
 
 async function proxyToMe4BrAIn(
   path: string,

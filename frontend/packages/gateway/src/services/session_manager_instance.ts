@@ -10,8 +10,8 @@ import { SessionManager } from './session_manager.js';
 
 // Initialize Me4BrAIn client
 // Note: Me4BrAInClient auto-appends /v1 if missing, so .env should NOT include /v1
-// Note: Backend runs on port 8089, not 8000
-const me4brainUrl = process.env.ME4BRAIN_URL || 'http://localhost:8089';
+// Note: Backend canonical port is 8000 (changed from legacy 8089)
+const me4brainUrl = process.env.ME4BRAIN_URL || 'http://localhost:8000';
 const me4brainClient = new Me4BrAInClient({ baseUrl: me4brainUrl });
 
 // Use the memory namespace from the client (no need to duplicate)

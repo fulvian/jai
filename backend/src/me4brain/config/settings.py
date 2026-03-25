@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     # API Configuration
     # -------------------------------------------------------------------------
     host: str = Field(default="0.0.0.0", description="API host")
-    port: int = Field(default=8089, description="API port")
-    debug: bool = Field(default=False, description="Debug mode")
+    port: int = Field(default=8000, description="API port")
+    debug: bool = Field(default=True, description="Debug mode")
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(default="INFO")
     cors_origins: str = Field(
         default="", description="Comma-separated CORS origins (empty = none in production)"
@@ -126,7 +126,7 @@ class Settings(BaseSettings):
     # Embedding Model
     # -------------------------------------------------------------------------
     embedding_model: str = Field(default="BAAI/bge-m3", alias="EMBEDDING_MODEL")
-    embedding_device: Literal["mps", "cuda", "cpu"] = Field(default="mps", alias="EMBEDDING_DEVICE")
+    embedding_device: Literal["mps", "cuda", "cpu"] = Field(default="cpu", alias="EMBEDDING_DEVICE")
 
     # -------------------------------------------------------------------------
     # Multi-Tenancy

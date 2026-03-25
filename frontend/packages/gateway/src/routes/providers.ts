@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
-const ME4BRAIN_URL = process.env.ME4BRAIN_URL || 'http://localhost:8089';
+const ME4BRAIN_URL = process.env.ME4BRAIN_URL || 'http://localhost:8000';
 
 export async function providersRoutes(app: FastifyInstance): Promise<void> {
     app.get('/api/providers', async (_req, _reply) => {

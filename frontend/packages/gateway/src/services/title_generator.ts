@@ -5,8 +5,8 @@
  * per le sessioni chat basati sulla query iniziale dell'utente.
  */
 
-// Always use port 8089 for title generation - backend runs on this port
-const ME4BRAIN_URL = 'http://localhost:8089';
+// Backend canonical port is 8000 (was 8089 legacy)
+const ME4BRAIN_URL = process.env.ME4BRAIN_URL || 'http://localhost:8000';
 const TITLE_GENERATION_TIMEOUT = 5000; // 5 secondi
 
 export interface GenerateTitleResponse {
