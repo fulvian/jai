@@ -109,8 +109,9 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
                 # Non è un UUID - verifica se è un provider noto (lm-studio-)
                 if provider_id.startswith("lm-studio-"):
                     # LM Studio provider - usa get_lmstudio_client()
-                    logger.debug("resolve_model_client_lmstudio_provider", model=model_id)
-                    return get_lmstudio_client(), model_id
+                    # Estrae solo il nome del modello senza il prefisso provider
+                    logger.debug("resolve_model_client_lmstudio_provider", model=actual_model)
+                    return get_lmstudio_client(), actual_model
                 # Non è un UUID e non è un provider noto (es. "qwen3.5:4b")
                 # Treat as LM Studio model (LM Studio uses colons in model names)
                 logger.debug("resolve_model_client_lmstudio_fallback", model=model_id)
@@ -156,7 +157,7 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
         ("mistralai/", "openai/", "anthropic/", "google/")
     ):
         logger.debug("resolve_model_client_lmstudio", model=model_id)
-        return get_llm_client(), model_id
+        return get_lmstudio_client(), model_id
 
     # Default: usa NanoGPT cloud
     logger.debug("resolve_model_client_cloud", model=model_id)
