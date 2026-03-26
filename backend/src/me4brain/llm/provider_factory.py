@@ -1,12 +1,10 @@
 """Provider Factory - Dispatcher per provider LLM con Health Check.
 
 Architettura robusta:
-1. **Ollama-First**: Priorità massima (local, no API keys, fast)
-2. **LM Studio Fallback**: Se Ollama offline (local, reliable UI)
-3. **NanoGPT Cloud**: Se entrambi offline (cloud, always available)
+1. **LM Studio ONLY**: Unico provider locale (local, reliable UI)
+2. **NanoGPT Cloud**: Fallback cloud (always available)
 
-Health checks automatici determinano il miglior provider disponibile.
-Supporta fallback intelligente e caching decisioni.
+NOTA: Ollama è stato rimosso. Tutti i provider locali usano LM Studio.
 """
 
 from __future__ import annotations
@@ -20,8 +18,7 @@ import structlog
 from me4brain.llm.base import LLMProvider
 from me4brain.llm.config import get_llm_config
 from me4brain.llm.health import get_llm_health_checker
-from me4brain.llm.nanogpt import get_llm_client
-from me4brain.llm.ollama import get_ollama_client
+from me4brain.llm.nanogpt import get_llm_client, get_lmstudio_client
 
 logger = structlog.get_logger(__name__)
 
@@ -111,22 +108,13 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
             if not UUID_PATTERN.match(provider_id):
                 # Non è un UUID - verifica se è un provider noto (lm-studio-)
                 if provider_id.startswith("lm-studio-"):
-                    # LM Studio provider - crea NanoGPTClient con LM Studio base URL
-                    # NOTA: get_llm_client() con llm_local_only=True usa Ollama, non LM Studio!
+                    # LM Studio provider - usa get_lmstudio_client()
                     logger.debug("resolve_model_client_lmstudio_provider", model=model_id)
-                    from me4brain.llm.nanogpt import NanoGPTClient
-
-                    return (
-                        NanoGPTClient(
-                            api_key=config.nanogpt_api_key or "dummy",
-                            base_url=config.lmstudio_base_url,
-                        ),
-                        model_id,
-                    )
+                    return get_lmstudio_client(), model_id
                 # Non è un UUID e non è un provider noto (es. "qwen3.5:4b")
-                # Treat as Ollama model (Ollama uses colons in tags)
-                logger.debug("resolve_model_client_ollama", model=model_id)
-                return get_ollama_client(), model_id
+                # Treat as LM Studio model (LM Studio uses colons in model names)
+                logger.debug("resolve_model_client_lmstudio_fallback", model=model_id)
+                return get_lmstudio_client(), model_id
 
             if config.llm_local_only:
                 raise ValueError("Dynamic provider resolution is disabled in local-only mode")
@@ -151,15 +139,15 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
         logger.debug("resolve_model_client_lmstudio", model=model_id)
         return get_llm_client(), model_id
 
-    # Default per modelli semplici: prova Ollama first
+    # Default per modelli semplici: usa LM Studio
     if config.llm_local_only:
-        logger.debug("resolve_model_client_ollama_local_only", model=model_id)
-        return get_ollama_client(), model_id
+        logger.debug("resolve_model_client_lmstudio_local_only", model=model_id)
+        return get_lmstudio_client(), model_id
 
-    # Modelli con famiglia locale comune: usa Ollama (senza /)
+    # Modelli con famiglia locale comune: usa LM Studio (senza /)
     if model_id.startswith(("qwen", "llama", "mistral")) and "/" not in model_id:
-        logger.debug("resolve_model_client_ollama_family", model=model_id)
-        return get_ollama_client(), model_id
+        logger.debug("resolve_model_client_lmstudio_family", model=model_id)
+        return get_lmstudio_client(), model_id
 
     # LM Studio models have / in them (e.g., "qwen/qwen3.5-9b") and use - not :
     # Ollama models use : separator (e.g., "qwen3.5:9b")
@@ -178,21 +166,17 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
 def get_reasoning_client() -> LLMProvider:
     """Restituisce il client per ragionamento, sintesi e task complessi.
 
-    Implementa Ollama-First con fallback intelligente:
-    1. Ollama (local, fast, no API keys) - FIRST TRY
-    2. LM Studio (local, reliable) - IF OLLAMA DOWN
-    3. NanoGPT Cloud (cloud, always available) - LAST RESORT
-
-    Health checks automatici determinano il provider migliore disponibile.
+    Usa LM Studio come provider locale.
+    NanoGPT Cloud come fallback.
     """
     config = get_llm_config()
     if config.llm_local_only or config.use_local_tool_calling:
         logger.debug(
             "provider_factory_reasoning_local",
-            provider="ollama",
-            model=config.ollama_model,
+            provider="lmstudio",
+            model=config.model_routing,
         )
-        return get_ollama_client()
+        return get_lmstudio_client()
 
     # Non-local mode: use cloud
     logger.debug("provider_factory_reasoning_cloud", provider="nanogpt", model=config.model_primary)
@@ -202,28 +186,26 @@ def get_reasoning_client() -> LLMProvider:
 def get_tool_calling_client() -> LLMProvider:
     """Restituisce il client per tool selection e argument extraction.
 
-    Implementa Ollama-First strategy:
-    1. Ollama (local, fast) - PRIMARY
-    2. LM Studio (local, reliable) - FALLBACK
-    3. NanoGPT (cloud, always available) - LAST RESORT
+    Usa LM Studio come provider locale.
+    NanoGPT Cloud come fallback.
     """
     config = get_llm_config()
     if config.llm_local_only:
         logger.debug(
             "provider_factory_tool_calling_local_only",
-            provider="ollama",
-            model=config.ollama_model,
+            provider="lmstudio",
+            model=config.model_routing,
         )
-        return get_ollama_client()
+        return get_lmstudio_client()
 
     # Non-local mode with local tool calling enabled
     if config.use_local_tool_calling:
         logger.debug(
             "provider_factory_tool_calling_local",
-            provider="ollama",
-            model=config.ollama_model,
+            provider="lmstudio",
+            model=config.model_routing,
         )
-        return get_ollama_client()
+        return get_lmstudio_client()
 
     logger.debug(
         "provider_factory_tool_calling_cloud", provider="nanogpt", model=config.model_agentic
