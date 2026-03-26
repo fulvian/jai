@@ -109,7 +109,12 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
             provider_id, actual_model = parts
             # Verifica che provider_id sia un UUID valido
             if not UUID_PATTERN.match(provider_id):
-                # Non è un UUID (es. "qwen3.5:4b" o "mlx/qwen3.5:9b")
+                # Non è un UUID - verifica se è un provider noto (lm-studio-)
+                if provider_id.startswith("lm-studio-"):
+                    # LM Studio provider - usa get_llm_client() che fa routing a LM Studio
+                    logger.debug("resolve_model_client_lmstudio_provider", model=model_id)
+                    return get_llm_client(), model_id
+                # Non è un UUID e non è un provider noto (es. "qwen3.5:4b")
                 # Treat as Ollama model (Ollama uses colons in tags)
                 logger.debug("resolve_model_client_ollama", model=model_id)
                 return get_ollama_client(), model_id
@@ -133,7 +138,7 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
 
     # Modello semplice - priorizza Ollama rispetto a NanoGPT
     # Per MLX models, usa ancora LM Studio via NanoGPT
-    if model_id.endswith("-mlx") or model_id.startswith("mlx-"):
+    if model_id.endswith("-mlx") or model_id.startswith("mlx-") or model_id.startswith("mlx/"):
         logger.debug("resolve_model_client_lmstudio", model=model_id)
         return get_llm_client(), model_id
 
@@ -142,10 +147,19 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
         logger.debug("resolve_model_client_ollama_local_only", model=model_id)
         return get_ollama_client(), model_id
 
-    # Modelli con famiglia locale comune: usa Ollama
+    # Modelli con famiglia locale comune: usa Ollama (senza /)
     if model_id.startswith(("qwen", "llama", "mistral")) and "/" not in model_id:
         logger.debug("resolve_model_client_ollama_family", model=model_id)
         return get_ollama_client(), model_id
+
+    # LM Studio models have / in them (e.g., "qwen/qwen3.5-9b") and use - not :
+    # Ollama models use : separator (e.g., "qwen3.5:9b")
+    # Route models with / to LM Studio
+    if "/" in model_id and not model_id.startswith(
+        ("mistralai/", "openai/", "anthropic/", "google/")
+    ):
+        logger.debug("resolve_model_client_lmstudio", model=model_id)
+        return get_llm_client(), model_id
 
     # Default: usa NanoGPT cloud
     logger.debug("resolve_model_client_cloud", model=model_id)

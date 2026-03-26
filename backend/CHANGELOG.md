@@ -1,3 +1,53 @@
+## [v0.20.7] - 2026-03-26
+
+### Added - LM Studio context_length Integration
+
+**Feature**: LM Studio models now properly report their `context_length` configuration, and the system can automatically reload models when `context_window_size` changes.
+
+**Changes**:
+
+1. **LMStudioAutoLoader Enhanced** (`nanogpt.py`):
+   - Added `_loaded_context_length` tracking
+   - `load_model()` now accepts optional `context_length` parameter
+   - `load_model()` passes `context_length` to LM Studio API when loading models
+   - `ensure_model_loaded()` automatically reloads models if `context_length` differs from configured value
+
+2. **Model Discovery Enhanced** (`model_discovery.py`):
+   - `scan_mlx_server()` now fetches detailed info from `/api/v1/models` endpoint
+   - Extracts `max_context_length` (maximum supported by model) and `context_length` (current if loaded)
+   - Reports `is_loaded` status and `quantization` for each model
+
+3. **API Extended** (`llm_config.py`):
+   - Added `max_context_length` and `is_loaded` fields to `LLMModelInfo`
+   - `_discovered_to_info()` now propagates these fields
+
+**How It Works**:
+```
+UI: context_window_size = 32768 (configurable in Settings)
+     ↓
+Backend: passes context_length=32768 to LM Studio when loading model
+     ↓
+LM Studio: loads model with specified context_length
+```
+
+**Model Info Now Shows**:
+```json
+{
+  "id": "qwen/qwen3.5-9b",
+  "context_window": 8192,        // current context_length (if loaded)
+  "max_context_length": 262144,  // maximum supported by model
+  "is_loaded": true,             // whether loaded in LM Studio
+  "quantization": "Q4_K_M"       // model quantization
+}
+```
+
+**Files Modified**:
+- `src/me4brain/llm/nanogpt.py` - LMStudioAutoLoader with context_length support
+- `src/me4brain/llm/model_discovery.py` - Enhanced LM Studio API discovery
+- `src/me4brain/api/routes/llm_config.py` - Added max_context_length, is_loaded fields
+
+---
+
 ## [v0.20.6] - 2026-03-23
 
 ### Fixed - Weather Query Classification (geo_weather domain)

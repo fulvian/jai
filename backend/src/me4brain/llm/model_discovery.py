@@ -55,6 +55,8 @@ class DiscoveredModel:
             "vram_required_gb": self.size_gb,
             "path": self.path,
             "is_local": self.source != ModelSource.CLOUD_NANOGPT,
+            "max_context_length": self.metadata.get("max_context_length"),
+            "is_loaded": self.metadata.get("is_loaded", False),
         }
 
 
@@ -179,9 +181,50 @@ class ModelDiscovery:
         return models
 
     async def scan_mlx_server(self) -> list[DiscoveredModel]:
-        """Scansiona modelli via mlx_lm.server API."""
+        """Scansiona modelli via LM Studio API (OpenAI-compatible /v1/models).
+
+        Usa anche /api/v1/models per ottenere max_context_length dettagliato.
+        """
         models = []
 
+        # Try the detailed API first to get max_context_length
+        # Convert http://localhost:1234/v1 → http://localhost:1234/api/v1
+        base_url = self.mlx_server_url.rstrip("/")
+        if base_url.endswith("/v1"):
+            api_url = base_url.rsplit("/v1", 1)[0] + "/api/v1"
+        else:
+            api_url = base_url + "/api/v1"
+        detailed_info: dict[str, dict[str, Any]] = {}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{api_url}/models")
+                if response.status_code == 200:
+                    data = response.json()
+                    for model_info in data.get("models", []):
+                        model_key = model_info.get("key", "")
+                        max_ctx = model_info.get("max_context_length", 32768)
+                        quantization = model_info.get("quantization", {})
+                        quantization_name = quantization.get("name") if quantization else None
+
+                        # Get currently loaded context_length if any instance is loaded
+                        context_length = max_ctx  # Default to max
+                        loaded = model_info.get("loaded_instances", [])
+                        if loaded:
+                            loaded_config = loaded[0].get("config", {})
+                            context_length = loaded_config.get("context_length", max_ctx)
+
+                        detailed_info[model_key] = {
+                            "max_context_length": max_ctx,
+                            "context_length": context_length,
+                            "quantization": quantization_name,
+                            "loaded": len(loaded) > 0,
+                        }
+                    logger.debug("lm_studio_detailed_api_success", models_count=len(detailed_info))
+        except Exception as e:
+            logger.debug("lm_studio_detailed_api_unavailable", error=str(e))
+
+        # Fallback to OpenAI-compatible endpoint
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(f"{self.mlx_server_url}/models")
@@ -194,13 +237,28 @@ class ModelDiscovery:
                         if "/" in model_id:
                             display_name = model_id.split("/")[-1]
 
+                        # Use detailed info if available
+                        details = detailed_info.get(model_id, {})
+                        context_window = details.get(
+                            "context_length",
+                            details.get(
+                                "max_context_length", self._estimate_context_window(model_id)
+                            ),
+                        )
+                        quantization = details.get("quantization")
+
                         models.append(
                             DiscoveredModel(
-                                id=f"mlx/{model_id}",
+                                id=model_id,  # Use raw ID from LM Studio (e.g., "qwen/qwen3.5-9b")
                                 name=display_name,
                                 source=ModelSource.MLX_SERVER,
-                                context_window=self._estimate_context_window(model_id),
-                                metadata={"raw_id": model_id},
+                                context_window=context_window,
+                                quantization=quantization,
+                                metadata={
+                                    "raw_id": model_id,
+                                    "max_context_length": details.get("max_context_length"),
+                                    "is_loaded": details.get("loaded", False),
+                                },
                             )
                         )
 
@@ -278,7 +336,7 @@ def get_model_discovery() -> ModelDiscovery:
         from me4brain.llm.config import get_llm_config
 
         config = get_llm_config()
-        _discovery = ModelDiscovery(mlx_server_url=config.ollama_base_url)
+        _discovery = ModelDiscovery(mlx_server_url=config.lmstudio_base_url)
     return _discovery
 
 

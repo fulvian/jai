@@ -37,12 +37,17 @@ class LMStudioAutoLoader:
     """Handles automatic model loading for LM Studio.
 
     LM Studio requires models to be explicitly loaded before making inference requests.
-    This class provides auto-loading functionality to ensure models are available.
+    This class provides auto-loading functionality to ensure models are available
+    with the correct context_length parameter.
+
+    When context_length is specified, the model will be reloaded if it differs from
+    the currently loaded model's context_length to ensure optimal performance.
     """
 
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/").replace("/v1", "")  # Remove /v1 suffix
         self._loaded_model: str | None = None
+        self._loaded_context_length: int | None = None
         self._lock = asyncio.Lock()
 
     def _get_api_base_url(self) -> str:
@@ -81,36 +86,64 @@ class LMStudioAutoLoader:
             logger.warning("lmstudio_check_loaded_error", error=str(e))
             return False
 
-    async def load_model(self, model_identifier: str) -> bool:
-        """Load a model in LM Studio.
+    async def load_model(self, model_identifier: str, context_length: int | None = None) -> bool:
+        """Load a model in LM Studio with optional context_length.
 
         Args:
-            model_identifier: The model to load (e.g., 'mlx-community/qwen3.5-9b-instruct-4bit')
+            model_identifier: The model to load (e.g., 'qwen/qwen3.5-9b')
+            context_length: Optional context length to set for the model.
+                           If None, LM Studio uses its default.
 
         Returns:
             True if model was loaded successfully, False otherwise.
         """
         async with self._lock:
-            # Double-check after acquiring lock
+            # Try to get list of available models to find a match
+            available_model = await self._find_available_model(model_identifier)
+            if not available_model:
+                logger.error("lmstudio_model_not_found", model=model_identifier)
+                return False
+
+            # Check if already loaded with correct context_length
             if await self.is_model_loaded(model_identifier):
-                return True
+                if self._loaded_context_length == context_length or context_length is None:
+                    logger.debug(
+                        "lmstudio_model_already_loaded",
+                        model=available_model,
+                        context_length=context_length,
+                    )
+                    return True
+                else:
+                    logger.info(
+                        "lmstudio_reloading_for_context_length",
+                        model=available_model,
+                        current_context=self._loaded_context_length,
+                        requested_context=context_length,
+                    )
 
             try:
-                # Try to get list of available models to find a match
-                available_model = await self._find_available_model(model_identifier)
-                if not available_model:
-                    logger.error("lmstudio_model_not_found", model=model_identifier)
-                    return False
-
-                logger.info("lmstudio_loading_model", model=available_model)
+                logger.info(
+                    "lmstudio_loading_model",
+                    model=available_model,
+                    context_length=context_length,
+                )
                 async with httpx.AsyncClient(timeout=300.0) as client:
+                    load_params: dict[str, Any] = {"model": available_model}
+                    if context_length is not None:
+                        load_params["context_length"] = context_length
+
                     response = await client.post(
                         f"{self._get_api_base_url()}/api/v1/models/load",
-                        json={"model": available_model},
+                        json=load_params,
                     )
                     if response.status_code == 200:
                         self._loaded_model = available_model
-                        logger.info("lmstudio_model_loaded", model=available_model)
+                        self._loaded_context_length = context_length
+                        logger.info(
+                            "lmstudio_model_loaded",
+                            model=available_model,
+                            context_length=context_length,
+                        )
                         return True
                     else:
                         logger.error(
@@ -167,22 +200,41 @@ class LMStudioAutoLoader:
             logger.error("lmstudio_list_models_error", error=str(e))
             return None
 
-    async def ensure_model_loaded(self, model_identifier: str) -> bool:
-        """Ensure the model is loaded, loading it if necessary.
+    async def ensure_model_loaded(
+        self, model_identifier: str, context_length: int | None = None
+    ) -> bool:
+        """Ensure the model is loaded with the specified context_length.
+
+        If the model is already loaded but with a different context_length,
+        it will be reloaded with the new context_length.
 
         Args:
             model_identifier: The model identifier to ensure is loaded
+            context_length: Optional context length to set for the model.
+                          If None, uses whatever is currently loaded.
 
         Returns:
             True if model is loaded (or was loaded), False otherwise.
         """
-        # Check if already loaded
+        # Check if already loaded with correct context_length
         if await self.is_model_loaded(model_identifier):
-            logger.debug("lmstudio_model_already_loaded", model=model_identifier)
-            return True
+            if self._loaded_context_length == context_length or context_length is None:
+                logger.debug(
+                    "lmstudio_model_already_loaded",
+                    model=model_identifier,
+                    context_length=context_length,
+                )
+                return True
+            else:
+                logger.info(
+                    "lmstudio_reloading_for_context_change",
+                    model=model_identifier,
+                    current_context=self._loaded_context_length,
+                    requested_context=context_length,
+                )
 
-        # Load the model
-        return await self.load_model(model_identifier)
+        # Load the model with specified context_length
+        return await self.load_model(model_identifier, context_length)
 
 
 # Global auto-loader instance
@@ -275,6 +327,13 @@ class NanoGPTClient(LLMProvider):
                 and cfg.use_local_tool_calling
                 and is_default_cloud_client
             )
+        ):
+            return cfg.lmstudio_base_url.rstrip("/")
+        # LM Studio models have / in them (e.g., "qwen/qwen3.5-9b")
+        # Ollama models use : separator (e.g., "qwen3.5:9b")
+        # Cloud models start with provider prefixes (mistralai/, openai/, etc.)
+        if "/" in model and not model_lower.startswith(
+            ("mistralai/", "openai/", "anthropic/", "google/", "cohere/")
         ):
             return cfg.lmstudio_base_url.rstrip("/")
         if ":" in model:
@@ -386,8 +445,11 @@ class NanoGPTClient(LLMProvider):
         # Auto-load model if going to LM Studio and model is not loaded
         if base_url == get_llm_config().lmstudio_base_url.rstrip("/"):
             auto_loader = get_lmstudio_auto_loader()
-            # Use normalized model name for LM Studio as well
-            model_loaded = await auto_loader.ensure_model_loaded(effective_model)
+            config = get_llm_config()
+            # Use normalized model name for LM Studio with context_length from config
+            model_loaded = await auto_loader.ensure_model_loaded(
+                effective_model, context_length=config.context_window_size
+            )
             if not model_loaded:
                 logger.error("lmstudio_auto_load_failed", model=request.model)
                 logger.warning(
@@ -525,7 +587,11 @@ class NanoGPTClient(LLMProvider):
         # Auto-load model if going to LM Studio and model is not loaded
         if base_url == get_llm_config().lmstudio_base_url.rstrip("/"):
             auto_loader = get_lmstudio_auto_loader()
-            model_loaded = await auto_loader.ensure_model_loaded(request.model)
+            config = get_llm_config()
+            # Use context_length from config
+            model_loaded = await auto_loader.ensure_model_loaded(
+                request.model, context_length=config.context_window_size
+            )
             if not model_loaded:
                 logger.error("lmstudio_auto_load_failed_stream", model=request.model)
                 logger.warning(

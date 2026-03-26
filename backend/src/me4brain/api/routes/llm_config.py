@@ -115,6 +115,8 @@ class LLMModelInfo(BaseModel):
     speed_tps: float | None = None
     recommended_for: list[str] = []
     not_recommended_for: list[str] = []
+    max_context_length: int | None = None  # Max supported by the model (from LM Studio)
+    is_loaded: bool = False  # Whether the model is currently loaded in LM Studio
 
 
 class LLMConfigResponse(BaseModel):
@@ -172,6 +174,8 @@ def _discovered_to_info(m: DiscoveredModel) -> LLMModelInfo:
         supports_vision=m.supports_vision,
         quantization=m.quantization,
         vram_required_gb=m.size_gb,
+        max_context_length=m.metadata.get("max_context_length"),
+        is_loaded=m.metadata.get("is_loaded", False),
     )
 
 
@@ -247,8 +251,10 @@ async def list_cloud_models() -> list[LLMModelInfo]:
 async def get_current_config() -> LLMConfigResponse:
     """Configurazione LLM corrente."""
     config = get_llm_config()
-    profiles = get_all_profiles()
-    available_models = [_profile_to_info(p) for p in profiles]
+
+    # Get available models from discovery + providers (same as /models endpoint)
+    available_models = await list_available_models()
+
     primary_profile = get_model_profile(config.model_primary)
     context_window = (
         primary_profile.context_window if primary_profile else config.context_window_size
@@ -522,7 +528,7 @@ async def discover_local_models() -> dict[str, Any]:
         discovered["errors"].append(f"ollama: {str(e)}")
 
     try:
-        lmstudio_url = config.ollama_base_url.replace(":1234", ":1234")
+        lmstudio_url = config.lmstudio_base_url
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{lmstudio_url}/models")
             if response.status_code == 200:
