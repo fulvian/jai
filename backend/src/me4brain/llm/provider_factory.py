@@ -111,9 +111,18 @@ def resolve_model_client(model_id: str) -> tuple[LLMProvider, str]:
             if not UUID_PATTERN.match(provider_id):
                 # Non è un UUID - verifica se è un provider noto (lm-studio-)
                 if provider_id.startswith("lm-studio-"):
-                    # LM Studio provider - usa get_llm_client() che fa routing a LM Studio
+                    # LM Studio provider - crea NanoGPTClient con LM Studio base URL
+                    # NOTA: get_llm_client() con llm_local_only=True usa Ollama, non LM Studio!
                     logger.debug("resolve_model_client_lmstudio_provider", model=model_id)
-                    return get_llm_client(), model_id
+                    from me4brain.llm.nanogpt import NanoGPTClient
+
+                    return (
+                        NanoGPTClient(
+                            api_key=config.nanogpt_api_key or "dummy",
+                            base_url=config.lmstudio_base_url,
+                        ),
+                        model_id,
+                    )
                 # Non è un UUID e non è un provider noto (es. "qwen3.5:4b")
                 # Treat as Ollama model (Ollama uses colons in tags)
                 logger.debug("resolve_model_client_ollama", model=model_id)

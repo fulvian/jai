@@ -354,9 +354,10 @@ async def update_llm_config(update: LLMConfigUpdate) -> dict[str, Any]:
             value_str = str(value).lower() if isinstance(value, bool) else str(value)
             os.environ[env_var] = value_str
 
-    # Reset hybrid router singleton to pick up new config
+    # Reset hybrid router singleton AND engine singleton to pick up new config
     # Note: get_llm_config() is not cached - it creates a fresh LLMConfig()
     # instance each time that reads from os.environ and .env file
+    # CRITICAL: Both router AND engine must be reset to ensure config consistency
     verified_config = {}
     if should_clear_cache:
         try:
@@ -365,6 +366,15 @@ async def update_llm_config(update: LLMConfigUpdate) -> dict[str, Any]:
             _reset_router_singleton()
         except Exception as e:
             logger.warning("hybrid_router_reset_failed", error=str(e))
+
+        # 🎯 FIX Problema D: Reset engine singleton to prevent config/runtime divergence
+        try:
+            from me4brain.engine.core import reset_engine
+
+            await reset_engine()
+            logger.info("engine_singleton_reset_after_config_update")
+        except Exception as e:
+            logger.warning("engine_reset_failed", error=str(e))
 
         new_config = get_llm_config()
         verified_config = {
@@ -443,13 +453,23 @@ async def reset_llm_config() -> dict[str, Any]:
     # Persist to .env file
     persistence_success, persistence_message = _persist_to_env_file(updates)
 
-    # Reset router singleton
+    # Reset router singleton AND engine singleton
+    # CRITICAL: Both must be reset to ensure config consistency
     try:
         from me4brain.engine.hybrid_router.router import _reset_router_singleton
 
         _reset_router_singleton()
     except Exception as e:
         logger.warning("hybrid_router_reset_failed", error=str(e))
+
+    # 🎯 FIX Problema D: Reset engine singleton to prevent config/runtime divergence
+    try:
+        from me4brain.engine.core import reset_engine
+
+        await reset_engine()
+        logger.info("engine_singleton_reset_after_default_reset")
+    except Exception as e:
+        logger.warning("engine_reset_failed", error=str(e))
 
     logger.info("llm_config_reset_to_defaults", persistence=persistence_success)
 

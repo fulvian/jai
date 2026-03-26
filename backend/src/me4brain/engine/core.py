@@ -1190,8 +1190,24 @@ Sii conciso ma completo.""",
                     model=conv_model,
                     provider=type(conv_client).__name__,
                 )
-                # Fallback: continue to tool routing
-                pass
+                # 🎯 FIX: Fail-fast invece di silent fallback to tool routing
+                # L'errore conversazionale deve essere esplicito, non mascherato
+                yield {
+                    "type": "error",
+                    "message": "Non sono riuscito a generare una risposta conversazionale. Riprova o riformula la domanda.",
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                    "provider": type(conv_client).__name__,
+                    "model": conv_model,
+                    "stage": "conversational",
+                }
+                yield {
+                    "type": "done",
+                    "tools_count": 0,
+                    "tools_called": [],
+                    "latency_ms": round((time_module.monotonic() - start_time) * 1000, 2),
+                }
+                return  # Non continuare con tool routing!
 
         # Check router support
         if not hasattr(self._router, "retriever") or not hasattr(self._router, "decomposer"):
