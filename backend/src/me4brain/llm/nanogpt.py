@@ -270,37 +270,6 @@ def get_llm_client() -> "NanoGPTClient":
     )
 
 
-# LM Studio client singleton
-_lmstudio_client: NanoGPTClient | None = None
-_lmstudio_client_config_hash: str | None = None
-
-
-def get_lmstudio_client() -> "NanoGPTClient":
-    """Factory per ottenere l'istanza del client LM Studio.
-
-    Usa LM Studio come backend locale con auto-routing dei modelli.
-    Questo client gestisce automaticamente modelli con / (LM Studio format)
-    e modelli con : (convertiti per compatibilità).
-    """
-    global _lmstudio_client, _lmstudio_client_config_hash
-
-    config = get_llm_config()
-    config_hash = f"{config.lmstudio_base_url}|{config.lmstudio_base_url}"
-
-    if _lmstudio_client is None or _lmstudio_client_config_hash != config_hash:
-        _lmstudio_client = NanoGPTClient(
-            api_key=config.nanogpt_api_key or "dummy",
-            base_url=config.lmstudio_base_url,
-        )
-        _lmstudio_client_config_hash = config_hash
-        logger.info(
-            "lmstudio_client_created",
-            base_url=config.lmstudio_base_url,
-        )
-
-    return _lmstudio_client
-
-
 class NanoGPTClient(LLMProvider):
     """Client per interagire con le API NanoGPT."""
 
@@ -682,3 +651,37 @@ class NanoGPTClient(LLMProvider):
                 except json.JSONDecodeError:
                     logger.warning("nanogpt_stream_decode_error", line=line)
                     continue
+
+
+# =============================================================================
+# LM Studio Client Singleton
+# =============================================================================
+# MUST be defined after NanoGPTClient class
+_lmstudio_client = None
+_lmstudio_client_config_hash: str | None = None
+
+
+def get_lmstudio_client() -> "NanoGPTClient":
+    """Factory per ottenere l'istanza del client LM Studio.
+
+    Usa LM Studio come backend locale con auto-routing dei modelli.
+    Questo client gestisce automaticamente modelli con / (LM Studio format)
+    e modelli con : (convertiti per compatibilità).
+    """
+    global _lmstudio_client, _lmstudio_client_config_hash
+
+    config = get_llm_config()
+    config_hash = f"{config.lmstudio_base_url}|{config.lmstudio_base_url}"
+
+    if _lmstudio_client is None or _lmstudio_client_config_hash != config_hash:
+        _lmstudio_client = NanoGPTClient(
+            api_key=config.nanogpt_api_key or "dummy",
+            base_url=config.lmstudio_base_url,
+        )
+        _lmstudio_client_config_hash = config_hash
+        logger.info(
+            "lmstudio_client_created",
+            base_url=config.lmstudio_base_url,
+        )
+
+    return _lmstudio_client
