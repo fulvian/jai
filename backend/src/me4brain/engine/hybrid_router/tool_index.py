@@ -391,9 +391,15 @@ class ToolIndexManager:
             points = []
             for node, embedding in zip(nodes, embeddings, strict=True):
                 payload = {**node.metadata}
-                # Remove excluded keys from payload
-                for key in ["schema_json", "_catalog_hash"]:
-                    payload.pop(key, None)
+                # CRITICAL: Include 'text' field for LlamaIndex TextNode reconstruction
+                # Without this, VectorIndexRetriever.aretrieve() fails with validation error
+                # because TextNode requires text field
+                payload["text"] = node.text
+
+                # Remove only internal metadata keys from payload
+                # NOTE: schema_json MUST be kept - it's needed by _nodes_to_tools()
+                # to reconstruct tool schemas for LLM tool calling
+                payload.pop("_catalog_hash", None)
 
                 # Extract tool_name and generate deterministic UUID5 for Qdrant
                 # Note: Qdrant requires UUID or integer IDs; tool_name strings are invalid
